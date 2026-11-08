@@ -15,6 +15,7 @@ export interface ArchitectureCoverage {
   unsupportedNodes: string[];
   unsupportedEdges: string[];
   unreachableRuntimeUnits: string[];
+  blockingOmissions: ArchitectureFactSet["omissions"];
 }
 
 const runtimeNodeKinds = new Set(["frontend", "api", "worker", "agent", "cli", "database", "object-store", "queue"]);
@@ -61,6 +62,7 @@ function architectureProblems(inventory: ArchitectureSignalInventory, facts: Arc
     unsupportedNodes: facts.nodes.filter((node) => node.kind !== "user" && node.synthetic !== true && node.evidence.length === 0).map((node) => node.id).sort(),
     unsupportedEdges: facts.edges.filter((edge) => edge.evidence.length === 0).map((edge) => edge.id).sort(),
     unreachableRuntimeUnits: facts.nodes.filter((node) => runtimeNodeKinds.has(node.kind) && !reached.has(node.id)).map((node) => node.id).sort(),
+    blockingOmissions: facts.omissions,
   };
 }
 

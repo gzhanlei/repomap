@@ -47,6 +47,7 @@ Resolving an omitted revision requires one GitHub API request. The archive downl
 
 The default directory is `./repomap-output/<repository>-<short-sha>`:
 
+- `architecture.candidates.json`: external candidate identities, protocols, dynamic state, operation details and omission outcomes for coverage checks and optional Harness follow-up.
 - `architecture.facts.json`: fixed-revision nodes, relationships, roots, and source evidence.
 - `architecture.analysis.json`: independent signal inventory, semantic coverage, and source receipt.
 - `architecture.json`: Archify input when coverage is publishable. Viewer repository links are omitted unless local-Git evidence is explicitly available; facts retain source evidence.
@@ -57,7 +58,7 @@ Coverage failures and renderer failures leave diagnostic JSON behind. A visually
 
 ## Supported analysis
 
-The initial static detectors cover common Next.js, Go, PHP, and miniprogram request flows, along with MySQL, object storage, scheduled workers, internal HTTP calls, and external services. Other stacks can be added through the same detector and coverage interfaces without repository-name branches.
+The initial static detectors cover common Next.js, Go, PHP, and miniprogram request flows, along with MySQL, object storage, scheduled workers, internal HTTP calls, and external services. Generic external candidates additionally cover dynamic endpoints and GraphQL operations without requiring a provider-specific detector. Static hosts, environment-derived identities, and unresolved `unknown` candidates are distinguished explicitly; unresolved candidates block publication. See [Generic external protocols and Harness follow-up](docs/generic-external-protocols.md).
 
 The reader rejects incomplete or over-budget source inventories. Defaults are 1,000 directories, 1,000 source files, 1 MB per file, and 10 MB of source content; the remote archive itself is capped at 50 MB. These are independent of any AI context budget because RepoMap does not use AI.
 

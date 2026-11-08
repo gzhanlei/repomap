@@ -21,6 +21,7 @@ export function assertArchitecturePublishable(coverage: ArchitectureCoverage) {
     ...coverage.unsupportedNodes.map((id) => `unsupported node ${id}`),
     ...coverage.unsupportedEdges.map((id) => `unsupported edge ${id}`),
     ...coverage.unreachableRuntimeUnits.map((id) => `unreachable runtime ${id}`),
+    ...coverage.blockingOmissions.map((omission) => `omission ${omission.signalId}: ${omission.detail}`),
   ];
   throw new Error(`Architecture coverage is not publishable: ${problems.join("; ") || "empty architecture or missing entry roots"}`);
 }

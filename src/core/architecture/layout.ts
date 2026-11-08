@@ -243,7 +243,7 @@ function laneComponents(components: Component[], roles: Map<string, NodeFact["ki
   return [
     { nodes: actors, x: 60 },
     { nodes: runtimes, x: 540 },
-    { nodes: resources, x: 1080 },
+    { nodes: resources, x: 900 },
   ];
 }
 

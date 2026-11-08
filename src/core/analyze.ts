@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { analyzeRepositoryArchitecture } from "./architecture/repository.js";
+import { externalCandidateSetSchema } from "./architecture/candidates.js";
 import { projectArchitectureDocument } from "./architecture/project.js";
 import { architectureDocumentSchema, type ArchitectureDocument } from "./architecture/document.js";
 import type { ArchitectureRepositorySourceReceipt, ArchitectureSource } from "./architecture/source.js";
@@ -79,10 +80,12 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   const analysis = analyzeRepositoryArchitecture({ revision: input.identity.revision, sources: input.sources, sourceReceipt: input.sourceReceipt });
   const factsPath = join(outDir, "architecture.facts.json");
   const analysisPath = join(outDir, "architecture.analysis.json");
+  const candidatesPath = join(outDir, "architecture.candidates.json");
   const receiptPath = join(outDir, "repomap.receipt.json");
   const specPath = join(outDir, "architecture.json");
   const artifactPath = join(outDir, "architecture.html");
   await writeJson(factsPath, analysis.facts);
+  await writeJson(candidatesPath, externalCandidateSetSchema.parse({ version: 1, revision: input.identity.revision, candidates: analysis.candidates }));
   await writeJson(analysisPath, { version: 1, repository: input.identity, source: analysis.sourceReceipt, signals: analysis.inventory.signals, coverage: analysis.coverage });
   const baseReceipt = {
     engine: "repomap-v1",
@@ -90,8 +93,9 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     source: analysis.sourceReceipt,
     archive: input.archive,
     aiRequests: 0,
+    candidateSummary: { total: analysis.candidates.length, omitted: analysis.candidates.filter((candidate) => candidate.status === "omitted").length },
     coverage: analysis.coverage,
-    outputs: { facts: factsPath, analysis: analysisPath, receipt: receiptPath },
+    outputs: { facts: factsPath, analysis: analysisPath, candidates: candidatesPath, receipt: receiptPath },
   };
   if (!analysis.coverage.publishable) {
     const receipt = { ...baseReceipt, status: "failed" as const, error: "Architecture coverage is not publishable", elapsedMs: (input.now?.() ?? Date.now()) - started };

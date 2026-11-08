@@ -10,6 +10,8 @@ import { externalArchitectureDetector, externalCallbackRelationships, linkExtern
 import { miniProgramApiRelationships, miniProgramArchitectureDetector } from "./detectors/mini-program.js";
 import { goInternalHttpRelationships } from "./detectors/go-http.js";
 import { emptyArchitectureFragment, type ArchitectureContext, type ArchitectureFragment } from "./detectors/types.js";
+import { detectGenericExternal, genericExternalCandidates } from "./detectors/generic-external.js";
+import type { ExternalCandidate } from "./candidates.js";
 
 const detectors = [nextArchitectureDetector, goArchitectureDetector, phpArchitectureDetector, miniProgramArchitectureDetector, storageArchitectureDetector, externalArchitectureDetector];
 
@@ -60,28 +62,34 @@ export function mergeArchitectureFragments(revision: string, fragments: Architec
   return architectureFactSetSchema.parse({ version: 1, revision, roots, nodes, edges, omissions });
 }
 
-function extractWithInventory(input: Pick<ArchitectureSignalInventory, "revision" | "scope">, sources: ArchitectureSource[], inventory: ArchitectureSignalInventory): ArchitectureFactSet {
+function extractWithInventory(input: Pick<ArchitectureSignalInventory, "revision" | "scope">, sources: ArchitectureSource[], inventory: ArchitectureSignalInventory): { facts: ArchitectureFactSet; candidates: ExternalCandidate[] } {
   const context: ArchitectureContext = { ...input, sources, signals: inventory.signals };
   const fragments = detectors.map((detector) => detector.detect(context));
   const base = mergeArchitectureFragments(input.revision, fragments);
-  const storageEdges = linkStorageRelationships(context, base.nodes);
+  const generic = detectGenericExternal(context, base.nodes);
+  const augmented = mergeArchitectureFragments(input.revision, [base, generic]);
+  const storageEdges = linkStorageRelationships(context, augmented.nodes);
   const relationshipEdges = [
     ...storageEdges,
-    ...linkExternalRelationships(context, base.nodes),
-    ...externalCallbackRelationships(context, base.nodes),
+    ...linkExternalRelationships(context, augmented.nodes),
+    ...externalCallbackRelationships(context, augmented.nodes),
     ...miniProgramApiRelationships(context, base.nodes),
     ...goInternalHttpRelationships(context, base.nodes),
   ];
   const callbackRoots = relationshipEdges.filter((edge) => edge.kind === "callback").map((edge) => edge.from);
-  return mergeArchitectureFragments(input.revision, [{ ...emptyArchitectureFragment(), nodes: base.nodes, edges: base.edges, roots: [...base.roots, ...callbackRoots], omissions: base.omissions }, { ...emptyArchitectureFragment(), edges: relationshipEdges }]);
+  const facts = mergeArchitectureFragments(input.revision, [{ ...emptyArchitectureFragment(), nodes: augmented.nodes, edges: augmented.edges, roots: [...augmented.roots, ...callbackRoots], omissions: augmented.omissions }, { ...emptyArchitectureFragment(), edges: relationshipEdges }]);
+  return { facts, candidates: generic.candidates };
 }
 
 export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory, "revision" | "scope">, sources: ArchitectureSource[]) {
   const runtimeSources = sources.filter((source) => isArchitectureSourcePath(source.path));
   const inventory = collectArchitectureSignals(input, runtimeSources);
-  const facts = extractWithInventory(input, runtimeSources, inventory);
-  const coverage = evaluateArchitectureCoverage(inventory, facts);
-  return { inventory, facts, coverage };
+  const generic = genericExternalCandidates({ ...input, sources: runtimeSources, signals: inventory.signals });
+  const signals = [...inventory.signals, ...generic.signals].sort((a, b) => a.id.localeCompare(b.id));
+  const enrichedInventory = { ...inventory, signals };
+  const { facts, candidates } = extractWithInventory(input, runtimeSources, enrichedInventory);
+  const coverage = evaluateArchitectureCoverage(enrichedInventory, facts);
+  return { inventory: enrichedInventory, facts, coverage, candidates };
 }
 
 export function extractArchitectureFacts(input: Pick<ArchitectureSignalInventory, "revision" | "scope">, sources: ArchitectureSource[]): ArchitectureFactSet {
