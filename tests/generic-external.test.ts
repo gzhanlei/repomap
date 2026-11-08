@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { analyzeArchitectureFacts } from "../src/core/architecture/extract.js";
+import { isArchitectureSourcePath } from "../src/core/architecture/source.js";
 import { layoutArchitecture } from "../src/core/architecture/layout.js";
 import { analyzeSources } from "../src/core/analyze.js";
 import { loadLocalRepositorySources } from "../src/core/source/local.js";
@@ -10,6 +11,13 @@ import { nextFixture, revision } from "./helpers.js";
 const scope = { revision, scope: "repository" as const };
 
 describe("generic external protocol detection", () => {
+  it("filters generated third-party bundles without excluding real source", () => {
+    expect(isArchitectureSourcePath("static/js/mathjax/tex-svg-full.js")).toBe(false);
+    expect(isArchitectureSourcePath("public/assets/plotly/plotly-full.js")).toBe(false);
+    expect(isArchitectureSourcePath("src/mathjax/index.ts")).toBe(true);
+    expect(isArchitectureSourcePath("static/js/app.js")).toBe(true);
+  });
+
   it("keeps the external resource lane within the desktop readability width", () => {
     const components = [
       { id: "ui", type: "frontend" as const, label: "Web UI", pos: [Number.NaN, Number.NaN] as [number, number], size: [200, 64] as [number, number] },

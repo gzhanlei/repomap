@@ -166,12 +166,16 @@ export async function analyzeSource(options: AnalyzeOptions) {
   if (options.revision) repository.revision = fixedRevision(options.revision);
   const loaded = await loadGitHubRepositorySources(repository, options);
   const identity: RepositoryIdentity = { kind: "github", owner: repository.owner, repo: repository.repo, revision: loaded.repository.revision };
-  return analyzeSources({
-    ...options,
-    identity,
-    sources: loaded.sources,
-    sourceReceipt: loaded.receipt,
-    archive: loaded.archive,
-    outDir: options.outDir ?? join(process.cwd(), "repomap-output", `${slugify(repository.repo)}-${identity.revision.slice(0, 7)}`),
-  });
+  try {
+    return await analyzeSources({
+      ...options,
+      identity,
+      sources: loaded.sources,
+      sourceReceipt: loaded.receipt,
+      archive: loaded.archive,
+      outDir: options.outDir ?? join(process.cwd(), "repomap-output", `${slugify(repository.repo)}-${identity.revision.slice(0, 7)}`),
+    });
+  } finally {
+    await loaded.cleanup();
+  }
 }

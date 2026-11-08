@@ -20,14 +20,26 @@ RepoMap 现在支持**不依赖服务商专用 detector 的外部依赖提取**�
 
 1. 源码中的绝对 HTTP(S) host；
 2. `*_DOMAIN`、`*_HOST`、`*_ENDPOINT`、`*_BASE_URL`、`*_URL`、`*_API_URL` 等环境变量；
-3. `lib/`、`src/`、`services/`、`server/`、`clients/`、`providers/`、`integrations/` 下的服务目录或模块名。
+3. `lib/`、`src/`、`services/`、`server/`、`clients/`、`providers/`、`integrations/` 下的服务目录或模块名；
+4. Go 文件中明确的协议模块名（如 OAuth、ActivityPub、Federation、Webhook），仅作为动态协议身份，不伪装成已解析 host。
 
 规则：
 
 - 静态 host 使用 host 作为节点 ID 和标签；
 - 动态 endpoint 使用环境变量或模块身份，并在标签中标记 `动态 endpoint`；
-- 候选必须同时具有运行时调用证据，单纯 import 不会自动创建外部系统；
+- 候选必须同时具有运行时调用证据，单纯 import 或请求构造不会自动创建外部系统；
+- Go 静态常量 URL 可以解析 host；若环境变量可以覆盖默认值，保留 host 证据但仍标记 `dynamic: true`；
 - 无法确定身份时保留 `unknown` 候选和 omission，**阻止发布**，不生成貌似完整的图。
+
+### Go 出站 HTTP
+
+通用提取覆盖：
+
+- `http.Get`、`http.Post`、`http.Head`；
+- `http.NewRequest` / `http.NewRequestWithContext` 与同文件后续 `client.Do(req)`、`http.DefaultClient.Do(req)`、`activityPubClient().Do(req)` 等实际发送调用；
+- 同文件静态字符串常量、环境变量动态 endpoint，以及同变量多次构造时按调用位置选择最近的请求定义。
+
+`NewRequest` 本身只是请求构造，不是网络调用证据。相对路径、注释、文档字符串和 `ListenAndServe` 不生成外部候选。协议模块身份只说明“该模块发起动态外部 HTTP 调用”，并不表示静态分析已经知道最终域名。
 
 现有专用 external detector 保留，通用规则不会重复处理其已注册身份。
 
@@ -95,6 +107,56 @@ RepoMap 现在支持**不依赖服务商专用 detector 的外部依赖提取**�
 
 在 `vercel/commerce` 上，10 个 query 和 4 个 mutation 由 32 条平行边聚合为每个运行时各一条 query、mutation 和 HTTP 关系，避免布局标签无法放置。
 
+## Go 模块与 SQLite 补充验收
+
+### Authelia 大仓库验收
+
+固定 revision：`32b0bdac395efc707bc098757afa232177965736`
+
+源码读取已改为按需加载和 64 文件 LRU 缓存，不再把整个仓库内容同时载入内存；GitHub 临时目录在分析完成或失败后统一清理。默认资源安全上限为 100,000 文件/目录、单文件 50 MB、总源码 500 MB、归档 500 MB，不把小型 AI context 预算当作仓库支持上限。
+
+完整读取结果：1,360 个支持源码文件、255 个目录、7,474,801 字节。固定归档命中缓存时网络请求为 0。
+
+此样本同时修复了通用语义问题：Vite/React 入口、Go import 闭包中的服务启动、PostgreSQL 方言和迁移、非 `github` 路径中的 GitHub API 调用，以及 CI schedule 被误判为运行时 Worker。纯 `sql.Null*` 类型和 `db:` tag 不再被当成真实 SQL 存储调用。
+
+最终输出目录：`/Users/leihan/Documents/GitHub/repomap-output/authelia-final`
+
+结果：
+
+- `entrypoint: 5/5`、`deployable: 6/6`、`store: 89/89`、`external: 2/2`；
+- `blockingOmissions: []`，`publishable: true`；
+- 渲染 diagnostics 为 0，浏览器视觉检查通过；
+- 已人工查看深浅主题截图。
+
+这证明该大仓库不再因旧的 1,000 文件预算被拒绝，并不表示所有更大的仓库都可以无限读取；超过明确资源安全边界时仍会显式失败。
+
+### WriteFreely 修复与验收
+
+固定 revision：`8ff3647e9a094dbcf09c9c84d8e2305543ee5cfb`
+
+修复的通用问题：
+
+- Go 模块名本身的导入现在会包含模块根目录，避免漏掉根目录的 `app.go` 和 SQL 初始化；
+- HTTP 入口增加 `mux.NewRouter` / `Serve(` 证据，避免 Go 服务被误标为 CLI；
+- `CREATE TABLE` 不再单独作为 MySQL 身份依据，新增 MySQL/SQLite/PostgreSQL 分别识别；
+- schema 按 SQL 方言和路径补充证据，迁移文件的完整匹配行纳入 `signalIds`；
+- schema/migration 不再无条件产生“每个 runtime 到每种数据库”的密集关系；只有真实 SQL 调用边附加 schema，完全无调用时仅由主 runtime 承接迁移证据；
+- `static/public/assets` 下的第三方发行 bundle 被排除，`src/` 中真实源码仍保留；
+- Go 出站 `http.Get`、`NewRequest` + `Do`、静态常量、动态环境配置和协议模块身份已进入通用候选。
+
+最终输出目录：`/Users/leihan/Documents/GitHub/repomap-output/writefreely-final`
+
+结果：
+
+- `store: 19/19`（纯 `database/sql` 类型引用不再产生假存储信号）；
+- `external: 15/15`，`candidateSummary: { total: 15, omitted: 0 }`；
+- ActivityPub、OAuth、Slack、版本检查和 receipts 调用均有真实发送行证据；
+- `slack.com`、`version.writefreely.org` 等使用静态 host；OAuth/ActivityPub 使用明确标记的动态协议模块身份；`webmonetization.org` 有环境覆盖，因此虽解析到默认 host 仍标记为动态；
+- `blockingOmissions: []`，Go HTTP 服务和 MySQL/SQLite 关系均可达；
+- 渲染 diagnostics 为 0，浏览器视觉检查通过，已人工查看深浅主题截图。
+
+**边界**：`external: 15/15` 表示当前提取到的调用候选均有身份和覆盖，不表示所有动态请求的最终域名都已静态确定，也不表示任意未知 Go SDK 都能自动识别。普通模块中无法识别身份的动态调用仍会产生 omission 并阻止发布。
+
 ## Harness 后续接续
 
 默认 CLI 不调用 LLM。后续 Harness 可以在独立阶段消费候选并输出 enriched facts，建议保持以下边界：
@@ -124,7 +186,7 @@ architecture.candidates.json
 
 最终输出目录：
 
-`/Users/leihan/Documents/GitHub/repomap-output/vercel-commerce-generic-v3`
+`/Users/leihan/Documents/GitHub/repomap-output/commerce-final`
 
 结果：
 

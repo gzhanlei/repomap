@@ -1,6 +1,8 @@
 # RepoMap 接手文档
 
-更新日期：2026-11-05
+更新日期：2026-11-08
+
+> 当前补充：项目已发布到 `https://github.com/gzhanlei/repomap`。本轮已完成大仓库懒加载、Go/SQLite/PostgreSQL、Vite/React、Go 出站 HTTP 和动态外部候选验证；当前全量检查为 13 个测试文件、46 项测试。以下 2026-11-05 的接手记录保留作历史背景，后续状态以 README、通用协议文档和 Git 历史为准。
 
 ## 已确认的产品边界
 
@@ -25,19 +27,19 @@
 
 - `src/cli.ts`：`analyze` 命令、GitHub/本地输入、fixed revision、`--no-render`、`--visual-check`、`--no-cache`、locale 和输出目录。
 - `src/core/github/`：GitHub shorthand/URL 解析、HEAD 解析、codeload 单 archive 下载、按 SHA 的本地缓存和成本指标。
-- `src/core/source/local.ts`：有界源码清单、完整 UTF-8 读取、行号、目录/文件/单文件/总字节限制，以及本地 Git HEAD 和脏工作区校验。
+- `src/core/source/local.ts`：按需加载的有界源码清单、64 文件 LRU 内容缓存、完整 UTF-8 读取、行号、目录/文件/单文件/总字节限制，以及本地 Git HEAD 和脏工作区校验。
 - `src/core/architecture/`：从 Radar 抽取的通用事实、信号、覆盖门禁、检测器、投影和布局；Radar adapter、数据库、专用模板及逐 blob loader 未带入。
 - `src/core/analyze.ts`：写出 facts、analysis、Archify spec、HTML（可选）和 `repomap.receipt.json`；覆盖或渲染失败也保留诊断。
 - `src/core/archify-*`：固定 Archify release 校验、准备、delivery 和 visual-check。
 - 根目录包含 `README.md`、`SKILL.md`、MIT `LICENSE` 和测试。
 - 当前没有账号、数据库、多租户、Web 服务或 AI 调用。
 
-## 已完成的验证
+## 历史验证记录（2026-11-05）
 
 最近一次全量本地检查：
 
 - `npm run typecheck`：通过。
-- 7 个测试文件、18 个测试：通过。
+- 7 个测试文件、18 个测试：通过（历史记录；当前为 13 个测试文件、46 项测试）。
 - `npm run build`：通过。
 - `npm run archify:prepare`：通过，固定 ZIP 的 SHA-256 已验证。
 
@@ -63,7 +65,7 @@ Easy Make PPT 固定版本验证：
 - 结果为 5 个节点、3 条关系，覆盖门禁为 `publishable: true`。
 - **这不是语义完整性的证明。** 当前独立信号清单尚未识别 Worker、Bull/Redis 和对象存储，因此覆盖分母不完整，不能直接交付该架构图。
 
-## 未提交与未发布状态
+## 历史未提交与未发布状态（2026-11-05）
 
 - RepoMap 是新建目录，尚未初始化 Git、配置远程仓库、提交、推送或发布 npm 包。
 - 当前源码和 `vendor/archify/archify-v3.2.0.zip` 均保留在本地。
@@ -96,7 +98,7 @@ Easy Make PPT 固定版本验证：
 - 初始化 Git 并选择远程仓库；确认生成目录均被忽略。
 - 补 package repository/homepage 元数据、CI、更多固定 SHA corpus 和 `npm pack --dry-run`。
 - 运行 CRAP、dryer、mutation testing，以及 Skill `quick_validate` 和真实调用验证。
-- P0 语义问题未解决前，不发布 npm 包，不宣称支持通用仓库架构生成。
+- P0 语义问题未解决前，不发布 npm 包，不宣称所有仓库都具有完整语义覆盖。
 
 ## 明确不做
 

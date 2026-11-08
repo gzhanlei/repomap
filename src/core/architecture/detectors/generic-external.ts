@@ -4,10 +4,11 @@ import type { ArchitectureSignal } from "../signals.js";
 import { emptyArchitectureFragment, factEdge, type ArchitectureContext, type ArchitectureFragment } from "./types.js";
 import type { ExternalCandidate } from "../candidates.js";
 
-const reservedIdentities = new Set(["cos", "wechat", "xpay", "aiphoto", "seedance", "chandler", "github", "llm", "archify"]);
+const reservedIdentities = new Set(["cos", "wechat", "xpay", "aiphoto", "seedance", "chandler", "github", "api.github.com", "llm", "archify"]);
 const genericSegments = new Set(["app", "api", "lib", "src", "core", "common", "shared", "utils", "util", "helpers", "helper", "types", "models", "config", "constants", "components", "pages", "clients", "services", "server", "providers", "integrations", "hooks", "store", "stores", "database", "db"]);
 const genericEnvPrefixes = new Set(["NEXT", "NEXT_PUBLIC", "APP", "APP_URL", "API", "API_URL", "SERVICE", "SERVICE_URL", "DEFAULT", "PUBLIC", "SERVER", "BACKEND", "FRONTEND", "BASE", "BASE_URL"]);
 const identitySegments = new Set(["lib", "src", "services", "server", "clients", "providers", "integrations"]);
+const protocolModulePattern = /(?:^|[_-])(oauth|activitypub|federation|webhook|graphql|grpc|monetization|payments?)(?:[_-]|$)/i;
 
 interface CandidateDraft {
   identity?: string;
@@ -18,18 +19,30 @@ interface CandidateDraft {
   omissionReason?: string;
 }
 
+interface GoRequestConstruction {
+  variable: string;
+  target: string;
+  method: string;
+  line: number;
+}
+
 function slug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function identityFromPath(path: string) {
   const parts = path.split("/");
-  for (let index = 0; index < parts.length - 1; index += 1) {
+  for (let index = 0; index < parts.length - 2; index += 1) {
     if (!identitySegments.has(parts[index])) continue;
     const candidate = parts[index + 1];
     if (!genericSegments.has(candidate)) return slug(candidate);
   }
   return undefined;
+}
+
+function identityFromProtocolModule(path: string) {
+  const filename = path.split("/").at(-1)?.replace(/\.[^.]+$/, "") ?? "";
+  return protocolModulePattern.test(filename) ? slug(filename) : undefined;
 }
 
 function identityFromEnvironment(content: string) {
@@ -52,6 +65,92 @@ function serviceIdentity(source: { path: string; content: string }) {
   if (environment) return { identity: environment, dynamic: true };
   const path = identityFromPath(source.path);
   return path ? { identity: path, dynamic: true } : undefined;
+}
+
+function goRequestConstructions(lines: string[]) {
+  const requests = new Map<string, GoRequestConstruction[]>();
+  for (const [index, line] of lines.entries()) {
+    const code = line.replace(/^\s*\d+:\s?/, "");
+    const match = code.match(/\b([A-Za-z_]\w*)\s*,\s*[A-Za-z_]\w*\s*(?::=|=)\s*http\.(NewRequestWithContext|NewRequest)\s*\((.*)$/);
+    if (!match) continue;
+    const args = match[3].split(",").map((part) => part.trim());
+    const targetIndex = match[2] === "NewRequestWithContext" ? 2 : 1;
+    const methodIndex = match[2] === "NewRequestWithContext" ? 1 : 0;
+    const target = args[targetIndex];
+    if (!target) continue;
+    const request = { variable: match[1], target, method: args[methodIndex]?.replace(/["`]/g, "") || "request", line: index };
+    requests.set(match[1], [...(requests.get(match[1]) ?? []), request]);
+  }
+  return requests;
+}
+
+function goStaticBindings(lines: string[]) {
+  const bindings = new Map<string, string>();
+  for (const line of lines) {
+    const code = line.replace(/^\s*\d+:\s?/, "");
+    const match = code.match(/\b([A-Za-z_]\w*)\s*(?::=|=)\s*["`](https?:\/\/[^"`]+)["`]/);
+    const identity = match ? absoluteIdentity(match[2]) : undefined;
+    if (match && identity) bindings.set(match[1], identity);
+  }
+  return bindings;
+}
+
+function goDynamicBindings(lines: string[]) {
+  const bindings = new Set<string>();
+  for (const line of lines) {
+    const code = line.replace(/^\s*\d+:\s?/, "");
+    const match = code.match(/\b([A-Za-z_]\w*)\s*(?::=|=)\s*os\.(?:Getenv|LookupEnv)\s*\(/);
+    if (match) bindings.add(match[1]);
+  }
+  return bindings;
+}
+
+function goTargetIdentity(target: string, source: { path: string; content: string }, staticBindings: Map<string, string>, dynamicBindings: Set<string>) {
+  const absolute = absoluteIdentity(target) ?? staticBindings.get(target.trim());
+  if (absolute) return { identity: absolute, dynamic: dynamicBindings.has(target.trim()) };
+  if (/^["'`]\//.test(target.trim())) return { local: true as const };
+  const environment = identityFromEnvironment(source.content);
+  if (environment) return { identity: environment, dynamic: true };
+  const path = identityFromPath(source.path) ?? identityFromProtocolModule(source.path);
+  return path ? { identity: path, dynamic: true } : { identity: undefined, dynamic: true };
+}
+
+function goOutboundDrafts(source: { path: string; content: string }): CandidateDraft[] {
+  if (!source.path.endsWith(".go")) return [];
+  const lines = source.content.split("\n");
+  const requests = goRequestConstructions(lines);
+  const staticBindings = goStaticBindings(lines);
+  const dynamicBindings = goDynamicBindings(lines);
+  const drafts: CandidateDraft[] = [];
+  lines.forEach((line, index) => {
+    const code = line.replace(/^\s*\d+:\s?/, "").trim();
+    if (["//", "#", "*", "/*"].some((prefix) => code.startsWith(prefix))) return;
+    const direct = code.match(/\bhttp\.(Get|Post|Head)\s*\((.*)$/);
+    const send = code.match(/\b((?:[A-Za-z_]\w*\.)*[A-Za-z_]\w*(?:Client|client)|[A-Za-z_]\w*(?:Client|client)\(\))\.Do\s*\(\s*([A-Za-z_]\w*)\s*\)/);
+    let target: string | undefined;
+    let method = "request";
+    if (direct) {
+      target = direct[2].split(",")[0]?.trim();
+      method = direct[1].toLowerCase();
+    } else if (send) {
+      const request = requests.get(send[2])?.filter((item) => item.line <= index).at(-1);
+      if (!request) return;
+      target = request.target;
+      method = request.method.toLowerCase();
+    } else return;
+    if (!target) return;
+    const resolved = goTargetIdentity(target, source, staticBindings, dynamicBindings);
+    if ("local" in resolved) return;
+    drafts.push({
+      identity: resolved.identity,
+      dynamic: resolved.dynamic,
+      protocol: "http",
+      operation: { name: method, kind: "http" },
+      evidence: { path: source.path, line: architectureLineNumber(lines[index], index), detector: "generic-go-http-call" },
+      omissionReason: resolved.identity ? undefined : "Go outbound HTTP call has no statically identifiable service identity",
+    });
+  });
+  return drafts;
 }
 
 function candidateId(draft: CandidateDraft) {
@@ -121,7 +220,7 @@ function graphQLDrafts(source: { path: string; content: string }): CandidateDraf
 export function detectGenericExternal(context: ArchitectureContext, runtimeNodes: NodeFact[] = []): ArchitectureFragment & { candidates: ExternalCandidate[] } {
   const fragment = emptyArchitectureFragment();
   const candidates: ExternalCandidate[] = [];
-  const drafts = [...context.sources.flatMap(fetchDrafts), ...context.sources.flatMap(graphQLDrafts)];
+  const drafts = [...context.sources.flatMap(fetchDrafts), ...context.sources.flatMap(goOutboundDrafts), ...context.sources.flatMap(graphQLDrafts)];
   const externalNodes = new Map<string, { identity: string; dynamic: boolean; evidence: { path: string; line: number; detector: string }[] }>();
   const edgeGroups = new Map<string, { source: string; target: string; kind: "http" | "download" | "upload"; protocol: "http" | "graphql"; operationKind?: "query" | "mutation" | "subscription" | "http"; operations: string[]; evidence: { path: string; line: number; detector: string }[] }>();
   const runtimes = runtimeNodes.filter((node) => ["frontend", "api", "worker", "agent", "cli"].includes(node.kind));

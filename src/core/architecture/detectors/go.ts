@@ -13,11 +13,13 @@ function sourceDirectory(path: string) {
 }
 
 function importCandidates(value: string, modules: string[]) {
-  const module = modules.find((name) => value.startsWith(`${name}/`));
-  return module === undefined ? [] : [value.slice(module.length + 1)];
+  const module = modules.find((name) => value === name || value.startsWith(`${name}/`));
+  if (module === undefined) return [];
+  return value === module ? [""] : [value.slice(module.length + 1)];
 }
 
 function pathSuffix(directory: string, candidate: string) {
+  if (candidate === "") return directory === ".";
   const escaped = candidate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(?:^|/)${escaped}$`).test(directory);
 }
@@ -73,7 +75,7 @@ function goNode(source: ArchitectureSource, context: ArchitectureContext, eviden
   const sourcePaths = goSourcePaths(source, context.sources);
   const paths = new Set(sourcePaths);
   const signalIds = context.signals.filter((signal) => ["entrypoint", "deployable", "worker"].includes(signal.kind) && paths.has(signal.evidence.path)).map((signal) => signal.id).sort();
-  return { id: `go:${unit}`, kind: goKind(source), label: `Go ${unit}`, runtimeUnit: unit, sourcePaths, signalIds, evidence: [evidence] };
+  return { id: `go:${unit}`, kind: goKind(source), label: `Go ${posix.basename(unit)}`, runtimeUnit: posix.basename(unit), sourcePaths, signalIds, evidence: [evidence] };
 }
 
 function detectGo(context: ArchitectureContext): ArchitectureFragment {
@@ -84,7 +86,10 @@ function detectGo(context: ArchitectureContext): ArchitectureFragment {
     if (!mainEvidence) continue;
     const node = goNode(source, context, mainEvidence);
     fragment.nodes.push(node);
-    const serverEvidence = findArchitectureEvidence(source, ["ListenAndServe", "NewHandler", "http.Handle", "chi.NewRouter", "gin.Default", "echo.New"], "go-http-entrypoint");
+    const serverEvidence = context.sources.filter((source) => node.sourcePaths?.includes(source.path)).flatMap((source) => {
+      const evidence = findArchitectureEvidence(source, ["ListenAndServe", "NewHandler", "http.Handle", "chi.NewRouter", "mux.NewRouter", "gin.Default", "echo.New", "http.Serve", "Serve(", "service.RunAll"], "go-http-entrypoint");
+      return evidence ? [evidence] : [];
+    })[0];
     const serverRoot = serverEvidence && node.kind === "api";
     if (serverRoot) {
       fragment.nodes.push(actorNode("actor:users", "产品用户"));

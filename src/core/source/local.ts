@@ -1,4 +1,5 @@
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readFileSync } from "node:fs";
+import { readdir, stat } from "node:fs/promises";
 import { basename, resolve, sep } from "node:path";
 import { isArchitectureSourcePath, type ArchitectureRepositorySourceReceipt, type ArchitectureSource } from "../architecture/source.js";
 import { execCommand, type CommandRunner } from "../process.js";
@@ -8,13 +9,15 @@ export interface RepositorySourceBudgets {
   maxDirectories: number;
   maxFileBytes: number;
   maxTotalBytes: number;
+  contentCacheFiles?: number;
 }
 
 export const defaultRepositorySourceBudgets: RepositorySourceBudgets = {
-  maxFiles: 1000,
-  maxDirectories: 1000,
-  maxFileBytes: 1_000_000,
-  maxTotalBytes: 10_000_000,
+  maxFiles: 100_000,
+  maxDirectories: 100_000,
+  maxFileBytes: 50_000_000,
+  maxTotalBytes: 500_000_000,
+  contentCacheFiles: 64,
 };
 
 const excludedDirectories = new Set([".git", "node_modules", "vendor", "third_party", "dist", "build", "out", "coverage"]);
@@ -29,6 +32,36 @@ export function numberedSource(path: string, content: string): ArchitectureSourc
   const lines = content.split("\n");
   if (lines.at(-1) === "") lines.pop();
   return { path, content: lines.map((line, index) => `${index + 1}: ${line}`).join("\n") };
+}
+
+export function createSourceContentCache(capacity = 64) {
+  const limit = Math.max(1, Math.floor(capacity));
+  const cache = new Map<string, string>();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  return {
+    read(absolute: string) {
+      const existing = cache.get(absolute);
+      if (existing !== undefined) {
+        cache.delete(absolute);
+        cache.set(absolute, existing);
+        return existing;
+      }
+      const content = numberedSource(absolute, decoder.decode(readFileSync(absolute))).content;
+      if (cache.size >= limit) cache.delete(cache.keys().next().value as string);
+      cache.set(absolute, content);
+      return content;
+    },
+    get size() { return cache.size; },
+  };
+}
+
+export function lazyNumberedSource(path: string, absolute: string, cache: ReturnType<typeof createSourceContentCache>): ArchitectureSource {
+  return {
+    path,
+    get content() {
+      return cache.read(absolute);
+    },
+  };
 }
 
 async function assertDirectory(root: string) {
@@ -54,7 +87,7 @@ export async function loadLocalRepositorySources(repositoryRoot: string, overrid
   const root = resolve(repositoryRoot);
   await assertDirectory(root);
   const sources: ArchitectureSource[] = [];
-  const decoder = new TextDecoder("utf-8", { fatal: true });
+  const contentCache = createSourceContentCache(budgets.contentCacheFiles);
   let directories = 0;
   let bytes = 0;
 
@@ -79,9 +112,7 @@ export async function loadLocalRepositorySources(repositoryRoot: string, overrid
       const info = await stat(absolute);
       if (info.size > budgets.maxFileBytes) throw new Error(`Repository source file exceeds max bytes: ${relative}`);
       if (bytes + info.size > budgets.maxTotalBytes) throw new Error(`Repository source byte budget exhausted: ${relative}`);
-      const buffer = await readFile(absolute);
-      const content = decoder.decode(buffer);
-      sources.push(numberedSource(relative, content));
+      sources.push(lazyNumberedSource(relative, absolute, contentCache));
       bytes += info.size;
     }
   }

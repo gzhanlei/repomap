@@ -25,7 +25,7 @@ const rules: ExternalRule[] = [
 ];
 
 function externalNode(context: ArchitectureContext, rule: ExternalRule): NodeFact | undefined {
-  const sources = context.sources.filter((source) => rule.path.test(source.path));
+  const sources = context.sources.filter((source) => rule.path.test(source.path) || rule.id === "external:github");
   const evidence = uniqueEvidence(sources.flatMap((source) => {
     const match = findAllArchitectureEvidence(source, rule.markers, `${rule.id}-client`);
     return match;

@@ -15,9 +15,10 @@ export interface ArchitectureRepositorySourceReceipt {
 
 const runtimeSourcePattern = /\.(?:go|ts|tsx|js|jsx|php|json|sql|prisma|java|kt|kts|py|rs|cs|csproj|xml|ya?ml|toml|gradle|properties)$/i;
 const nonRuntimePathPattern = /(?:^|\/)(?:__tests__|tests?|fixtures?|mocks?)(?:\/|\.)|\.(?:test|spec|d)\.[a-z]+$|_test\.(?:go|py)$/i;
+const generatedArtifactPathPattern = /(?:^|\/)(?:vendor|third_party|node_modules|bower_components|dist|build|out|coverage)(?:\/|$)|(?:^|\/)(?:static|public|assets)\/(?:.*\/)?(?:mathjax|katex|plotly|monaco|codemirror|ckeditor|tinymce)(?:\/|$)|(?:^|\/)(?:static|public|assets)\/.*-full\.js$/i;
 
 export function isArchitectureSourcePath(path: string) {
-  return (path.endsWith("go.mod") || runtimeSourcePattern.test(path)) && !nonRuntimePathPattern.test(path) && !path.endsWith(".min.js");
+  return !generatedArtifactPathPattern.test(path) && (path.endsWith("go.mod") || runtimeSourcePattern.test(path)) && !nonRuntimePathPattern.test(path) && !path.endsWith(".min.js");
 }
 
 export function architectureLineNumber(line: string, index: number) {

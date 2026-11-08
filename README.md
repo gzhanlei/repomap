@@ -58,9 +58,9 @@ Coverage failures and renderer failures leave diagnostic JSON behind. A visually
 
 ## Supported analysis
 
-The initial static detectors cover common Next.js, Go, PHP, and miniprogram request flows, along with MySQL, object storage, scheduled workers, internal HTTP calls, and external services. Generic external candidates additionally cover dynamic endpoints and GraphQL operations without requiring a provider-specific detector. Static hosts, environment-derived identities, and unresolved `unknown` candidates are distinguished explicitly; unresolved candidates block publication. See [Generic external protocols and Harness follow-up](docs/generic-external-protocols.md).
+The static detectors cover common Next.js, Vite/React, Go, PHP, and miniprogram request flows, along with MySQL, PostgreSQL, SQLite, object storage, scheduled workers, internal HTTP calls, and external services. Generic external candidates additionally cover dynamic endpoints, GraphQL operations, and Go `http.Get` / `http.Post` / `NewRequest` + `client.Do` flows without requiring a provider-specific detector. Static hosts, environment-derived identities, protocol-module identities, and unresolved `unknown` candidates are distinguished explicitly; unresolved candidates block publication. Generated third-party bundles under `static/public/assets` are excluded from source inventory. See [Generic external protocols and Harness follow-up](docs/generic-external-protocols.md).
 
-The reader rejects incomplete or over-budget source inventories. Defaults are 1,000 directories, 1,000 source files, 1 MB per file, and 10 MB of source content; the remote archive itself is capped at 50 MB. These are independent of any AI context budget because RepoMap does not use AI.
+The reader indexes source paths first and loads file contents on demand through a bounded 64-file LRU cache. GitHub extraction directories remain alive until analysis finishes and are cleaned in both success and failure paths. Inventory limits are resource-safety boundaries, not an AI context budget: defaults are 100,000 directories, 100,000 source files, 50 MB per file, and 500 MB of source content; the remote archive itself is capped at 500 MB. Repositories beyond explicit safety limits still fail rather than returning partial facts.
 
 ## Agent Skill
 
@@ -68,7 +68,7 @@ The repository root includes `SKILL.md`. It teaches an Agent to invoke the CLI, 
 
 ## Development
 
-当前为待语义补全的接手快照；遗留工作、验证记录和后续优先级见 [docs/HANDOFF.md](docs/HANDOFF.md)。
+语义覆盖持续扩展；历史接手记录和后续优先级见 [docs/HANDOFF.md](docs/HANDOFF.md)。
 
 ```bash
 npm run typecheck

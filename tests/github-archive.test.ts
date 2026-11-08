@@ -29,12 +29,15 @@ describe("GitHub archive source loading", () => {
     expect(second.archive.httpRequests).toBe(0);
     expect(second.sources).toEqual(first.sources);
     expect(fetcher).toHaveBeenCalledOnce();
+    await first.cleanup();
+    await second.cleanup();
   });
 
   it("can bypass the archive cache", async () => {
     const { fixture, archive } = await archiveFixture();
     const fetcher = vi.fn(async (_url: string | URL | Request) => new Response(archive));
-    await loadGitHubRepositorySources({ owner: "octo", repo: "demo", revision }, { fetcher: fetcher as typeof fetch, useCache: false, cacheDir: join(fixture, "cache") });
+    const loaded = await loadGitHubRepositorySources({ owner: "octo", repo: "demo", revision }, { fetcher: fetcher as typeof fetch, useCache: false, cacheDir: join(fixture, "cache") });
     expect(fetcher).toHaveBeenCalledOnce();
+    await loaded.cleanup();
   });
 });

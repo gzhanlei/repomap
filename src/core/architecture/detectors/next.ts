@@ -57,7 +57,7 @@ function tsSourcePaths(entry: ArchitectureSource, sources: ArchitectureSource[])
   return [...visited].sort();
 }
 
-function nextNode(id: string, kind: "frontend" | "api", root: string, source: ArchitectureSource, context: ArchitectureContext, evidence: NonNullable<ReturnType<typeof findArchitectureEvidence>>): NodeFact {
+function nextNode(id: string, kind: "frontend" | "api", root: string, source: ArchitectureSource, context: ArchitectureContext, evidence: NonNullable<ReturnType<typeof findArchitectureEvidence>>, framework = "Next.js"): NodeFact {
   const deferred = /(?:^|\/)app\/api\/.*route\.ts$/.test(source.path) && findArchitectureEvidence(source, ["after("], "next-after-worker") !== undefined;
   const sourcePaths = deferred ? [source.path] : tsSourcePaths(source, context.sources);
   const paths = [...sourcePaths, ...packagePath(context.sources, root)];
@@ -66,8 +66,8 @@ function nextNode(id: string, kind: "frontend" | "api", root: string, source: Ar
   return {
     id,
     kind,
-    label: `${root || "Next.js"} ${kind === "frontend" ? "Web UI" : "API"}`,
-    runtimeUnit: root || "next-root",
+    label: `${root || framework} ${kind === "frontend" ? "Web UI" : "API"}`,
+    runtimeUnit: root || (framework === "Vite" ? "vite-root" : "next-root"),
     sourcePaths,
     signalIds,
     evidence: [evidence],
@@ -92,6 +92,44 @@ function asyncFragment(context: ArchitectureContext): ArchitectureFragment {
 }
 
 function detectNext(context: ArchitectureContext): ArchitectureFragment {
+  const next = detectNextAppRouter(context);
+  const vite = detectVite(context);
+  return {
+    nodes: [...next.nodes, ...vite.nodes],
+    edges: [...next.edges, ...vite.edges],
+    roots: [...next.roots, ...vite.roots],
+    omissions: [...next.omissions, ...vite.omissions],
+  };
+}
+
+function detectVite(context: ArchitectureContext): ArchitectureFragment {
+  const fragment = emptyArchitectureFragment();
+  const viteConfigs = context.sources.filter((source) => /(?:^|\/)vite\.config\.(?:ts|js|mts|mjs)$/.test(source.path));
+  if (viteConfigs.length === 0) return fragment;
+  const roots = [...new Set(viteConfigs.map((source) => {
+    const root = posix.dirname(source.path);
+    return root === "." ? "" : root;
+  }))];
+  for (const root of roots) {
+    const entries = context.sources.filter((source) => {
+      const relative = root === "" ? source.path : source.path.startsWith(`${root}/`) ? source.path.slice(root.length + 1) : undefined;
+      return relative !== undefined && /^src\/(?:main|index|App)\.tsx?$/.test(relative);
+    });
+    if (entries.length === 0) continue;
+    fragment.nodes.push(actorNode("actor:users", "产品用户"));
+    fragment.roots.push("actor:users");
+    for (const source of entries) {
+      const evidence = findArchitectureEvidence(source, ["createRoot", "export default", "render\\("], "vite-react-entrypoint");
+      if (!evidence) continue;
+      const id = `vite:${root || "root"}:ui`;
+      fragment.nodes.push(nextNode(id, "frontend", root, source, context, evidence, "Vite"));
+      fragment.edges.push(factEdge(`entry:users->${id}`, "actor:users", id, "http", "Vite 页面入口", [evidence], signalIdsForPaths(context.signals, [source.path])));
+    }
+  }
+  return fragment;
+}
+
+function detectNextAppRouter(context: ArchitectureContext): ArchitectureFragment {
   const fragment = emptyArchitectureFragment();
   const pages = context.sources.filter((source) => /(?:^|\/)app\/.*page\.tsx$|(?:^|\/)pages\/index\.tsx$/.test(source.path));
   const routes = context.sources.filter((source) => /(?:^|\/)app\/.*route\.ts$/.test(source.path));

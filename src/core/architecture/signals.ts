@@ -41,12 +41,13 @@ const signalRules: SignalRule[] = [
   { kind: "worker", detector: "next-after-worker", path: /(?:^|\/)app\/api\/.*route\.ts$/, markers: ["after("] },
   { kind: "worker", detector: "async-worker", path: /worker|job|cron|scheduler|analysis/i, markers: ["func main", "cron", "NewRunner"] },
   { kind: "worker", detector: "async-worker", path: /(?:^|\/)(?:workers?|jobs?|cron|scheduler)(?:\/|\.)/i, markers: ["setInterval"] },
-  { kind: "store", detector: "storage-usage", path: /./, markers: ["mysql2", "sql.Open", "database/sql", "new PDO", "provider = \"mysql\"", "provider=\"mysql\"", "RoomDatabase", "file_get_contents", "file_put_contents", "CREATE TABLE", "gorm.Open", "SQLAlchemy"] },
+  { kind: "store", detector: "storage-usage", path: /./, markers: ["mysql2", "sql.Open", "new PDO", "provider = \"mysql\"", "provider=\"mysql\"", "go-sqlite3", "sqlite3_with_regex", "driverSQLite", "sqlite_master", "lib/pq", "pgx", "postgres", "postgresql", "RoomDatabase", "file_get_contents", "file_put_contents", "CREATE TABLE", "gorm.Open", "SQLAlchemy"] },
   { kind: "external", detector: "external-sdk", path: /./, markers: ["api.github.com", "chat/completions", "NewQCloudClient", "cos.tencentcloudapi.com", "requestVirtualPayment", "Code2Session", ".CreateTask(", "new OpenAI", "ImgSecCheck(", "deliverArchify", "visualCheckArchify"] },
   { kind: "relationship", detector: "miniprogram-api-call", path: /\.js$/i, markers: ["wx.cloud.callContainer"] },
 ];
 
 function matchingLine(source: ArchitectureSource, rule: SignalRule) {
+  if (rule.kind === "worker" && /(?:^|\/)(?:\.github\/workflows|\.gitlab-ci|\.circleci|\.buildkite)/.test(source.path)) return undefined;
   if (!rule.path.test(source.path)) return undefined;
   return findArchitectureEvidence(source, rule.markers, rule.detector);
 }

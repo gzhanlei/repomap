@@ -51,7 +51,7 @@ export async function loadGitHubRepositorySources(repository: GitHubRepositoryRe
   const token = options.token ?? process.env.GITHUB_TOKEN;
   const resolved = await resolveGitHubRevision(repository, { fetcher, token });
   const revision = resolved.revision;
-  const maximum = options.maxArchiveBytes ?? 50_000_000;
+  const maximum = options.maxArchiveBytes ?? 500_000_000;
   const cacheDir = options.cacheDir ?? process.env.REPOMAP_CACHE_DIR ?? join(homedir(), ".repomap", "cache");
   const cachePath = join(cacheDir, repository.owner, repository.repo, `${revision}.tar.gz`);
   let archive: Buffer;
@@ -107,8 +107,10 @@ export async function loadGitHubRepositorySources(repository: GitHubRepositoryRe
       ...loaded,
       repository: { owner: repository.owner, repo: repository.repo, revision },
       archive: { bytes: archive.byteLength, sha256: createHash("sha256").update(archive).digest("hex"), cacheHit, httpRequests },
+      cleanup: () => rm(temporaryRoot, { recursive: true, force: true }),
     };
-  } finally {
+  } catch (error) {
     await rm(temporaryRoot, { recursive: true, force: true });
+    throw error;
   }
 }
