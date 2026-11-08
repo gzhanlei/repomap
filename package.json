@@ -1,0 +1,51 @@
+{
+  "name": "repomap",
+  "version": "0.1.0",
+  "description": "Generate evidence-backed architecture diagrams from GitHub repositories or local source trees.",
+  "type": "module",
+  "bin": {
+    "repomap": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "vendor/archify",
+    "SKILL.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "cli": "tsx src/cli.ts",
+    "archify:prepare": "tsx scripts/prepare-archify.ts",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "tar": "^7.5.2",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@vitest/coverage-v8": "^4.1.12",
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10"
+  },
+  "license": "MIT",
+  "keywords": [
+    "architecture",
+    "github",
+    "diagram",
+    "static-analysis",
+    "archify",
+    "cli",
+    "agent-skill"
+  ]
+}

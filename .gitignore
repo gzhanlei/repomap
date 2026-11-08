@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.repomap/
+repomap-output/
+*.tgz
+vendor/archify/runtime/
+.env
+.DS_Store

@@ -1,0 +1,8 @@
+{
+  "version": "3.2.0",
+  "license": "MIT",
+  "archive": "archify-v3.2.0.zip",
+  "sha256": "70e210265c59f24dcbdf2a502ff671104b5454e7ee7d3554aecd86bad32384f5",
+  "source": "https://github.com/tt-a1i/archify/releases/download/v3.2.0/archify.zip",
+  "licenseSource": "https://github.com/tt-a1i/archify/blob/v3.2.0/LICENSE"
+}
