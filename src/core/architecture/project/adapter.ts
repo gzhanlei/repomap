@@ -47,6 +47,9 @@ export type ProjectUnit = z.infer<typeof projectUnitSchema>;
 
 export const importResolutionSchema = z.enum([
   "relative", "alias", "workspace-package", "project-reference", "external", "unresolved",
+  // PR #7: Go specifiers are resolved against go.mod / go.work / replace rules
+  // inside the snapshot. They are additive values, never TS edge semantics.
+  "go-module-internal", "go-workspace-module", "go-replace-local", "standard-library",
 ]);
 export type ImportResolution = z.infer<typeof importResolutionSchema>;
 
@@ -63,6 +66,10 @@ export const importRefSchema = z.object({
   targetPackageId: z.string().min(1).optional(),
   /** True when the specifier resolved through a directory index/barrel. */
   barrel: z.boolean().optional(),
+  /** Go import alias (`alias "path"`), absent for unaliased imports. */
+  alias: z.string().min(1).optional(),
+  /** Go import form: ordinary, blank (`_`) or dot (`.`) import. */
+  importForm: z.enum(["normal", "blank", "dot"]).optional(),
 }).strict();
 export type ImportRef = z.infer<typeof importRefSchema>;
 

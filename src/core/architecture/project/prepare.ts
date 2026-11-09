@@ -2,18 +2,19 @@ import { irOmissionSchema, type IrOmission } from "../ir.js";
 import { capabilitySchema, type ArchitectureView, type Capability } from "../scope.js";
 import type { SourceCensus } from "../census.js";
 import {
-  AdapterRegistry, adapterStatus, buildContextSchema, createUnavailableAdapter, projectUnitSchema,
+  AdapterRegistry, adapterStatus, buildContextSchema, projectUnitSchema,
   type AdapterCapability, type ImportRef, type LanguageAdapter, type ProjectUnit,
 } from "./adapter.js";
 import type { SourceSnapshot } from "./snapshot.js";
 import { createTypeScriptAdapter } from "./typescript.js";
+import { createGoAdapter } from "./go.js";
 import { projectPreparationSchema, type ProjectPreparation } from "./adapter.js";
 
-/** The shipped adapter set for this slice. Go is declared, not faked. */
+/** The shipped adapter set. `createUnavailableAdapter` remains injectable for parser-unavailable tests. */
 export function defaultProjectAdapters(): LanguageAdapter[] {
   return [
     createTypeScriptAdapter(),
-    createUnavailableAdapter("ast-go", ["go"], "Package-aware Go AST helper is not shipped in the project-preparation slice; go-module-graph owns it"),
+    createGoAdapter(),
   ];
 }
 

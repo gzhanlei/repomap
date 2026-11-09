@@ -14,6 +14,12 @@
       "status": "implemented",
       "goldStatus": "not-audited",
       "note": "Fixture tests cover extensionless/barrel/directory-root imports, tsconfig paths and baseUrl, workspace package names, project references, cycles, external/unresolved separation, AST evidence reconciliation and an independent-denominator mutation test. No fixed-SHA corpus or human-reviewed critical module facts exist yet."
+    },
+    {
+      "id": "go-module-graph",
+      "status": "implemented",
+      "goldStatus": "not-audited",
+      "note": "Fixture tests cover go.mod module/replace resolution, go.work workspace use, build-tag/GOOS/GOARCH file selection, standard-library/external/internal-cross-module edge classification, cycles, syntax errors, parser-unavailable degradation, an independent-denominator mutation test and an end-to-end production-dependency check. Fixed Go grammar versions are web-tree-sitter@0.27.2 + tree-sitter-go@0.25.0 (see docs/adr-go-parser.md). No fixed-SHA corpus or human-reviewed critical Go module facts exist yet."
     }
   ],
   "rules": {

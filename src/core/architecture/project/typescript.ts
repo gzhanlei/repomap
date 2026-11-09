@@ -326,8 +326,7 @@ export function createTypeScriptAdapter(): LanguageAdapter {
   const capabilities = (): AdapterCapability[] => [
     adapterCapabilitySchema.parse({ id: "typescript-compiler", version: ts.version, status: "available", detail: "One project-wide TypeScript Compiler API Program over the immutable raw snapshot" }),
     adapterCapabilitySchema.parse({ id: "ast-typescript", version: "1", status: "partial", detail: "syntax diagnostics, imports/re-exports, symbols, tsconfig/workspace resolution; routes and call summaries are not implemented" }),
-    adapterCapabilitySchema.parse({ id: "module-graph", version: "1", status: "partial", detail: "TypeScript/JavaScript module graph with cycles, barrels, aliases and workspace packages; Go module graph is not shipped" }),
-    adapterCapabilitySchema.parse({ id: "module-graph-go", version: "0", status: "unavailable", detail: "Package-aware Go AST helper lands in go-module-graph" }),
+    adapterCapabilitySchema.parse({ id: "module-graph", version: "1", status: "partial", detail: "TypeScript/JavaScript source-module graph with cycles, barrels, aliases and workspace packages; the Go package graph is a separate artifact" }),
     adapterCapabilitySchema.parse({ id: "route-graph", version: "0", status: "unavailable", detail: "route-to-handler resolution lands in route-and-call-graph" }),
   ];
 

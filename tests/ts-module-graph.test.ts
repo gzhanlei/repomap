@@ -229,6 +229,6 @@ describe("M2 ts-module-graph: lossless delivery integration", () => {
     expect(capability?.status).not.toBe("unavailable");
     expect(capability?.version).toBe("1");
     expect(capabilityGaps()).toContain("module-graph");
-    expect(repomapCapabilities.find((entry) => entry.id === "module-graph-go")?.status).toBe("unavailable");
+    expect(repomapCapabilities.find((entry) => entry.id === "module-graph-go")?.status).toBe("partial");
   });
 });

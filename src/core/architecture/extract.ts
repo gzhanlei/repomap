@@ -21,6 +21,7 @@ import { buildDeclaredScope, defaultArchitectureView, type DeclaredScopeInput } 
 import { createSourceSnapshot } from "./project/snapshot.js";
 import { prepareProjects } from "./project/prepare.js";
 import { buildModuleGraph, moduleGraphEvidenceReferences } from "./project/module-graph.js";
+import { buildGoModuleGraph, goModuleGraphEvidenceReferences } from "./project/go-module-graph.js";
 import type { LanguageAdapter } from "./project/adapter.js";
 
 const detectors = [nextArchitectureDetector, goArchitectureDetector, phpArchitectureDetector, miniProgramArchitectureDetector, storageArchitectureDetector, externalArchitectureDetector];
@@ -143,6 +144,10 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   // PR #6: the module graph is derived from the same immutable snapshot and
   // project units; it never mutates facts v1.
   const moduleGraph = buildModuleGraph({ revision: input.revision, snapshot, census: baseCensus, project });
+  // PR #7: the Go package graph is a second, package-granularity graph derived
+  // from the SAME immutable snapshot and project units. Neither graph mutates
+  // facts v1, and both feed the single lossless evidence index.
+  const goModuleGraph = buildGoModuleGraph({ revision: input.revision, snapshot, census: baseCensus, project });
 
   // Independent declaration discovery runs before any semantic detector.
   const rawDeclarations = buildDeclarationInventory({ revision: input.revision, census: baseCensus, sources: runtimeSources });
@@ -156,11 +161,11 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   const coverage = evaluateArchitectureCoverage(enrichedInventory, facts);
   const declarationCoverage = evaluateDeclarationCoverage(rawDeclarations, facts);
   const mutation = mutationCheck(rawDeclarations, facts);
-  // One lossless index: regex runtime evidence + AST module evidence.
+  // One lossless index: regex runtime evidence + TS AST import evidence + Go AST import evidence.
   const evidence = mergeEvidenceIndex(
     buildEvidenceIndex(input.revision, facts),
-    moduleGraph.evidenceRecords,
-    moduleGraphEvidenceReferences(moduleGraph),
+    [...moduleGraph.evidenceRecords, ...goModuleGraph.evidenceRecords],
+    [...moduleGraphEvidenceReferences(moduleGraph), ...goModuleGraphEvidenceReferences(goModuleGraph)],
   );
   const declarations = {
     ...rawDeclarations,
@@ -182,7 +187,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     buildContext: options.buildContext,
     parsers: project.parsers,
   });
-  const omissions = [...omissionsFrom(baseCensus, rawDeclarations, facts), ...project.omissions, ...moduleGraph.omissions];
+  const omissions = [...omissionsFrom(baseCensus, rawDeclarations, facts), ...project.omissions, ...moduleGraph.omissions, ...goModuleGraph.omissions];
   const ir = buildArchitectureIr({ revision: input.revision, view: defaultArchitectureView, scope, facts, evidence, declarations, census: censusWithDeclarations, omissions });
   assertEvidenceReferences(evidence, irEvidenceIds(ir));
   const projection = buildProjectionManifest({ revision: input.revision, view: defaultArchitectureView, evidence, ir });
@@ -190,7 +195,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   return {
     inventory: enrichedInventory, facts, coverage, candidates,
     census, evidence, declarations, declarationCoverage, mutation,
-    scope, ir, projection, omissions, project, moduleGraph, snapshotId: snapshot.snapshotId,
+    scope, ir, projection, omissions, project, moduleGraph, goModuleGraph, snapshotId: snapshot.snapshotId,
     view: defaultArchitectureView,
   };
 }

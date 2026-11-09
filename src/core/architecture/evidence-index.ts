@@ -20,7 +20,7 @@ export const evidenceRecordSchema = z.object({
 export type EvidenceRecord = z.infer<typeof evidenceRecordSchema>;
 
 export const evidenceReferenceSchema = z.object({
-  ownerType: z.enum(["node", "edge", "operation", "module", "module-edge"]),
+  ownerType: z.enum(["node", "edge", "operation", "module", "module-edge", "go-module-edge"]),
   ownerId: z.string().min(1),
   evidenceIds: z.array(z.string().min(1)),
   renderedEvidenceIds: z.array(z.string().min(1)),
@@ -91,6 +91,19 @@ export function astImportEvidenceRecord(input: { path: string; line: number; kin
     endLine: input.line,
     extractor: `ast:ts-import:${input.kind}`,
     role: input.kind === "dynamic" || input.kind === "require" ? "runtime-call" : "declaration",
+    source: "parser",
+  };
+  return { id: stableEvidenceId(base), ...base };
+}
+
+/** PR #7: one Tree-sitter Go import spec is one parser-sourced evidence record. */
+export function astGoImportEvidenceRecord(input: { path: string; line: number; form: string }): EvidenceRecord {
+  const base: EvidenceRecordWithoutId = {
+    path: input.path,
+    startLine: input.line,
+    endLine: input.line,
+    extractor: `ast:go-import:${input.form}`,
+    role: input.form === "blank" ? "runtime-call" : "declaration",
     source: "parser",
   };
   return { id: stableEvidenceId(base), ...base };

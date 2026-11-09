@@ -100,7 +100,7 @@ describe("M0 delivery contract", () => {
     expect(scope.strictExternalHosts).toBe(true);
     expect(scope.buildContext).toEqual({ goos: "linux", goarch: "amd64", buildTags: [] });
     expect(scope.parsers.find((parser) => parser.id === "ast-typescript")?.status).toBe("partial");
-    expect(scope.parsers.find((parser) => parser.id === "ast-go")?.status).toBe("unavailable");
+    expect(scope.parsers.find((parser) => parser.id === "ast-go")?.status).toBe("partial");
     expect(scope.parsers.find((parser) => parser.id === "regex-line-scan")?.status).toBe("partial");
   });
 

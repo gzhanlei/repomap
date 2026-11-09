@@ -1,6 +1,6 @@
-# RepoMap 视图、声明范围与交付契约（M0 / M1 / M2 project-preparation / M2 ts-module-graph）
+# RepoMap 视图、声明范围与交付契约（M0 / M1 / M2 project-preparation / M2 ts-module-graph / M2 go-module-graph）
 
-本文对应 `docs/full-architecture-plan.md` 的 M0、M1 和 M2 前两个切片，说明当前实现到哪一步、以及**哪些结论还不能得出**。
+本文对应 `docs/full-architecture-plan.md` 的 M0、M1 和 M2 三个切片，说明当前实现到哪一步、以及**哪些结论还不能得出**。
 
 ## 1. 视图等级
 
@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `system-context` | 未实现门禁 | 请求时返回 `failed` |
 | `runtime-overview` | 已实现、唯一可发布视图 | 沿用现有入口/runtime/store/external 门禁，新增 raw census 预算门禁 |
-| `module-architecture` | 未实现门禁 | 已有 TypeScript/JavaScript ModuleGraph 产物与独立分母，但**视图门禁仍未实现**，请求时依然 `failed`；Go 模块图 declared unavailable |
+| `module-architecture` | 未实现门禁 | 已有 TypeScript/JavaScript 与 Go 两个 ModuleGraph 产物与各自独立分母，但**视图门禁仍未实现**，请求时依然 `failed` |
 | `protocol-flows` | 未实现门禁 | operation union 已在 IR v2 定义，但还没有 operation extractor |
 | `full-declared-scope` | 未实现门禁 | 不能发布 |
 
@@ -59,8 +59,8 @@ repomap analyze <source> --view runtime --view full \
 - **LanguageAdapter 契约**：`prepareProject(snapshot, context)` → `ProjectUnit`，`parseProject` / `declarations` / `symbols` / `imports` / `entrypoints` / `capabilities` 都以项目为单位。声明发现仍与语义提取分离：结构入口由路径发现，不复用 AST detector。
 - **TypeScript adapter**：**一个全快照级** Compiler API `Program` 在内存 compiler host 上运行（不是每 unit 一个，否则跨 workspace import 无法解析），覆盖静态 import / re-export / 动态 import / require、exported symbols、结构化入口候选和语法诊断；相对导入、tsconfig paths/baseUrl、project references、workspace 包名都只在 snapshot 内解析，裸包名诚实记为 `external-package-not-in-snapshot`。多 workspace 中同名 `src/index.ts` 按 `packageId` 分到不同 unit。
 - **显式 build context**：`goos` / `goarch` / `buildTags` 固定写入（默认 `linux/amd64/[]`），不读取宿主机 `GOOS`/`GOARCH`；`go.work use` 与 `go.mod replace` 从 snapshot 读取并记录。
-- **parser 门禁**：`ast-typescript` 为 `partial`，`ast-go` 为 `unavailable`。parser 缺失只产生 `parser-unavailable` omission，影响 `module-architecture` / `protocol-flows` / `full-declared-scope`；`gates.runtimeOverviewUnaffected` 恒为 `true`，绝不影响默认视图。
-- **生产依赖**：`typescript` 位于 `dependencies`。`npm run pack:dry-run` 与 `npm run smoke:production` 验证仅安装生产依赖的打包 CLI 仍能运行并输出 `architecture.project.json`。
+- **parser 门禁**：`ast-typescript` 与 `ast-go` 都从 snapshot 真实加载；只有当 grammar runtime（`web-tree-sitter` WASM）初始化失败时才报告 `parser-unavailable`。parser 缺失只产生 `parser-unavailable` omission，影响 `module-architecture` / `protocol-flows` / `full-declared-scope`；`gates.runtimeOverviewUnaffected` 恒为 `true`，绝不影响默认视图。
+- **生产依赖**：`typescript` 与 `web-tree-sitter` / `tree-sitter-go` 位于 `dependencies`。`npm run pack:dry-run` 与 `npm run smoke:production` 验证仅安装生产依赖的打包 CLI 仍能运行并输出 `architecture.project.json`。Go parser 取舍见 [ADR](docs/adr-go-parser.md)。
 
 ## 6. ModuleGraph（M2 第二个切片）
 
@@ -72,9 +72,21 @@ repomap analyze <source> --view runtime --view full \
 - **单一证据索引**：每条 AST import 生成 `ast:ts-import:*` 的 parser 证据记录，合并进 `architecture.evidence.json`（与 regex 证据共用稳定 ID 算法），边的 `evidenceIds` 必须能在该索引中找到；projection manifest 同步增加 `module-edge` owner 与 `architecture.module-graph.json` 输出项。
 - **独立分母与 mutation test**：`importDeclarations` 由独立行扫描声明「哪里存在 import 语法」，不产生任何边。禁用 AST 提取器后分母不变、`missing` 为全部声明、模块视图被阻断——证明覆盖分母不来自被评估的提取器，也不会用正则偷偷补边。
 
-## 7. 已知边界（不要越界宣称）
+## 7. Go Module Graph（M2 第三个切片）
 
-- 有 TypeScript/JavaScript ModuleGraph，但 `module-architecture` **视图门禁**、Go 模块图、RouteGraph、protocol operation extractor、身份解析和黄金评估仍未实现；Go package-aware AST helper 未发布；
+`architecture.go-module-graph.json` 是**图数据**，不是 `module-architecture` 视图发布结果；粒度为 **package**（一个 `package` 声明的目录 = 一个 package 节点），不展开函数或语句：
+
+- **构建上下文固定写入** `declaredScope.buildContext`（`goos` / `goarch` / `buildTags` 默认 `linux` / `amd64` / `[]`），不读取宿主机 `GOOS`/`GOARCH`；每个 Go 文件按 `//go:build` / `// +build` 约束与 (`goos`,`goarch`) 二元组判断进入解析集，`buildTagExcludedFiles` 显式记录，绝不静默丢弃。
+- **go.mod / go.work / replace 解析**：`module` 路径作为 module ID，workspace `go.work use` 与 `go.mod replace` 从 snapshot 读取并把被替换路径重定向到替换目标；多 module 仓库按 module 边界分节点。
+- **边带 `resolution`**：`internal`（同 module 内包）、`internal-cross-module`（同仓库跨 module）、`replace`（被 replace 重定向）、`standard-library`（Go 标准库）、`external`（外部 module）、`unresolved`。标准库与外部 module 分别显式成集，宿主 `GOPATH`/网络从不参与。
+- **循环依赖**用与 TS 同源的迭代 Kosaraju 求强连通分量并**保留**，不为布局删边；`standardPackages` 与 `externalModules` 分别列出，unresolved import 单独成集。
+- **单一证据索引**：每条 AST import spec 生成 `ast:go-import:*` 的 parser 证据记录，合并进 `architecture.evidence.json`；边的 `evidenceIds` 必须能在索引中找到；projection manifest 同步增加 `go-module-edge` owner 与 `architecture.go-module-graph.json` 输出项。
+- **独立分母与 mutation test**：`importDeclarations` 由独立行扫描声明「哪里存在 import 语法」（不依赖 AST），禁用 Go AST 提取器后分母不变、`missing` 为全部声明、模块视图被阻断——证明覆盖分母不来自被评估的提取器。
+- **降级**：当 `web-tree-sitter` WASM 无法初始化时，`ast-go` 报告 `parser-unavailable`，产物退化为 `buildContext` + `excludedFiles` + `importDeclarations`（独立分母仍在），`gates.runtimeOverviewUnaffected` 恒为 `true`。
+
+## 8. 已知边界（不要越界宣称）
+
+- 有 TypeScript/JavaScript 与 Go 两个 ModuleGraph，但 `module-architecture` **视图门禁**、RouteGraph、protocol operation extractor、身份解析和黄金评估仍未实现；
 - submodule 目前只记录 `unresolved-submodule`，不会作为独立 fixed-SHA 输入获取；
 - evidence / census 尚未流式分片写出；
 - `docs/gold-manifest.v1.json` 只是版本化骨架，未经过人工审核，不能当作真值；

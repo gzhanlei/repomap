@@ -92,12 +92,13 @@ const unresolvedImportSchema = z.object({
   evidenceIds: z.array(z.string().min(1)),
 }).strict();
 
-const cycleSchema = z.object({
+export const cycleSchema = z.object({
   id: z.string().min(1),
   nodes: z.array(z.string().min(1)),
   edges: z.array(z.string().min(1)),
   preservesSemantics: z.literal(true),
 }).strict();
+export type ModuleCycle = z.infer<typeof cycleSchema>;
 
 /**
  * Independent denominator discovery. A line scanner declares WHERE import
@@ -178,8 +179,8 @@ function moduleId(packageId: string, path: string) {
   return `module:${packageId}:${path}`;
 }
 
-/** Iterative Kosaraju: large monorepos must not depend on JS recursion depth. */
-function findCycles(nodeIds: string[], internal: ModuleEdge[]) {
+/** Iterative Kosaraju: large monorepos must not depend on JS recursion depth. Shared by the TS and Go package graphs. */
+export function findCycles(nodeIds: string[], internal: Pick<ModuleEdge, "id" | "from" | "to">[]): ModuleCycle[] {
   const adjacency = new Map<string, string[]>(nodeIds.map((id) => [id, []]));
   const reverse = new Map<string, string[]>(nodeIds.map((id) => [id, []]));
   for (const edge of internal) {
@@ -398,8 +399,12 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
   if (unresolved.length > 0) reasons.push(`${unresolved.length} unresolved relative import(s) block the module view`);
   if (project.parseErrors.length > 0) reasons.push(`${project.parseErrors.length} syntax diagnostic(s) block the module view`);
   if (preparedUnits.length === 0) reasons.push("no prepared TypeScript/JavaScript unit");
+  // PR #7: Go is no longer an unshipped capability, but its package graph has
+  // a different granularity and lives in a separate artifact. This is a note,
+  // not a blocking reason for the TypeScript source-module graph.
   const hasGoSources = census.files.some((file) => file.language === "go" && file.role === "source");
-  if (hasGoSources) reasons.push("Go source files are present but the package-aware Go module graph is not shipped in this slice");
+  const notes = hasGoSources ? ["Go package graph is delivered separately in architecture.go-module-graph.json"] : [];
+  const gateReasons = [...reasons, ...notes];
   const blocked = reasons.length > 0;
 
   return moduleGraphSchema.parse({
@@ -418,7 +423,7 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
     gates: {
       blockedViews: blocked ? ["module-architecture", "full-declared-scope"] : [],
       runtimeOverviewUnaffected: true,
-      reasons: reasons.length > 0 ? reasons : ["TypeScript/JavaScript module graph built; the module-architecture view gate itself is still a later PR"],
+      reasons: gateReasons.length > 0 ? gateReasons : ["TypeScript/JavaScript module graph built; the module-architecture view gate itself is still a later PR"],
     },
     statistics: {
       modules: nodes.length,
