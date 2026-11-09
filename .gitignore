@@ -7,3 +7,4 @@ repomap-output/
 vendor/archify/runtime/
 .env
 .DS_Store
+.workbuddy/

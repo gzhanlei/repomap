@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
-import { readdir, stat } from "node:fs/promises";
+import { lstat, readdir, stat } from "node:fs/promises";
 import { basename, resolve, sep } from "node:path";
 import { isArchitectureSourcePath, type ArchitectureRepositorySourceReceipt, type ArchitectureSource } from "../architecture/source.js";
+import { excludedDirectoryRules } from "../architecture/file-roles.js";
+import type { RepositoryFileEntry } from "../architecture/census.js";
 import { execCommand, type CommandRunner } from "../process.js";
 
 export interface RepositorySourceBudgets {
@@ -20,7 +22,8 @@ export const defaultRepositorySourceBudgets: RepositorySourceBudgets = {
   contentCacheFiles: 64,
 };
 
-const excludedDirectories = new Set([".git", "node_modules", "vendor", "third_party", "dist", "build", "out", "coverage"]);
+const excludedDirectories = new Set(excludedDirectoryRules);
+const maxInventoryFiles = 200_000;
 
 export function isSupportedRepositoryPath(path: string) {
   const normalized = path.replaceAll("\\", "/").replace(/^\.\//, "");
@@ -82,11 +85,12 @@ export async function verifyLocalGitRevision(repositoryRoot: string, revision: s
   if (status.stdout.trim()) throw new Error("Local Git work tree is dirty; use a clean fixed revision or a GitHub archive");
 }
 
-export async function loadLocalRepositorySources(repositoryRoot: string, overrides: Partial<RepositorySourceBudgets> = {}): Promise<{ sources: ArchitectureSource[]; receipt: ArchitectureRepositorySourceReceipt }> {
+export async function loadLocalRepositorySources(repositoryRoot: string, overrides: Partial<RepositorySourceBudgets> = {}): Promise<{ sources: ArchitectureSource[]; receipt: ArchitectureRepositorySourceReceipt; inventory: RepositoryFileEntry[] }> {
   const budgets = { ...defaultRepositorySourceBudgets, ...overrides };
   const root = resolve(repositoryRoot);
   await assertDirectory(root);
   const sources: ArchitectureSource[] = [];
+  const inventory: RepositoryFileEntry[] = [];
   const contentCache = createSourceContentCache(budgets.contentCacheFiles);
   let directories = 0;
   let bytes = 0;
@@ -98,20 +102,30 @@ export async function loadLocalRepositorySources(repositoryRoot: string, overrid
     entries.sort((a, b) => a.name.localeCompare(b.name));
     for (const entry of entries) {
       if (entry.isDirectory() && excludedDirectories.has(entry.name)) continue;
-      if (entry.isSymbolicLink()) throw new Error(`Repository symbolic links are not supported: ${entry.name}`);
       const absolute = resolve(directory, entry.name);
       if (!absolute.startsWith(`${root}${sep}`)) throw new Error("Repository path escapes the source root");
+      const relative = absolute.slice(root.length + 1).split(sep).join("/");
+      // Symlinks and gitlinks are raw entries with their own disposition; they
+      // are never followed, never read, and never silently dropped.
+      if (entry.isSymbolicLink()) {
+        const info = await lstat(absolute);
+        inventory.push({ path: relative, size: info.size, entryKind: "symlink", selected: false });
+        continue;
+      }
       if (entry.isDirectory()) {
         await visit(absolute);
         continue;
       }
       if (!entry.isFile()) continue;
-      const relative = absolute.slice(root.length + 1).split(sep).join("/");
+      if (inventory.length >= maxInventoryFiles) throw new Error(`Repository file inventory budget exhausted: ${relative}`);
+      const info = await stat(absolute);
+      const record: RepositoryFileEntry = { path: relative, size: info.size, entryKind: "file", selected: false };
+      inventory.push(record);
       if (!isSupportedRepositoryPath(relative)) continue;
       if (sources.length >= budgets.maxFiles) throw new Error(`Repository source file budget exhausted: ${relative}`);
-      const info = await stat(absolute);
       if (info.size > budgets.maxFileBytes) throw new Error(`Repository source file exceeds max bytes: ${relative}`);
       if (bytes + info.size > budgets.maxTotalBytes) throw new Error(`Repository source byte budget exhausted: ${relative}`);
+      record.selected = true;
       sources.push(lazyNumberedSource(relative, absolute, contentCache));
       bytes += info.size;
     }
@@ -119,5 +133,5 @@ export async function loadLocalRepositorySources(repositoryRoot: string, overrid
 
   await visit(root);
   const receipt: ArchitectureRepositorySourceReceipt = { scope: "repository", directories, files: sources.length, bytes };
-  return { sources, receipt };
+  return { sources, receipt, inventory: inventory.sort((a, b) => a.path.localeCompare(b.path)) };
 }

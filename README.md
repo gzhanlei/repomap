@@ -49,12 +49,25 @@ The default directory is `./repomap-output/<repository>-<short-sha>`:
 
 - `architecture.candidates.json`: external candidate identities, protocols, dynamic state, operation details and omission outcomes for coverage checks and optional Harness follow-up.
 - `architecture.facts.json`: fixed-revision nodes, relationships, roots, and source evidence.
-- `architecture.analysis.json`: independent signal inventory, semantic coverage, and source receipt.
+- `architecture.analysis.json`: independent signal inventory, semantic coverage, declarations, mutation result, omissions and source receipt.
+- `architecture.source-census.json`: one disposition per raw repository/archive entry, with roles, package ownership and exclusion counts.
+- `architecture.declarations.json`: independent declaration inventory and capability/protocol gaps.
+- `architecture.evidence.json`: lossless evidence index with roles, parser/regex source and stable IDs.
+- `architecture.ir.json`: versioned IR v2 envelope; nodes, edges and operations reference `evidenceIds`/`declarationIds`.
+- `architecture.projection.json`: reconciliation manifest for rendered vs. remaining evidence.
 - `architecture.json`: Archify input when coverage is publishable. Viewer repository links are omitted unless local-Git evidence is explicitly available; facts retain source evidence.
 - `architecture.html`: self-contained Archify artifact when rendering is enabled and accepted.
-- `repomap.receipt.json`: status, outputs, coverage, source/archive metrics, Archify receipts, and visual-review state.
+- `repomap.receipt.json`: status, per-view delivery, declared scope, capabilities, coverage, source/archive metrics, Archify receipts, and visual-review state.
 
-Coverage failures and renderer failures leave diagnostic JSON behind. A visually valid diagram is not treated as proof of semantic completeness. Unsupported critical signals, unreachable runtime units, and evidence-free relationships prevent publication.
+`architecture.facts.json` stays a strict v1 compatibility projection. The lossless reconciliation set is **IR v2 + Evidence Index + Projection Manifest**; facts v1 and HTML are allowed to be lossy.
+
+Coverage failures, raw-budget failures and renderer failures leave diagnostic JSON behind. **A passing Runtime Overview gate is not a complete architecture**: `fullArchitecture` is always `false` until the `full-declared-scope` gate exists and passes. A visually valid diagram, or a view that passes its own checks, cannot change that. See [View, scope and delivery contract](docs/view-terminology.md).
+
+## Views and declared scope
+
+The default and only publishable view is `runtime-overview`. `--view` is repeatable (`system|runtime|module|flows|full`); requesting `full` automatically requires every contributing view, and any requested-but-failed view makes the command exit non-zero. `--include`/`--exclude` record user scope only — a detector capability gap is never disguised as a user exclusion. `--require-external-hosts` enables the strict host gate. `--no-render` writes JSON, coverage and receipt only, without Archify or Chromium.
+
+The receipt records `declaredScope`, `capabilities`, `delivery.views[*]` (with `blockingReasons` and `omissionCount`), `mutation`, `declarationCoverage` and `evidenceProjection`. Unknown frameworks, unsupported protocols, unresolved submodules and raw-budget exhaustion are explicit capability gaps or blocking omissions.
 
 ## Supported analysis
 
@@ -68,7 +81,7 @@ The repository root includes `SKILL.md`. It teaches an Agent to invoke the CLI, 
 
 ## Development
 
-通用完整架构的目标、独立覆盖模型、分阶段 PR 和验收标准见 [docs/full-architecture-plan.md](docs/full-architecture-plan.md)。历史接手记录见 [docs/HANDOFF.md](docs/HANDOFF.md)。
+通用完整架构的目标、独立覆盖模型、分阶段 PR 和验收标准见 [docs/full-architecture-plan.md](docs/full-architecture-plan.md)。本轮实现的是 M0 / M1 契约切片（视图、CLI/receipt、IR envelope、raw census、独立声明、证据索引、lockfile 负例）；AST adapter、模块图、路由图、协议 operation、身份解析、黄金评估和多视图投影尚未实现，详见 [交付契约与已知边界](docs/view-terminology.md) 和 [版本化黄金骨架](docs/gold-manifest.v1.json)。历史接手记录见 [docs/HANDOFF.md](docs/HANDOFF.md)。
 
 ```bash
 npm run typecheck

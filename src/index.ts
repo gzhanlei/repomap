@@ -3,3 +3,10 @@ export { parseGitHubRepository, resolveGitHubRevision, type GitHubRepositoryRef 
 export { loadGitHubRepositorySources, type GitHubSourceOptions } from "./core/github/archive.js";
 export { loadLocalRepositorySources, verifyLocalGitRevision, defaultRepositorySourceBudgets, type RepositorySourceBudgets } from "./core/source/local.js";
 export { prepareArchify } from "./core/archify-runtime.js";
+export { architectureFactSetSchema, type ArchitectureFactSet } from "./core/architecture/facts.js";
+export { classifySourcePath, isDeclarationOnlyPath, isLockfilePath, isRuntimeEvidencePath, sourceFileRoleSchema } from "./core/architecture/file-roles.js";
+export { buildSourceCensus, censusFromSources, linkCensusEvidence, linkCensusDeclarations, assertSourceCensusReconciled, sourceCensusSchema, type SourceCensus, type RawEntryRecord, type RepositoryFileEntry } from "./core/architecture/census.js";
+export { buildEvidenceIndex, assertEvidenceReferences, evidenceIndexSchema, type EvidenceIndex, type EvidenceRecord } from "./core/architecture/evidence-index.js";
+export { buildDeclarationInventory, evaluateDeclarationCoverage, mutationCheck, declarationInventorySchema, type DeclarationInventory } from "./core/architecture/declarations.js";
+export { architectureIrSchema, projectionManifestSchema, buildArchitectureIr, buildProjectionManifest, irEvidenceIds, type ArchitectureIr, type ProjectionManifest, type OperationFact } from "./core/architecture/ir.js";
+export { architectureViewSchema, buildDeclaredScope, buildDeliveryStatement, deliveryExitCode, parseView, resolveRequestedViews, capabilityGaps, defaultArchitectureView, repomapCapabilities, type ArchitectureView, type DeclaredScope, type DeliveryStatement } from "./core/architecture/scope.js";

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises";
 import { analyzeSource, type AnalyzeOptions } from "./core/analyze.js";
+import { deliveryExitCode } from "./core/architecture/scope.js";
 
 const usage = `RepoMap — evidence-backed repository architecture diagrams
 
@@ -16,11 +17,19 @@ Options:
   --revision <sha>   Pin a 40-character Git revision
   --out <directory>  Output directory (default: ./repomap-output/<repo>-<short-sha>)
   --locale <locale>  en (default) or zh-CN
-  --no-render        Write facts and diagnostics without Archify HTML
+  --view <view>      Request a view: system|runtime|module|flows|full (repeatable; default runtime)
+  --include <glob>   Declare an included path (repeatable)
+  --exclude <glob>   Declare a user-excluded path as out-of-scope (repeatable)
+  --require-external-hosts   Require resolvable external hosts (strict full gate)
+  --no-render        Write JSON, coverage and receipt only; no Archify or Chromium
   --visual-check     Run Archify Chromium visual checks after delivery
   --no-cache         Disable the local GitHub archive cache
   -h, --help         Show this help
   -v, --version      Show the package version
+
+A runtime overview is not a complete architecture. Only a passing
+full-declared-scope gate can set fullArchitecture; that gate is not implemented
+yet, so receipts always report fullArchitecture: false.
 
 Environment:
   GITHUB_TOKEN       Optional token for private repositories and higher API limits
@@ -40,6 +49,7 @@ export function parseCliArguments(argv: string[]): AnalyzeOptions | { help: true
     if (argument === "--no-render") { options.render = false; continue; }
     if (argument === "--visual-check") { options.visualCheck = true; continue; }
     if (argument === "--no-cache") { options.useCache = false; continue; }
+    if (argument === "--require-external-hosts") { options.strictExternalHosts = true; continue; }
     const value = argv[index + 1];
     if (!value || value.startsWith("-")) throw new Error(`Missing value for ${argument}`);
     index += 1;
@@ -48,6 +58,19 @@ export function parseCliArguments(argv: string[]): AnalyzeOptions | { help: true
     if (argument === "--locale") {
       if (value !== "en" && value !== "zh-CN") throw new Error("--locale must be en or zh-CN");
       options.locale = value;
+      continue;
+    }
+    if (argument === "--view") {
+      options.requestedViews = [...(options.requestedViews ?? []), value];
+      continue;
+    }
+    if (argument === "--include") {
+      options.include = [...(options.include ?? []), value];
+      continue;
+    }
+    if (argument === "--exclude") {
+      options.exclude = [...(options.exclude ?? []), value];
+      options.userExclusions = [...(options.userExclusions ?? []), value];
       continue;
     }
     throw new Error(`Unknown option: ${argument}`);
@@ -65,8 +88,8 @@ export async function main(argv = process.argv.slice(2)) {
   }
   const receipt = await analyzeSource(parsed);
   console.log(JSON.stringify(receipt, null, 2));
-  if (receipt.status === "failed") {
-    console.error(`RepoMap failed: ${receipt.error}`);
+  if (receipt.status === "failed" || deliveryExitCode(receipt.delivery) !== 0) {
+    console.error(`RepoMap failed: ${receipt.status === "failed" ? receipt.error : "one or more requested views failed"}`);
     process.exitCode = 1;
   }
 }

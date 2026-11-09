@@ -1,5 +1,6 @@
 import type { ArchitectureEvidence, NodeFact } from "./facts.js";
 import type { ArchitectureSignal } from "./signals.js";
+import { isLockfilePath, isRuntimeEvidencePath } from "./file-roles.js";
 
 export interface ArchitectureSource {
   path: string;
@@ -32,6 +33,9 @@ export function architectureCallContext(lines: string[], index: number) {
 }
 
 export function findAllArchitectureEvidence(source: ArchitectureSource, markers: string[], detector: string, lineFilter?: (line: string, index: number, lines: string[]) => boolean): ArchitectureEvidence[] {
+  // A lockfile proves a declared dependency, never a runtime call or a live
+  // database. It stays in the raw census but is excluded from every scan.
+  if (isLockfilePath(source.path)) return [];
   const lines = source.content.split("\n");
   return lines.flatMap((line, index) => {
     const code = line.replace(/^\s*\d+:\s?/, "").trim();
@@ -65,4 +69,15 @@ export function signalIdsForEvidence(signals: ArchitectureSignal[], evidence: Ar
 export function uniqueEvidence(evidence: ArchitectureEvidence[]) {
   const values = new Map(evidence.map((item) => [`${item.path}:${item.line}:${item.detector}`, item]));
   return [...values.values()].sort((a, b) => `${a.path}:${a.line}:${a.detector}`.localeCompare(`${b.path}:${b.line}:${b.detector}`));
+}
+
+/** Only real source/schema/config files can prove runtime behaviour. */
+export function isRuntimeEvidenceSource(source: ArchitectureSource) {
+  return isRuntimeEvidencePath(source.path);
+}
+
+/** Path-level evidence must be semantic, and bounded per file. */
+export function findSemanticEvidence(source: ArchitectureSource, markers: string[], detector: string, limit = 3): ArchitectureEvidence[] {
+  if (!isRuntimeEvidenceSource(source) || markers.length === 0) return [];
+  return findAllArchitectureEvidence(source, markers, detector).slice(0, limit);
 }

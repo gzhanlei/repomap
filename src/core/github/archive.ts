@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/p
 import * as tar from "tar";
 import { githubHeaders, resolveGitHubRevision, type GitHubRepositoryRef } from "./repository.js";
 import { isSupportedRepositoryPath, loadLocalRepositorySources, type RepositorySourceBudgets } from "../source/local.js";
+import type { RepositoryFileEntry } from "../architecture/census.js";
 
 export interface GitHubSourceOptions {
   fetcher?: typeof fetch;
@@ -84,6 +85,7 @@ export async function loadGitHubRepositorySources(repository: GitHubRepositoryRe
     let selectedFiles = 0;
     let selectedBytes = 0;
     const budgets = options.budgets ?? {};
+    const archiveInventory: RepositoryFileEntry[] = [];
     await tar.x({
       file: archivePath,
       cwd: extractRoot,
@@ -91,13 +93,22 @@ export async function loadGitHubRepositorySources(repository: GitHubRepositoryRe
       strict: true,
       preservePaths: false,
       filter: (path, entry) => {
-        if (!("type" in entry) || entry.type !== "File") return false;
+        if (!("type" in entry)) return false;
         const relative = path.split("/").slice(1).join("/");
+        const size = Number(entry.size ?? 0);
+        if (entry.type === "SymbolicLink" || entry.type === "Link") {
+          archiveInventory.push({ path: relative, size, entryKind: "symlink", selected: false });
+          return false;
+        }
+        if (entry.type !== "File" && entry.type !== "OldFile" && entry.type !== "ContiguousFile") return false;
+        const record: RepositoryFileEntry = { path: relative, size, entryKind: "file", selected: false };
+        archiveInventory.push(record);
         if (!isSupportedRepositoryPath(relative)) return false;
+        record.selected = true;
         selectedFiles += 1;
         if (budgets.maxFiles !== undefined && selectedFiles > budgets.maxFiles) throw new Error("Repository source file budget exhausted");
-        selectedBytes += entry.size;
-        if (budgets.maxFileBytes !== undefined && entry.size > budgets.maxFileBytes) throw new Error(`Repository source file exceeds max bytes: ${relative}`);
+        selectedBytes += size;
+        if (budgets.maxFileBytes !== undefined && size > budgets.maxFileBytes) throw new Error(`Repository source file exceeds max bytes: ${relative}`);
         if (budgets.maxTotalBytes !== undefined && selectedBytes > budgets.maxTotalBytes) throw new Error("Repository source byte budget exhausted");
         return true;
       },
@@ -105,12 +116,24 @@ export async function loadGitHubRepositorySources(repository: GitHubRepositoryRe
     const loaded = await loadLocalRepositorySources(extractRoot, budgets);
     return {
       ...loaded,
+      // The tar stream sees every raw entry, including rejected ones. The
+      // census must reconcile against this inventory, not the filtered sources.
+      inventory: archiveInventory.sort((a, b) => a.path.localeCompare(b.path)),
       repository: { owner: repository.owner, repo: repository.repo, revision },
       archive: { bytes: archive.byteLength, sha256: createHash("sha256").update(archive).digest("hex"), cacheHit, httpRequests },
-      cleanup: () => rm(temporaryRoot, { recursive: true, force: true }),
+      // Cleanup is best-effort. A sandbox, read-only volume or locked file must
+      // not invalidate an analysis whose artifacts are already written.
+      cleanup: async () => {
+        try {
+          await rm(temporaryRoot, { recursive: true, force: true });
+          return { ok: true as const };
+        } catch (error) {
+          return { ok: false as const, error: error instanceof Error ? error.message : String(error) };
+        }
+      },
     };
   } catch (error) {
-    await rm(temporaryRoot, { recursive: true, force: true });
+    try { await rm(temporaryRoot, { recursive: true, force: true }); } catch { /* best-effort cleanup */ }
     throw error;
   }
 }
