@@ -19,8 +19,8 @@ export const evidenceRecordSchema = z.object({
 }).strict();
 export type EvidenceRecord = z.infer<typeof evidenceRecordSchema>;
 
-const evidenceReferenceSchema = z.object({
-  ownerType: z.enum(["node", "edge", "operation"]),
+export const evidenceReferenceSchema = z.object({
+  ownerType: z.enum(["node", "edge", "operation", "module", "module-edge"]),
   ownerId: z.string().min(1),
   evidenceIds: z.array(z.string().min(1)),
   renderedEvidenceIds: z.array(z.string().min(1)),
@@ -59,19 +59,41 @@ export function evidenceSource(extractor: string): EvidenceSource {
   return /^(?:ast|parser)[-:]/.test(extractor) ? "parser" : "regex";
 }
 
+type EvidenceRecordWithoutId = Omit<EvidenceRecord, "id">;
+
+/** Stable ID shared by regex evidence and AST evidence, so both live in one index. */
+export function stableEvidenceId(record: EvidenceRecordWithoutId) {
+  const key = `${record.path}|${record.startLine}|${record.endLine}|${record.extractor}|${record.role}|${record.source}`;
+  return `ev:${createHash("sha256").update(key).digest("hex").slice(0, 16)}`;
+}
+
+function dedupeKey(record: EvidenceRecordWithoutId) {
+  return `${record.path}:${record.startLine}:${record.endLine}:${record.extractor}:${record.role}:${record.source}`;
+}
+
 export function evidenceRecord(evidence: ArchitectureEvidence): EvidenceRecord {
-  const role = evidenceRole(evidence.path, evidence.detector);
-  const source = evidenceSource(evidence.detector);
-  const key = `${evidence.path}|${evidence.line}|${evidence.line}|${evidence.detector}|${role}|${source}`;
-  return {
-    id: `ev:${createHash("sha256").update(key).digest("hex").slice(0, 16)}`,
+  const base: EvidenceRecordWithoutId = {
     path: evidence.path,
     startLine: evidence.line,
     endLine: evidence.line,
     extractor: evidence.detector,
-    role,
-    source,
+    role: evidenceRole(evidence.path, evidence.detector),
+    source: evidenceSource(evidence.detector),
   };
+  return { id: stableEvidenceId(base), ...base };
+}
+
+/** PR #6: one AST import statement is one parser-sourced evidence record. */
+export function astImportEvidenceRecord(input: { path: string; line: number; kind: string }): EvidenceRecord {
+  const base: EvidenceRecordWithoutId = {
+    path: input.path,
+    startLine: input.line,
+    endLine: input.line,
+    extractor: `ast:ts-import:${input.kind}`,
+    role: input.kind === "dynamic" || input.kind === "require" ? "runtime-call" : "declaration",
+    source: "parser",
+  };
+  return { id: stableEvidenceId(base), ...base };
 }
 
 export function evidenceIdsFor(evidence: ArchitectureEvidence[]) {
@@ -118,6 +140,41 @@ export function buildEvidenceIndex(revision: string, factsInput: ArchitectureFac
       bySource: Object.fromEntries(evidenceSourceSchema.options.map((source) => [source, sorted.filter((record) => record.source === source).length])),
       renderLimit: renderEvidenceLimit,
       hiddenEvidenceCount: references.reduce((total, item) => total + item.remainingEvidenceIds.length, 0),
+    },
+  });
+}
+
+export type EvidenceReference = z.infer<typeof evidenceReferenceSchema>;
+
+/**
+ * PR #6: AST-derived module evidence is folded into the SAME lossless index as
+ * regex evidence. There is no second, competing evidence store: IR, census,
+ * projection manifest and module graph all reference these stable IDs.
+ */
+export function mergeEvidenceIndex(index: EvidenceIndex, records: EvidenceRecord[], references: EvidenceReference[]): EvidenceIndex {
+  const byKey = new Map(index.records.map((record) => [dedupeKey(record), record]));
+  let duplicatesRemoved = index.statistics.duplicatesRemoved;
+  for (const record of records) {
+    const key = dedupeKey(record);
+    if (byKey.has(key)) duplicatesRemoved += 1;
+    else byKey.set(key, record);
+  }
+  const sorted = [...byKey.values()].sort((a, b) => `${a.path}:${a.startLine}:${a.extractor}:${a.role}`.localeCompare(`${b.path}:${b.startLine}:${b.extractor}:${b.role}`));
+  const byOwner = new Map(index.references.map((reference) => [`${reference.ownerType}:${reference.ownerId}`, reference]));
+  for (const reference of references) byOwner.set(`${reference.ownerType}:${reference.ownerId}`, reference);
+  const mergedReferences = [...byOwner.values()].sort((a, b) => `${a.ownerType}:${a.ownerId}`.localeCompare(`${b.ownerType}:${b.ownerId}`));
+  return evidenceIndexSchema.parse({
+    version: 1,
+    revision: index.revision,
+    records: sorted,
+    references: mergedReferences,
+    statistics: {
+      total: sorted.length,
+      duplicatesRemoved,
+      byRole: Object.fromEntries(evidenceRoleSchema.options.map((role) => [role, sorted.filter((record) => record.role === role).length])),
+      bySource: Object.fromEntries(evidenceSourceSchema.options.map((source) => [source, sorted.filter((record) => record.source === source).length])),
+      renderLimit: renderEvidenceLimit,
+      hiddenEvidenceCount: mergedReferences.reduce((total, reference) => total + reference.remainingEvidenceIds.length, 0),
     },
   });
 }

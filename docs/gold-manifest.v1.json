@@ -8,6 +8,12 @@
       "status": "implemented",
       "goldStatus": "not-audited",
       "note": "Import, workspace, parser-unavailable and syntax-error fixtures exist in tests, but no fixed-SHA corpus or human-reviewed critical facts have been added."
+    },
+    {
+      "id": "ts-module-graph",
+      "status": "implemented",
+      "goldStatus": "not-audited",
+      "note": "Fixture tests cover extensionless/barrel/directory-root imports, tsconfig paths and baseUrl, workspace package names, project references, cycles, external/unresolved separation, AST evidence reconciliation and an independent-denominator mutation test. No fixed-SHA corpus or human-reviewed critical module facts exist yet."
     }
   ],
   "rules": {

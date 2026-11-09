@@ -45,6 +45,11 @@ export const projectUnitSchema = z.object({
 }).strict();
 export type ProjectUnit = z.infer<typeof projectUnitSchema>;
 
+export const importResolutionSchema = z.enum([
+  "relative", "alias", "workspace-package", "project-reference", "external", "unresolved",
+]);
+export type ImportResolution = z.infer<typeof importResolutionSchema>;
+
 export const importRefSchema = z.object({
   path: z.string().min(1),
   source: z.string().min(1),
@@ -52,6 +57,12 @@ export const importRefSchema = z.object({
   line: z.number().int().positive(),
   resolvedPath: z.string().min(1).optional(),
   unresolvedReason: z.string().min(1).optional(),
+  /** How the specifier was resolved. Absent only for units produced by external/unavailable adapters. */
+  resolution: importResolutionSchema.optional(),
+  /** Package owning the resolved module, for cross-package edges. */
+  targetPackageId: z.string().min(1).optional(),
+  /** True when the specifier resolved through a directory index/barrel. */
+  barrel: z.boolean().optional(),
 }).strict();
 export type ImportRef = z.infer<typeof importRefSchema>;
 

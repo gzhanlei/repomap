@@ -110,6 +110,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   const evidencePath = join(outDir, "architecture.evidence.json");
   const declarationsPath = join(outDir, "architecture.declarations.json");
   const projectPath = join(outDir, "architecture.project.json");
+  const moduleGraphPath = join(outDir, "architecture.module-graph.json");
   const irPath = join(outDir, "architecture.ir.json");
   const projectionPath = join(outDir, "architecture.projection.json");
   const receiptPath = join(outDir, "repomap.receipt.json");
@@ -124,6 +125,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   await writeJson(evidencePath, analysis.evidence);
   await writeJson(declarationsPath, analysis.declarations);
   await writeJson(projectPath, analysis.project);
+  await writeJson(moduleGraphPath, analysis.moduleGraph);
   await writeJson(irPath, analysis.ir);
   await writeJson(projectionPath, analysis.projection);
 
@@ -157,6 +159,13 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
       parseErrors: analysis.project.statistics.parseErrors,
       blockedViews: analysis.project.gates.blockedViews,
     },
+    moduleGraph: {
+      snapshotId: analysis.moduleGraph.snapshotId,
+      granularity: analysis.moduleGraph.granularity,
+      statistics: analysis.moduleGraph.statistics,
+      blockedViews: analysis.moduleGraph.gates.blockedViews,
+      runtimeOverviewUnaffected: analysis.moduleGraph.gates.runtimeOverviewUnaffected,
+    },
     archive: input.archive,
     aiRequests: 0,
     candidateSummary: { total: analysis.candidates.length, omitted: analysis.candidates.filter((candidate) => candidate.status === "omitted").length },
@@ -164,7 +173,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     outputs: {
       facts: factsPath, analysis: analysisPath, candidates: candidatesPath, census: censusPath,
       evidence: evidencePath, declarations: declarationsPath, project: projectPath,
-      ir: irPath, projection: projectionPath, receipt: receiptPath,
+      moduleGraph: moduleGraphPath, ir: irPath, projection: projectionPath, receipt: receiptPath,
     },
   };
   const deliveryFor = (status: "accepted" | "facts-ready" | "failed", visualPassed?: boolean) => buildDeliveryStatement({
@@ -194,6 +203,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
       statistics: analysis.project.statistics,
       gates: analysis.project.gates,
     },
+    moduleGraph: analysis.moduleGraph.statistics,
     omissions: analysis.omissions,
     evidenceProjection,
     rawBudgetExceeded,

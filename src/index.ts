@@ -14,3 +14,6 @@ export { createSourceSnapshot, numberedText, unnumberedText, lineForRawOffset, s
 export { AdapterRegistry, adapterStatus, createUnavailableAdapter, emptyParseResult, projectPreparationSchema, buildContextSchema, type LanguageAdapter, type ProjectUnit, type ProjectPreparation, type BuildContext, type ImportRef, type SymbolRecord, type EntrypointCandidate, type AdapterCapability } from "./core/architecture/project/adapter.js";
 export { createTypeScriptAdapter } from "./core/architecture/project/typescript.js";
 export { prepareProjects, defaultProjectAdapters, viewsBlockedByPreparation, type PrepareProjectsInput } from "./core/architecture/project/prepare.js";
+export { readTypeScriptResolutionRules, type TypeScriptResolutionRules } from "./core/architecture/project/typescript.js";
+export { buildModuleGraph, moduleGraphEvidenceReferences, viewsBlockedByModuleGraph, moduleGraphSchema, moduleNodeSchema, moduleEdgeSchema, type ModuleGraph, type ModuleNode, type ModuleEdge, type BuildModuleGraphInput } from "./core/architecture/project/module-graph.js";
+export { mergeEvidenceIndex, astImportEvidenceRecord, stableEvidenceId, evidenceReferenceSchema, type EvidenceReference } from "./core/architecture/evidence-index.js";
