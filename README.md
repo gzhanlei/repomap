@@ -68,7 +68,7 @@ The repository root includes `SKILL.md`. It teaches an Agent to invoke the CLI, 
 
 ## Development
 
-语义覆盖持续扩展；历史接手记录和后续优先级见 [docs/HANDOFF.md](docs/HANDOFF.md)。
+通用完整架构的目标、独立覆盖模型、分阶段 PR 和验收标准见 [docs/full-architecture-plan.md](docs/full-architecture-plan.md)。历史接手记录见 [docs/HANDOFF.md](docs/HANDOFF.md)。
 
 ```bash
 npm run typecheck

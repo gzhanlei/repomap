@@ -2,7 +2,7 @@
 
 更新日期：2026-11-08
 
-> 当前补充：项目已发布到 `https://github.com/gzhanlei/repomap`。本轮已完成大仓库懒加载、Go/SQLite/PostgreSQL、Vite/React、Go 出站 HTTP 和动态外部候选验证；当前全量检查为 13 个测试文件、46 项测试。以下 2026-11-05 的接手记录保留作历史背景，后续状态以 README、通用协议文档和 Git 历史为准。
+> 当前补充：项目已发布到 `https://github.com/gzhanlei/repomap`。本轮已完成大仓库懒加载、Go/SQLite/PostgreSQL、Vite/React、Go 出站 HTTP 和动态外部候选验证；当前全量检查为 13 个测试文件、46 项测试。通用完整架构的后续实施计划见 [full-architecture-plan.md](full-architecture-plan.md)。以下 2026-11-05 的接手记录保留作历史背景，后续状态以 README、通用协议文档、完整架构计划和 Git 历史为准。
 
 ## 已确认的产品边界
 
