@@ -25,17 +25,19 @@
     "coverage": "vitest run --coverage",
     "cli": "tsx src/cli.ts",
     "archify:prepare": "tsx scripts/prepare-archify.ts",
+    "pack:dry-run": "npm pack --dry-run --json",
+    "smoke:production": "node scripts/production-smoke.mjs",
     "prepack": "npm run build"
   },
   "dependencies": {
     "tar": "^7.5.2",
+    "typescript": "^5.8.3",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
     "@vitest/coverage-v8": "^4.1.12",
     "tsx": "^4.20.6",
-    "typescript": "^5.8.3",
     "vitest": "^4.1.10"
   },
   "license": "MIT",

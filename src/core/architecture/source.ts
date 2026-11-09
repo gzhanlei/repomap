@@ -4,7 +4,10 @@ import { isLockfilePath, isRuntimeEvidencePath } from "./file-roles.js";
 
 export interface ArchitectureSource {
   path: string;
+  /** Numbered view, for evidence display and line mapping only. */
   content: string;
+  /** Immutable raw text, for AST parsing, hashing and content-addressed caches. */
+  rawText?: () => string;
 }
 
 export interface ArchitectureRepositorySourceReceipt {

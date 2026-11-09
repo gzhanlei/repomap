@@ -1,6 +1,6 @@
-# RepoMap 视图、声明范围与交付契约（M0 / M1）
+# RepoMap 视图、声明范围与交付契约（M0 / M1 / M2 project-preparation）
 
-本文对应 `docs/full-architecture-plan.md` 的 M0、M1 契约，说明本轮实现到哪一步、以及**哪些结论还不能得出**。
+本文对应 `docs/full-architecture-plan.md` 的 M0、M1 和 M2 首个切片，说明当前实现到哪一步、以及**哪些结论还不能得出**。
 
 ## 1. 视图等级
 
@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `system-context` | 未实现门禁 | 请求时返回 `failed` |
 | `runtime-overview` | 已实现、唯一可发布视图 | 沿用现有入口/runtime/store/external 门禁，新增 raw census 预算门禁 |
-| `module-architecture` | 未实现门禁 | 没有 AST adapter，capability gap 明确记录 |
+| `module-architecture` | 未实现门禁 | 已有 TypeScript Program 与 import refs，但没有 ModuleGraph / 视图门禁；Go parser 明确 declared unavailable |
 | `protocol-flows` | 未实现门禁 | operation union 已在 IR v2 定义，但还没有 operation extractor |
 | `full-declared-scope` | 未实现门禁 | 不能发布 |
 
@@ -37,7 +37,7 @@ repomap analyze <source> --view runtime --view full \
 `architecture.source-census.json` 直接来自本地文件树或 archive entry stream，**不是**从过滤后的 sources 反推。每个原始条目恰好一个 disposition：
 
 - `status`：`inventoried`（symlink / gitlink）、`selected`（进入行扫描）、`excluded`、`unsupported`、`parse-error`、`not-required`；
-- 没有 AST adapter 接入前，绝不把文件标成 `parsed`；`parser` 如实写 `regex-line-scan@1` 或 `none`；
+- 绝不把文件标成 `parsed`；census 的 `parser` 只描述该 raw entry 被哪套行扫描器选中（`regex-line-scan@1` 或 `none`），AST 解析状态与 unit 归属另见 `architecture.project.json`；
 - `role` 区分 source / test / fixture / generated / vendored / schema / migration / manifest / lockfile / config / documentation / binary / unknown；
 - `packageId` 由最近的 manifest 目录决定，无法归属时落到 `package:root` 并记录原因；
 - `exclusions` 记录规则与数量，`totals.rawEntries` 与 `files.length` 必须对账；
@@ -51,9 +51,20 @@ repomap analyze <source> --view runtime --view full \
 - `architecture.projection.json`：记录每个 owner 的代表性证据、剩余证据 ID、选择原因和总数，不做隐藏截断。
 - per-view omission impact 骨架：`unsupported-framework`、`unsupported-protocol`、`unresolved-submodule`、`budget-exceeded` 等带 `affectedViews` 与 `blocking`。
 
-## 5. 已知边界（不要越界宣称）
+## 5. Project Preparation（M2 首个切片）
 
-- 没有 AST adapter、ModuleGraph、RouteGraph、protocol operation extractor、身份解析和黄金评估；
+`architecture.project.json` 是项目级准备层，不是 facts v1 的一部分：
+
+- **不可变 raw snapshot**：parser 输入是原始 UTF-8 文本，`numbered view` 只用于 evidence 展示与行号映射；`snapshotId` 由 revision + 每个 raw entry 的 `path/size/sha256` 内容寻址，供 census、adapter、helper、cache 共用。loader 的 `rawText` 是惰性访问器，不进入 source 对象的可枚举数据。
+- **LanguageAdapter 契约**：`prepareProject(snapshot, context)` → `ProjectUnit`，`parseProject` / `declarations` / `symbols` / `imports` / `entrypoints` / `capabilities` 都以项目为单位。声明发现仍与语义提取分离：结构入口由路径发现，不复用 AST detector。
+- **TypeScript adapter**：Compiler API `Program` 在内存 compiler host 上运行，覆盖静态 import / re-export / 动态 import / require、exported symbols、结构化入口候选和语法诊断；相对导入在 snapshot 内解析，裸包名诚实记为 `external-package-not-in-snapshot`。多 workspace 中同名 `src/index.ts` 按 `packageId` 分到不同 unit。
+- **显式 build context**：`goos` / `goarch` / `buildTags` 固定写入（默认 `linux/amd64/[]`），不读取宿主机 `GOOS`/`GOARCH`；`go.work use` 与 `go.mod replace` 从 snapshot 读取并记录。
+- **parser 门禁**：`ast-typescript` 为 `partial`，`ast-go` 为 `unavailable`。parser 缺失只产生 `parser-unavailable` omission，影响 `module-architecture` / `protocol-flows` / `full-declared-scope`；`gates.runtimeOverviewUnaffected` 恒为 `true`，绝不影响默认视图。
+- **生产依赖**：`typescript` 位于 `dependencies`。`npm run pack:dry-run` 与 `npm run smoke:production` 验证仅安装生产依赖的打包 CLI 仍能运行并输出 `architecture.project.json`。
+
+## 6. 已知边界（不要越界宣称）
+
+- 有 TypeScript Program 与 import refs，但**没有** ModuleGraph、RouteGraph、protocol operation extractor、身份解析和黄金评估；Go package-aware AST helper 未发布；
 - submodule 目前只记录 `unresolved-submodule`，不会作为独立 fixed-SHA 输入获取；
 - evidence / census 尚未流式分片写出；
 - `docs/gold-manifest.v1.json` 只是版本化骨架，未经过人工审核，不能当作真值；

@@ -99,7 +99,9 @@ describe("M0 delivery contract", () => {
     expect(scope.capabilityGaps).toContain("ast-typescript");
     expect(scope.strictExternalHosts).toBe(true);
     expect(scope.buildContext).toEqual({ goos: "linux", goarch: "amd64", buildTags: [] });
-    expect(scope.parsers.every((parser) => parser.status === "unavailable" || parser.id === "regex-line-scan")).toBe(true);
+    expect(scope.parsers.find((parser) => parser.id === "ast-typescript")?.status).toBe("partial");
+    expect(scope.parsers.find((parser) => parser.id === "ast-go")?.status).toBe("unavailable");
+    expect(scope.parsers.find((parser) => parser.id === "regex-line-scan")?.status).toBe("partial");
   });
 
   it("still parses legacy facts v1 without any IR-only fields", () => {

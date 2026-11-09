@@ -18,6 +18,9 @@ import { buildDeclarationInventory, evaluateDeclarationCoverage, mutationCheck }
 import { assertEvidenceReferences, buildEvidenceIndex } from "./evidence-index.js";
 import { buildArchitectureIr, buildProjectionManifest, irEvidenceIds, type IrOmission } from "./ir.js";
 import { buildDeclaredScope, defaultArchitectureView, type DeclaredScopeInput } from "./scope.js";
+import { createSourceSnapshot } from "./project/snapshot.js";
+import { prepareProjects } from "./project/prepare.js";
+import type { LanguageAdapter } from "./project/adapter.js";
 
 const detectors = [nextArchitectureDetector, goArchitectureDetector, phpArchitectureDetector, miniProgramArchitectureDetector, storageArchitectureDetector, externalArchitectureDetector];
 
@@ -82,6 +85,8 @@ function extractWithInventory(input: Pick<ArchitectureSignalInventory, "revision
 export interface ArchitectureAnalysisOptions extends Partial<Omit<DeclaredScopeInput, "revision" | "languages" | "packageManagers" | "workspaces">> {
   inventory?: RepositoryFileEntry[];
   rawBudgets?: { maxRawEntries?: number; maxRawBytes?: number; maxRawEntryBytes?: number };
+  /** Injectable for parser-unavailable tests; defaults to the shipped adapter set. */
+  adapters?: LanguageAdapter[];
 }
 
 function omissionsFrom(census: ReturnType<typeof buildSourceCensus>, declarations: ReturnType<typeof buildDeclarationInventory>, facts: ArchitectureFactSet): IrOmission[] {
@@ -125,6 +130,16 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   const baseCensus = buildSourceCensus({ revision: input.revision, inventory: rawEntries, userExclusions: options.userExclusions, budgets: options.rawBudgets });
   assertSourceCensusReconciled(baseCensus);
 
+  // Project preparation consumes immutable raw text; it never changes facts v1.
+  const snapshot = createSourceSnapshot({ revision: input.revision, sources: runtimeSources, census: baseCensus });
+  const project = prepareProjects({
+    revision: input.revision,
+    snapshot,
+    census: baseCensus,
+    buildContext: options.buildContext,
+    adapters: options.adapters,
+  });
+
   // Independent declaration discovery runs before any semantic detector.
   const rawDeclarations = buildDeclarationInventory({ revision: input.revision, census: baseCensus, sources: runtimeSources });
   const censusWithDeclarations = linkCensusDeclarations(baseCensus, rawDeclarations);
@@ -156,8 +171,9 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     requestedViews: options.requestedViews,
     strictExternalHosts: options.strictExternalHosts,
     buildContext: options.buildContext,
+    parsers: project.parsers,
   });
-  const omissions = omissionsFrom(baseCensus, rawDeclarations, facts);
+  const omissions = [...omissionsFrom(baseCensus, rawDeclarations, facts), ...project.omissions];
   const ir = buildArchitectureIr({ revision: input.revision, view: defaultArchitectureView, scope, facts, evidence, declarations, census: censusWithDeclarations, omissions });
   assertEvidenceReferences(evidence, irEvidenceIds(ir));
   const projection = buildProjectionManifest({ revision: input.revision, view: defaultArchitectureView, evidence, ir });
@@ -165,7 +181,8 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   return {
     inventory: enrichedInventory, facts, coverage, candidates,
     census, evidence, declarations, declarationCoverage, mutation,
-    scope, ir, projection, omissions, view: defaultArchitectureView,
+    scope, ir, projection, omissions, project, snapshotId: snapshot.snapshotId,
+    view: defaultArchitectureView,
   };
 }
 

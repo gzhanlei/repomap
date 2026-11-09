@@ -211,6 +211,7 @@ export function buildProjectionManifest(input: { revision: string; view: string;
       { name: "architecture.evidence.json", role: "lossless evidence index" },
       { name: "architecture.source-census.json", role: "raw entry dispositions" },
       { name: "architecture.declarations.json", role: "independent declaration inventory" },
+      { name: "architecture.project.json", role: "immutable raw snapshot, project units and parser capabilities" },
       { name: "architecture.projection.json", role: "projection reconciliation manifest" },
       { name: "architecture.analysis.json", role: "signal inventory and coverage" },
       { name: "repomap.receipt.json", role: "delivery and cost receipt" },

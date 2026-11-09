@@ -36,13 +36,15 @@ export type Capability = z.infer<typeof capabilitySchema>;
 
 export const repomapCapabilities: Capability[] = [
   { id: "raw-source-census", version: "1", status: "available" },
+  { id: "source-snapshot", version: "1", status: "available" },
+  { id: "project-preparation", version: "1", status: "available" },
   { id: "evidence-index", version: "1", status: "available" },
   { id: "declaration-inventory", version: "1", status: "partial" },
   { id: "mutation-harness", version: "1", status: "partial" },
   { id: "regex-line-scan", version: "1", status: "partial" },
   { id: "external-candidates", version: "1", status: "partial" },
   { id: "coverage-evaluator", version: "1", status: "partial" },
-  { id: "ast-typescript", version: "0", status: "unavailable" },
+  { id: "ast-typescript", version: "1", status: "partial" },
   { id: "ast-go", version: "0", status: "unavailable" },
   { id: "module-graph", version: "0", status: "unavailable" },
   { id: "route-graph", version: "0", status: "unavailable" },
@@ -86,6 +88,8 @@ export interface DeclaredScopeInput {
   requestedViews?: string[];
   strictExternalHosts?: boolean;
   buildContext?: { goos: string; goarch: string; buildTags: string[] };
+  /** Actual parser statuses from project preparation; defaults to the engine catalog. */
+  parsers?: Capability[];
 }
 
 export function buildDeclaredScope(input: DeclaredScopeInput): DeclaredScope {
@@ -98,7 +102,7 @@ export function buildDeclaredScope(input: DeclaredScopeInput): DeclaredScope {
     languages: [...new Set(input.languages ?? [])].sort(),
     packageManagers: [...new Set(input.packageManagers ?? [])].sort(),
     workspaces: [...new Set(input.workspaces ?? [])].sort(),
-    parsers: repomapCapabilities.filter((capability) => capability.id.startsWith("ast-") || capability.id === "regex-line-scan")
+    parsers: (input.parsers ?? repomapCapabilities.filter((capability) => capability.id.startsWith("ast-") || capability.id === "regex-line-scan"))
       .map(({ id, version, status }) => ({ id, version, status })),
     protocols: ["http", "graphql", "sql", "schedule", "callback", "oauth"],
     requestedViews,

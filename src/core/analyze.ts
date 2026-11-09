@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { analyzeRepositoryArchitecture } from "./architecture/repository.js";
+import type { LanguageAdapter } from "./architecture/project/adapter.js";
 import { externalCandidateSetSchema } from "./architecture/candidates.js";
 import { projectArchitectureDocument } from "./architecture/project.js";
 import { architectureDocumentSchema, type ArchitectureDocument } from "./architecture/document.js";
@@ -32,6 +33,7 @@ interface AnalyzeSourcesInput extends Partial<Omit<DeclaredScopeInput, "revision
   visualCheck?: boolean;
   archive?: { bytes: number; sha256: string; cacheHit: boolean; httpRequests: number };
   now?: () => number;
+  adapters?: LanguageAdapter[];
   deliver?: typeof deliverArchify;
   check?: typeof visualCheckArchify;
 }
@@ -99,6 +101,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     strictExternalHosts: input.strictExternalHosts,
     buildContext: input.buildContext,
     rawBudgets: input.rawBudgets,
+    adapters: input.adapters,
   });
   const factsPath = join(outDir, "architecture.facts.json");
   const analysisPath = join(outDir, "architecture.analysis.json");
@@ -106,6 +109,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   const censusPath = join(outDir, "architecture.source-census.json");
   const evidencePath = join(outDir, "architecture.evidence.json");
   const declarationsPath = join(outDir, "architecture.declarations.json");
+  const projectPath = join(outDir, "architecture.project.json");
   const irPath = join(outDir, "architecture.ir.json");
   const projectionPath = join(outDir, "architecture.projection.json");
   const receiptPath = join(outDir, "repomap.receipt.json");
@@ -119,6 +123,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   await writeJson(censusPath, analysis.census);
   await writeJson(evidencePath, analysis.evidence);
   await writeJson(declarationsPath, analysis.declarations);
+  await writeJson(projectPath, analysis.project);
   await writeJson(irPath, analysis.ir);
   await writeJson(projectionPath, analysis.projection);
 
@@ -144,13 +149,22 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     evidenceProjection,
     declarationCoverage: analysis.declarationCoverage,
     mutation: analysis.mutation,
+    project: {
+      snapshotId: analysis.snapshotId,
+      parsers: analysis.project.parsers,
+      units: analysis.project.statistics.units,
+      unresolvedImports: analysis.project.statistics.unresolvedImports,
+      parseErrors: analysis.project.statistics.parseErrors,
+      blockedViews: analysis.project.gates.blockedViews,
+    },
     archive: input.archive,
     aiRequests: 0,
     candidateSummary: { total: analysis.candidates.length, omitted: analysis.candidates.filter((candidate) => candidate.status === "omitted").length },
     coverage: analysis.coverage,
     outputs: {
       facts: factsPath, analysis: analysisPath, candidates: candidatesPath, census: censusPath,
-      evidence: evidencePath, declarations: declarationsPath, ir: irPath, projection: projectionPath, receipt: receiptPath,
+      evidence: evidencePath, declarations: declarationsPath, project: projectPath,
+      ir: irPath, projection: projectionPath, receipt: receiptPath,
     },
   };
   const deliveryFor = (status: "accepted" | "facts-ready" | "failed", visualPassed?: boolean) => buildDeliveryStatement({
@@ -173,6 +187,13 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     },
     declarationCoverage: analysis.declarationCoverage,
     mutation: analysis.mutation,
+    project: {
+      snapshotId: analysis.snapshotId,
+      buildContext: analysis.project.buildContext,
+      parsers: analysis.project.parsers,
+      statistics: analysis.project.statistics,
+      gates: analysis.project.gates,
+    },
     omissions: analysis.omissions,
     evidenceProjection,
     rawBudgetExceeded,

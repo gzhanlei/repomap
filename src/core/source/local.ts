@@ -42,6 +42,10 @@ export function createSourceContentCache(capacity = 64) {
   const cache = new Map<string, string>();
   const decoder = new TextDecoder("utf-8", { fatal: true });
   return {
+    /** Raw bytes decoded as UTF-8, without display line numbers. */
+    readRaw(absolute: string) {
+      return decoder.decode(readFileSync(absolute));
+    },
     read(absolute: string) {
       const existing = cache.get(absolute);
       if (existing !== undefined) {
@@ -49,7 +53,7 @@ export function createSourceContentCache(capacity = 64) {
         cache.set(absolute, existing);
         return existing;
       }
-      const content = numberedSource(absolute, decoder.decode(readFileSync(absolute))).content;
+      const content = numberedSource(absolute, this.readRaw(absolute)).content;
       if (cache.size >= limit) cache.delete(cache.keys().next().value as string);
       cache.set(absolute, content);
       return content;
@@ -59,12 +63,16 @@ export function createSourceContentCache(capacity = 64) {
 }
 
 export function lazyNumberedSource(path: string, absolute: string, cache: ReturnType<typeof createSourceContentCache>): ArchitectureSource {
-  return {
+  const source: ArchitectureSource = {
     path,
     get content() {
       return cache.read(absolute);
     },
   };
+  // A lazy reader, not data. Keep it out of enumeration so source objects stay
+  // comparable/serializable across independent loads of the same snapshot.
+  Object.defineProperty(source, "rawText", { enumerable: false, value: () => cache.readRaw(absolute) });
+  return source;
 }
 
 async function assertDirectory(root: string) {

@@ -52,6 +52,7 @@ The default directory is `./repomap-output/<repository>-<short-sha>`:
 - `architecture.analysis.json`: independent signal inventory, semantic coverage, declarations, mutation result, omissions and source receipt.
 - `architecture.source-census.json`: one disposition per raw repository/archive entry, with roles, package ownership and exclusion counts.
 - `architecture.declarations.json`: independent declaration inventory and capability/protocol gaps.
+- `architecture.project.json`: content-addressed immutable raw snapshot ID, project units, explicit build context, parser versions/capabilities, import refs, structural entrypoints, syntax diagnostics and per-view parser gates.
 - `architecture.evidence.json`: lossless evidence index with roles, parser/regex source and stable IDs.
 - `architecture.ir.json`: versioned IR v2 envelope; nodes, edges and operations reference `evidenceIds`/`declarationIds`.
 - `architecture.projection.json`: reconciliation manifest for rendered vs. remaining evidence.
@@ -67,7 +68,9 @@ Coverage failures, raw-budget failures and renderer failures leave diagnostic JS
 
 The default and only publishable view is `runtime-overview`. `--view` is repeatable (`system|runtime|module|flows|full`); requesting `full` automatically requires every contributing view, and any requested-but-failed view makes the command exit non-zero. `--include`/`--exclude` record user scope only — a detector capability gap is never disguised as a user exclusion. `--require-external-hosts` enables the strict host gate. `--no-render` writes JSON, coverage and receipt only, without Archify or Chromium.
 
-The receipt records `declaredScope`, `capabilities`, `delivery.views[*]` (with `blockingReasons` and `omissionCount`), `mutation`, `declarationCoverage` and `evidenceProjection`. Unknown frameworks, unsupported protocols, unresolved submodules and raw-budget exhaustion are explicit capability gaps or blocking omissions.
+The receipt records `declaredScope`, `capabilities`, `delivery.views[*]` (with `blockingReasons` and `omissionCount`), `project` (snapshot ID, parser statuses, units, unresolved imports, blocked views), `mutation`, `declarationCoverage` and `evidenceProjection`. Unknown frameworks, unsupported protocols, unresolved submodules and raw-budget exhaustion are explicit capability gaps or blocking omissions.
+
+Project preparation is parser-optional for the default view: the TypeScript adapter is a real project-level Compiler API `Program` over immutable raw text (imports, re-exports, symbols, structural entrypoints, syntax diagnostics), while the Go adapter is explicitly declared unavailable. Parser unavailability produces `parser-unavailable` omissions that block only `module-architecture` / `protocol-flows` / `full-declared-scope`; it never blocks or upgrades `runtime-overview`. Nothing is marked `parsed` without a parser.
 
 ## Supported analysis
 
@@ -81,13 +84,17 @@ The repository root includes `SKILL.md`. It teaches an Agent to invoke the CLI, 
 
 ## Development
 
-通用完整架构的目标、独立覆盖模型、分阶段 PR 和验收标准见 [docs/full-architecture-plan.md](docs/full-architecture-plan.md)。本轮实现的是 M0 / M1 契约切片（视图、CLI/receipt、IR envelope、raw census、独立声明、证据索引、lockfile 负例）；AST adapter、模块图、路由图、协议 operation、身份解析、黄金评估和多视图投影尚未实现，详见 [交付契约与已知边界](docs/view-terminology.md) 和 [版本化黄金骨架](docs/gold-manifest.v1.json)。历史接手记录见 [docs/HANDOFF.md](docs/HANDOFF.md)。
+通用完整架构的目标、独立覆盖模型、分阶段 PR 和验收标准见 [docs/full-architecture-plan.md](docs/full-architecture-plan.md)。已完成 M0 / M1 契约切片（视图、CLI/receipt、IR envelope、raw census、独立声明、证据索引、lockfile 负例），以及 M2 的第一个可回滚切片 `project-preparation`（不可变 raw snapshot、`LanguageAdapter` 契约、TypeScript Program、显式 build context、parser 门禁、生产依赖与 production-install smoke test）。模块图、路由图、协议 operation、身份解析、黄金评估和多视图投影尚未实现，详见 [交付契约与已知边界](docs/view-terminology.md) 和 [版本化黄金骨架](docs/gold-manifest.v1.json)。历史接手记录见 [docs/HANDOFF.md](docs/HANDOFF.md)。
 
 ```bash
 npm run typecheck
 npm test
 npm run build
 npm run archify:prepare
+npm run pack:dry-run
+npm run smoke:production   # packs + installs only production deps + runs the packed CLI
 ```
+
+`typescript` 是 production dependency：打包后的 CLI 直接依赖 Compiler API，不能用仅存在于 devDependencies 的解析器发布。
 
 Archify is pinned to v3.2.0 under MIT. Its ZIP and expected SHA-256 live in `vendor/archify/`; runtime preparation verifies the archive before extraction. RepoMap itself is MIT licensed.

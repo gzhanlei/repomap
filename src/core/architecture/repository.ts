@@ -21,6 +21,7 @@ export function analyzeRepositoryArchitecture(input: RepositoryArchitectureInput
       strictExternalHosts: input.strictExternalHosts,
       buildContext: input.buildContext,
       rawBudgets: input.rawBudgets,
+      adapters: input.adapters,
     }),
     sourceReceipt: input.sourceReceipt,
   };
