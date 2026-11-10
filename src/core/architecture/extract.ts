@@ -24,6 +24,7 @@ import { buildModuleGraph, moduleGraphEvidenceReferences } from "./project/modul
 import { buildGoModuleGraph, goModuleGraphEvidenceReferences } from "./project/go-module-graph.js";
 import { analyzeGoRoutes } from "./project/go-routes.js";
 import { analyzeTypeScriptRoutes } from "./project/ts-routes.js";
+import { operationEvidenceReferences, sqlOperationFacts } from "./sql-operations.js";
 import { buildRouteGraph, candidateOperationFacts, routeGraphEvidenceReferences, routeOperationFacts, type RouteGraph } from "./project/route-graph.js";
 import type { LanguageAdapter } from "./project/adapter.js";
 
@@ -213,7 +214,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   const coverage = evaluateArchitectureCoverage(enrichedInventory, facts);
   const declarationCoverage = evaluateDeclarationCoverage(rawDeclarations, facts);
   const mutation = mutationCheck(rawDeclarations, facts);
-  const operationFacts = [...routeOperationFacts(routeGraph), ...candidateOperationFacts(candidates)];
+  const operationFacts = [...routeOperationFacts(routeGraph), ...candidateOperationFacts(candidates), ...sqlOperationFacts(facts, runtimeSources)];
   const candidateEvidenceRecords = candidates.flatMap((candidate) => [
     evidenceRecord(candidate.evidence),
     ...(candidate.configEvidence ? [evidenceRecord(candidate.configEvidence)] : []),
@@ -236,7 +237,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   const evidence = mergeEvidenceIndex(
     buildEvidenceIndex(input.revision, facts),
     [...moduleGraph.evidenceRecords, ...goModuleGraph.evidenceRecords, ...routeGraph.evidenceRecords, ...candidateEvidenceRecords],
-    [...moduleGraphEvidenceReferences(moduleGraph), ...goModuleGraphEvidenceReferences(goModuleGraph), ...routeGraphEvidenceReferences(routeGraph), ...candidateEvidenceReferences],
+    [...moduleGraphEvidenceReferences(moduleGraph), ...goModuleGraphEvidenceReferences(goModuleGraph), ...routeGraphEvidenceReferences(routeGraph), ...candidateEvidenceReferences, ...operationEvidenceReferences(operationFacts.filter((operation) => operation.kind === "sql"))],
   );
   const declarations = {
     ...rawDeclarations,

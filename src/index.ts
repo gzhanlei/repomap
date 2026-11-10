@@ -23,3 +23,4 @@ export { mergeEvidenceIndex, astImportEvidenceRecord, astGoImportEvidenceRecord,
 export { buildRouteGraph, routeGraphEvidenceReferences, routeOperationFacts, candidateOperationFacts, routeGraphSchema, type RouteGraph, type RouteExtraction } from "./core/architecture/project/route-graph.js";
 export { analyzeGoRoutes } from "./core/architecture/project/go-routes.js";
 export { analyzeTypeScriptRoutes } from "./core/architecture/project/ts-routes.js";
+export { sqlOperationFacts, operationEvidenceReferences } from "./core/architecture/sql-operations.js";
