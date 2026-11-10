@@ -54,6 +54,20 @@ describe("M0 delivery contract", () => {
     expect(receipt.delivery.view).toBe("runtime-overview");
   });
 
+  it("renders only the requested runtime overview by default", async () => {
+    const input = await fixtureInput();
+    const deliver = vi.fn(async () => ({ ok: true, command: "deliver" }));
+    const receipt = await analyzeSources({ ...input, deliver });
+    if (receipt.status !== "accepted") throw new Error("expected accepted runtime delivery");
+    const overviewPages = receipt.viewManifest.views.find((view: { kind: string }) => view.kind === "overview")?.pages.length ?? 0;
+    expect(overviewPages).toBeGreaterThan(0);
+    expect(deliver).toHaveBeenCalledTimes(overviewPages);
+    expect(receipt.viewArtifacts.every((artifact: { kind: string }) => artifact.kind === "overview")).toBe(true);
+    for (const view of receipt.viewManifest.views) {
+      for (const page of view.pages) expect(existsSync(join(input.outDir, page.json))).toBe(true);
+    }
+  });
+
   it("keeps failed coverage at the same view and never sets fullArchitecture", async () => {
     const outDir = await mkdtemp(join(tmpdir(), "repomap-scope-failed-"));
     const receipt = await analyzeSources({

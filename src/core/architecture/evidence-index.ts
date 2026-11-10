@@ -50,7 +50,7 @@ export function evidenceRole(path: string, extractor: string): EvidenceRole {
   if (/(?:^|\/)(?:migrations?|migrate|alembic|db\/migrate)(?:\/|$)/i.test(path)) return "migration";
   if (/\.prisma$/i.test(path) || /config|default|provider/i.test(path) || /(?:^|[/._-])env(?:[/._-]|$)/i.test(path) || /\.(?:ya?ml|toml|ini|properties)$/i.test(path) || /config|default|provider/i.test(extractor)) return "configuration";
   if (/\.(?:sql|graphql|gql)$/i.test(path) || /schema/i.test(extractor)) return "schema";
-  if (/call|caller|usage|client|request|fetch|external|outbound|http|poll|worker|queue|enqueue|consume/i.test(extractor)) return "runtime-call";
+  if (/call|caller|usage|client|request|fetch|external|outbound|http|poll|worker|queue|enqueue|consume|async|schedule|publish|subscribe|produce|receive/i.test(extractor)) return "runtime-call";
   if (/inferred|fallback/i.test(extractor)) return "inferred-default";
   return "declaration";
 }
@@ -107,6 +107,33 @@ export function astGoImportEvidenceRecord(input: { path: string; line: number; f
     source: "parser",
   };
   return { id: stableEvidenceId(base), ...base };
+}
+
+const evidenceRecordLookup = new WeakMap<EvidenceRecord[], Map<string, EvidenceRecord[]>>();
+
+export function evidenceRecordsFor(evidence: ArchitectureEvidence[], records: EvidenceRecord[]) {
+  let lookup = evidenceRecordLookup.get(records);
+  if (!lookup) {
+    lookup = new Map<string, EvidenceRecord[]>();
+    for (const record of records) {
+      const key = `${record.path}|${record.startLine}|${record.extractor}`;
+      lookup.set(key, [...(lookup.get(key) ?? []), record]);
+    }
+    evidenceRecordLookup.set(records, lookup);
+  }
+  return evidence.map((item) => {
+    const candidates = lookup.get(`${item.path}|${item.line}|${item.detector}`) ?? [];
+    if (candidates.length === 1) return candidates[0];
+    const generated = evidenceRecord(item);
+    const exact = candidates.find((record) => record.id === generated.id);
+    if (exact) return exact;
+    if (candidates.length > 1) throw new Error(`Ambiguous evidence identity: ${item.path}:${item.line}:${item.detector}`);
+    return generated;
+  });
+}
+
+export function evidenceIdsForRecords(evidence: ArchitectureEvidence[], records: EvidenceRecord[]) {
+  return [...new Set(evidenceRecordsFor(evidence, records).map((record) => record.id))].sort();
 }
 
 export function evidenceIdsFor(evidence: ArchitectureEvidence[]) {

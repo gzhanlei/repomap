@@ -63,6 +63,16 @@ describe("M5 independent view coverage and full gate", () => {
     expect(evaluation.views["full-declared-scope"].blockingReasons.join(" ")).toContain("projection");
   });
 
+  it("rejects projection owner and evidence substitutions", () => {
+    const analysis = analyzeArchitectureFacts(scope, completeSources());
+    const first = analysis.projection.projection[0];
+    const projection = { ...analysis.projection, projection: analysis.projection.projection.map((entry, index) => index === 0 ? { ...entry, ownerId: "missing:owner" } : entry) };
+    const evaluation = evaluateArchitectureViews(analysis, { projection });
+    expect(evaluation.fullArchitecture).toBe(false);
+    expect(evaluation.views["full-declared-scope"].blockingReasons.join(" ")).toContain("missing:owner");
+    expect(first).toBeDefined();
+  });
+
   it("distinguishes dynamic disclosure from strict static-host requirements", () => {
     const sources = [
       { path: "go.mod", content: "module example.com/demo" },

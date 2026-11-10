@@ -1,7 +1,7 @@
 {
   "version": 1,
   "status": "bootstrap-pending-human-audit",
-  "purpose": "M0/M1/M2/M3/M4/M5 versioned gold-standard manifest skeleton. Fixed SHAs and archive hashes are pinned for reproducibility, but no critical fact or human review has been recorded; this is NOT ground truth yet.",
+  "purpose": "M0/M1/M2/M3/M4/M5/M6 versioned gold-standard manifest skeleton. Fixed SHAs and archive hashes are pinned for reproducibility, but no critical fact or human review has been recorded; this is NOT ground truth yet.",
   "capabilitySlices": [
     {
       "id": "project-preparation",
@@ -38,6 +38,12 @@
       "status": "implemented",
       "goldStatus": "fixture-and-fixed-sha-verified-not-human-audited",
       "note": "M5 adds independent view coverage, projection round-trip validation, adapter independence mutations and critical Gold checks. Authelia, WriteFreely and Commerce all pass full-declared-scope with fullArchitecture: true and independencePassed: true. This is per-input semantic completeness only; no human-reviewed critical Gold facts or generator release qualification is claimed."
+    },
+    {
+      "id": "multi-view-projection",
+      "status": "implemented",
+      "goldStatus": "fixture-and-fixed-sha-verified-not-human-audited",
+      "note": "M6 adds overview/module/flow pages, bounded detail pagination, aliasOf links, reversible aggregateOf import groups, unaggregated operation evidence and independent manifest/IR viewOwners round-trip validation. Fixed-SHA delivery produced 97 Authelia, 31 WriteFreely and 5 Commerce page artifacts; all Archify validation and automated visual checks passed, with representative light/dark screenshots inspected. These are not human-reviewed Gold facts."
     }
   ],
   "rules": {

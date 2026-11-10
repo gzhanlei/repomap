@@ -1,6 +1,6 @@
-# RepoMap 视图、声明范围与交付契约（M0 / M1 / M2 / M3 / M4）
+# RepoMap 视图、声明范围与交付契约（M0–M6）
 
-本文对应 `docs/full-architecture-plan.md` 的 M0、M1、M2、M3 和 M4 切片，说明当前实现到哪一步、以及**哪些结论还不能得出**。
+本文对应 `docs/full-architecture-plan.md` 的 M0–M6 切片，说明当前实现到哪一步、以及**哪些结论还不能得出**。
 
 ## 1. 视图等级
 
@@ -12,7 +12,7 @@
 | `protocol-flows` | 已实现 per-view 门禁 | route/async/operation 和外部 operation 证据门禁通过时可发布 |
 | `full-declared-scope` | 已实现 per-input 聚合门禁 | 四个基础视图、independence mutation 和 projection round-trip 全部通过时才允许 `fullArchitecture: true` |
 
-`architecture.html` 仍是默认 Runtime Overview。`fullArchitecture` 只有在请求 `full-declared-scope` 且所有基础视图、独立 mutation 和 projection round-trip 通过时才为 `true`；默认 runtime 请求保持 `false`。视觉检查通过不会改变视图等级，也不等于 generator release qualification 或人工 Gold 审核。
+`architecture.html` 仍是默认 Runtime Overview 的 legacy overview-first artifact；M6 同时写出 `architecture.views.json`、overview/module/flow 分页 JSON/HTML。`fullArchitecture` 只有在请求 `full-declared-scope` 且所有基础视图、独立 mutation、projection round-trip 和 view manifest round-trip 通过时才为 `true`；默认 runtime 请求保持 `false`。视觉检查通过不会改变视图等级，也不等于 generator release qualification 或人工 Gold 审核。
 
 **覆盖通过 ≠ 架构完整。** 当前 `coverage.publishable` 只说明 Runtime Overview 的既有信号被覆盖；它不证明模块、路由、异步、身份或协议细节完整。
 
@@ -27,7 +27,7 @@ repomap analyze <source> --view runtime --view full \
 - `--view` 可重复；`full` 自动要求四个基础视图。任何被请求但失败的视图都会让命令退出非零，较低视图自己的 `accepted` 状态不会伪造成总成功。
 - `--include` / `--exclude` 同时作用于 raw census disposition、独立声明分母和语义事实，并写入声明范围；用户排除记录为 `out-of-scope`，绝不会伪装成 detector 能力。
 - `--require-external-hosts` 启用严格门禁：只有 `target.kind=host` 且 `resolution=static` 的候选才能通过。configured/dynamic host、协议目标和 unknown 均会失败；默认模式仍允许带明确动态披露的候选发布。
-- `--no-render` 只写 JSON / coverage / receipt，不准备 Archify、不调用 Chromium、不写 HTML。
+- `--no-render` 写出全部 overview/module/flow 页面 JSON、coverage 和 receipt，不准备 Archify HTML、不调用 Chromium；manifest 中的 HTML 路径仅在 render 交付时生成。非渲染页面使用相同 facts/IDs 的确定性 grid 布局，避免无意义的路径寻路成本。
 - Go 构建上下文固定写入 `declaredScope.buildContext`（默认 `linux/amd64`、空 build tags），不继承宿主机隐式值。
 
 每个视图在 `delivery.views` 中独立记录 `accepted | facts-ready | failed | not-requested`、`blockingReasons` 和 `omissionCount`。
@@ -49,7 +49,7 @@ repomap analyze <source> --view runtime --view full \
 
 - `architecture.declarations.json`：独立 DeclarationInventory，用原始条目结构、manifest 解析和独立的 protocol-capability 词表发现声明，不调用生产 detector。`mutationCheck` 证明禁用全部 semantic extractor 后分母不变且 coverage 报告 missing。
 - `architecture.evidence.json`：以 `path + startLine + endLine + extractor + role` 去重的稳定证据索引，区分 `declaration / runtime-call / configuration / schema / migration / inferred-default` 与 `parser / regex` 来源。
-- `architecture.ir.json`：版本化 IR v2 envelope，节点/边/operation 保存 `evidenceIds` 和 `declarationIds`。**facts v1 保持 strict schema，不加入 evidenceIds**；无损对账集合是 IR + Evidence Index + Projection Manifest。
+- `architecture.ir.json`：版本化 IR v2 envelope，节点/边/operation 保存 `evidenceIds` 和 `declarationIds`，`viewOwners` 独立保存每个 module/flow owner 的预期 node/edge/operation 分母。**facts v1 保持 strict schema，不加入 evidenceIds**；无损对账集合是 IR + Evidence Index + Projection/View Manifest。
 - `architecture.projection.json`：记录每个 owner 的代表性证据、剩余证据 ID、选择原因和总数，不做隐藏截断。
 - per-view omission impact 骨架：`unsupported-framework`、`unsupported-protocol`、`unresolved-submodule`、`budget-exceeded` 等带 `affectedViews` 与 `blocking`。
 
@@ -66,7 +66,7 @@ repomap analyze <source> --view runtime --view full \
 
 ## 6. ModuleGraph（M2 第二个切片）
 
-`architecture.module-graph.json` 是**图数据**，不是 `module-architecture` 视图发布结果：
+`architecture.module-graph.json` 是 M6 module 详图的输入图数据，发布页面与反向对账见 `architecture.views.json`：
 
 - 粒度为 `source-module`（一个源文件 = 一个模块节点），不展开函数或语句；节点带 `packageId` / `group` / `ownerBasis`（manifest / 目录约定 / 源码声明）、`kind`（source-module / barrel / entrypoint / declaration-file）与导出符号数、入/出度。
 - 边带 `resolution`：`relative`（含扩展名省略、目录根、barrel）、`alias`（tsconfig `paths`）、`workspace-package`（monorepo 包名 + `main`）、`project-reference`（tsconfig `references`）、`external`、`unresolved`。解析规则原文记录在 `resolutionRules`，宿主 `node_modules` 从不参与。
@@ -76,7 +76,7 @@ repomap analyze <source> --view runtime --view full \
 
 ## 7. Go Module Graph（M2 第三个切片）
 
-`architecture.go-module-graph.json` 是**图数据**，不是 `module-architecture` 视图发布结果；粒度为 **package**（一个 `package` 声明的目录 = 一个 package 节点），不展开函数或语句：
+`architecture.go-module-graph.json` 是 M6 module 详图的输入图数据；粒度为 **package**（一个 `package` 声明的目录 = 一个 package 节点），不展开函数或语句：
 
 - **构建上下文固定写入** `declaredScope.buildContext`（`goos` / `goarch` / `buildTags` 默认 `linux` / `amd64` / `[]`），不读取宿主机 `GOOS`/`GOARCH`；每个 Go 文件按 `//go:build` / `// +build` 约束与 (`goos`,`goarch`) 二元组判断进入解析集，`buildTagExcludedFiles` 显式记录，绝不静默丢弃。
 - **go.mod / go.work / replace 解析**：`module` 路径作为 module ID，workspace `go.work use` 与 `go.mod replace` 从 snapshot 读取并把被替换路径重定向到替换目标；多 module 仓库按 module 边界分节点。
@@ -88,7 +88,7 @@ repomap analyze <source> --view runtime --view full \
 
 ## 8. RouteGraph 与统一 External（M3）
 
-`architecture.route-graph.json` 是路由与有限调用图数据，不是 `module-architecture` 或 `protocol-flows` 的发布结果：
+`architecture.route-graph.json` 是路由与有限调用图数据，也是 M6 flow 详图的输入；发布页面与 operation/evidence 对账见 `architecture.views.json`：
 
 - **独立 declarations**：行扫描只声明 route method/path/位置，不能生成 handler edge；禁用 parser 后 declaration 仍保留并阻断 module/flows/full。
 - **Next.js**：支持文件路由、HTTP method 函数/变量、命名 re-export 与 alias，handler 关联到真实模块和直接 import call。
@@ -106,12 +106,22 @@ repomap analyze <source> --view runtime --view full \
 - `architecture.async-graph.json` 记录 Queue/Worker、channel send/receive、Pub/Sub 和 ticker schedule 的 operation、方向、独立 declarations 和证据；`time.After` 类型签名、CI YAML schedule 和生成物 bundle 不进入运行时 async operation。
 - Authelia async 为 73/73 resolved，WriteFreely 为 5/5；这些仍不是 `protocol-flows` 或 full 的发布结果。
 
-## 10. 已知边界（不要越界宣称）
+## 10. M6 多视图与无损 Projection Manifest
 
-- 有 RouteGraph 和统一 External operation，但 `module-architecture` / `protocol-flows` **视图门禁**、异步数据流、完整 Target/Config 解析和黄金人工评估仍未实现；
-- submodule 目前只记录 `unresolved-submodule`，不会作为独立 fixed-SHA 输入获取；
-- evidence / census / IR / receipt 已通过带回压和原子替换的流式 JSON writer 写出；内存中的语义分析对象尚未全流式化，固定 CI 性能门槛仍需复核；
-- `docs/gold-manifest.v1.json` 已固定三个仓库的 SHA/archive hash，但仍未经过人工审核，不能当作真值；
+- `architecture.views.json` 将同一分析投影为 `overview`、`modules`、`flows` 三类视图；每个 runtime owner 有独立详图分页，页面记录 `nodeIds`、`edgeIds`、`operationIds`、JSON/HTML 路径和 representative/remaining evidence partition。原始 detail facts 同步合入 IR v2 的相应 module/protocol scope，IR `viewOwners` 与 manifest `detailOwners` 分别保存并核对预期分母，node/edge 的 `projectionId` 与实际 Archify component/connection ID 对账。
+- 详图按节点与出边打包，限制单页实际节点数；跨页关系用 `synthetic` 节点和 `aliasOf` 指向原始节点，不靠复制原始事实制造“完整”。无边 target 优先提升回已有 alias 页，避免无意义的空白详图。
+- module import 关系按 `from/to/kind` 可逆聚合为 `import ×N`；`aggregateOf` 保留每条原始 edge ID（包括单条映射），完整 evidence 仍进入 manifest。operation 不做有损聚合，GraphQL/queue/SQL/schedule 等通过 `relatedProjectionIds` 指向实际语义边；config-binding 可明确只保留 manifest evidence，不伪造 operation 自身的 Archify ID。
+- `validateViewManifest` 不接受嵌入的 `roundtrip.ok` 作为信任依据：以生成的 pages 和 IR `viewOwners` 为期望集合，双向检查 view/page/entity、确定性 artifact path、原始 ID、projection ID、aggregate/alias 映射与 evidence 来源；删页、删除 detailOwners、替换有效但错误的 evidence、重复原始 ID 或 dangling evidence 都会阻断对应视图和 full。没有独立 ownership 的 IR-only 校验必须失败，不能退回跨视图并集。
+- runtime operation 归属优先使用精确 callSite/owner，再使用 ModuleGraph 从入口出发的可达性；同包但不可达的独立 job 不会被误归给 frontend，无法归属的必需 operation 阻断 `protocol-flows`。store-owned migration 仍按资源所有权保留在 operation/IR，不伪造 runtime 执行边。
+
+- `architecture.json/html` 保留为 overview-first 的有损兼容投影；完整对账仍以 IR v2、Evidence Index、Projection Manifest 和 View Manifest 为准。Archify 只接收语义 facts，标签压缩不改变事实身份。
+
+## 11. 已知边界（不要越界宣称）
+
+- M0–M6 的声明范围门禁和多视图交付已实现，但 human-reviewed critical Gold、generator release qualification 和 M7 固定 CI 性能门槛仍未完成；`fullArchitecture: true` 只表示单次输入的声明范围语义门禁通过。
+- submodule 目前只记录 `unresolved-submodule`，不会作为独立 fixed-SHA 输入获取。
+- evidence / census / IR / receipt 已通过带回压和原子替换的流式 JSON writer 写出；内存中的语义分析对象尚未全流式化，固定 CI 性能门槛仍需复核。
+- `docs/gold-manifest.v1.json` 已固定三个仓库的 SHA/archive hash，但仍未经过人工审核，不能当作真值。
 - 已建立 Authelia 本地三次数值基线（见 `docs/performance-baseline.v1.json`），固定 CI 与视觉发布资格仍需独立验证。
 
-上述缺口全部写入 `declaredScope.capabilityGaps` 与 `delivery.views[*].blockingReasons`，因此本轮任何输出都只能称为 Runtime Overview，不能称为完整架构。
+上述不妨碍对已声明范围作 per-input 的完整门禁判断，但不得把单次 `fullArchitecture: true` 称为所有仓库的 release qualification、人工 Gold 通过或普遍精度/召回证明。

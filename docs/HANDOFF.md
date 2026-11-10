@@ -2,7 +2,7 @@
 
 更新日期：2026-11-09
 
-> 当前补充：项目已发布到 `https://github.com/gzhanlei/repomap`。已完成大仓库懒加载、Go/SQLite/PostgreSQL、Vite/React、Go 出站 HTTP、M0/M1 契约、census、独立声明、证据索引、M2 项目/模块图、M3 RouteGraph/统一 External、M4 Target/Config/SQL/异步 operation，以及 M5 逐视图覆盖、独立 mutation 和 full-declared-scope 聚合门禁；当前全量检查为 31 个测试文件、161 项测试。通用完整架构的后续实施计划见 [full-architecture-plan.md](full-architecture-plan.md)。以下 2026-11-05 的接手记录保留作历史背景，后续状态以 README、通用协议文档、完整架构计划和 Git 历史为准。
+> 当前补充：项目已发布到 `https://github.com/gzhanlei/repomap`。已完成大仓库懒加载、Go/SQLite/PostgreSQL、Vite/React、Go 出站 HTTP、M0/M1 契约、census、独立声明、证据索引、M2 项目/模块图、M3 RouteGraph/统一 External、M4 Target/Config/SQL/异步 operation、M5 逐视图覆盖/独立 mutation/full-declared-scope 聚合门禁，以及 M6 多视图无损 Projection Manifest。当前全量检查为 33 个测试文件、182 项测试。通用完整架构的后续实施计划见 [full-architecture-plan.md](full-architecture-plan.md)。以下 2026-11-05 的接手记录保留作历史背景，后续状态以 README、通用协议文档、完整架构计划和 Git 历史为准。
 
 ## 已确认的产品边界
 
@@ -33,6 +33,14 @@
 - `src/core/archify-*`：固定 Archify release 校验、准备、delivery 和 visual-check。
 - 根目录包含 `README.md`、`SKILL.md`、MIT `LICENSE` 和测试。
 - 当前没有账号、数据库、多租户、Web 服务或 AI 调用。
+
+## M6 当前交付快照
+
+- `src/core/architecture/view-manifest.ts`：overview/module/flow facts、分页、`aliasOf`、可逆 `aggregateOf`、operation/evidence 对账；原始 detail facts 合入 IR v2，IR `viewOwners` 与 manifest `detailOwners` 独立对账，node/edge 记录并校验 Archify `projectionId`，operation 通过 `relatedProjectionIds` 指向实际语义边。
+- `src/core/architecture/view-delivery.ts`：`architecture.views.json`、每页 JSON/HTML、legacy overview-first `architecture.json/html` 和每页 Archify/visual-check receipt；no-render 页面使用相同 facts 的确定性 grid 布局。
+- 详图按实际节点与出边打包；Go import 标签只在显示层压缩，完整 ID/path/evidence 保留。密集 fan-out 有确定性标签布局 fallback，单节点页使用 `Scope` synthetic alias 满足渲染器的最小组件数。
+- 固定 SHA 最终输出目录（不在 Git 中）：`/Users/leihan/Documents/GitHub/repomap-output/m6-final-v5-authelia`（97 页）、`m6-final-v5-writefreely`（31 页）、`m6-final-v5-commerce`（5 页）。三者均 `accepted`、`fullArchitecture: true`、round-trip 零缺失/重复/dangling，自动 visual-check 全通过；已抽查代表性 light/dark 截图。
+- M7 尚未完成：human-reviewed critical Gold、固定 CI 性能门槛、generator release qualification；M8 语言扩展与可选 Harness 未开始。
 
 ## 历史验证记录（2026-11-05）
 

@@ -88,6 +88,14 @@ export const operationSchema = z.discriminatedUnion("kind", [
 ]);
 export type OperationFact = z.infer<typeof operationSchema>;
 
+export const irViewOwnerSchema = z.object({
+  scope: z.enum(["module-architecture", "protocol-flows"]),
+  owner: z.string().min(1),
+  nodeIds: z.array(z.string().min(1)),
+  edgeIds: z.array(z.string().min(1)),
+  operationIds: z.array(z.string().min(1)),
+}).strict();
+
 export const architectureIrSchema = z.object({
   version: z.literal(2),
   revision: z.string().regex(/^[0-9a-f]{40}$/),
@@ -97,6 +105,7 @@ export const architectureIrSchema = z.object({
   nodes: z.array(irNodeSchema),
   edges: z.array(irEdgeSchema),
   operations: z.array(operationSchema),
+  viewOwners: z.array(irViewOwnerSchema),
   declarations: z.array(declarationRecordSchema),
   omissions: z.array(irOmissionSchema),
   evidenceIndex: z.object({ path: z.string().min(1), total: z.number().int().nonnegative() }).strict(),
@@ -136,43 +145,77 @@ export interface BuildIrInput {
   census: SourceCensus;
   omissions?: IrOmission[];
   operations?: OperationFact[];
-}
-
-function ownerFor(paths: string[], census: SourceCensus) {
-  for (const path of paths) {
-    const record = census.files.find((file) => file.path === path);
-    if (record) return record.packageId;
-  }
-  return "repository";
+  additionalFacts?: Array<{ facts: ArchitectureFactSet; scope: string; owner?: string; operations?: OperationFact[]; evidenceIds?: Map<string, string[]> }>;
 }
 
 export function buildArchitectureIr(input: BuildIrInput): ArchitectureIr {
-  const declarationIdsForPath = (path: string) => input.declarations.declarations
-    .filter((declaration) => declaration.sourcePath === path).map((declaration) => declaration.declarationId).sort();
-  const nodes = input.facts.nodes.map((node) => {
+  const declarationPathCache = new Map<string, string[]>();
+  const declarationIdsForPath = (path: string) => {
+    const cached = declarationPathCache.get(path);
+    if (cached) return cached;
+    const ids = input.declarations.declarations.filter((declaration) => declaration.sourcePath === path).map((declaration) => declaration.declarationId).sort();
+    declarationPathCache.set(path, ids);
+    return ids;
+  };
+  const censusByPath = new Map(input.census.files.map((file) => [file.path, file]));
+  const ownerForPaths = (paths: string[]) => {
+    for (const path of paths) {
+      const record = censusByPath.get(path);
+      if (record) return record.packageId;
+    }
+    return "repository";
+  };
+  const factSets = [{ facts: input.facts, scope: "runtime-overview", evidenceIds: undefined as Map<string, string[]> | undefined }, ...(input.additionalFacts ?? [])];
+  const sourceNodes = new Map<string, { node: ArchitectureFactSet["nodes"][number]; scope: string; evidenceIds?: string[] }>();
+  const sourceEdges = new Map<string, { edge: ArchitectureFactSet["edges"][number]; evidenceIds?: string[] }>();
+  for (const { facts, scope, evidenceIds } of factSets) {
+    for (const node of facts.nodes) {
+      const existing = sourceNodes.get(node.id);
+      if (!existing) {
+        sourceNodes.set(node.id, { node, scope, evidenceIds: evidenceIds?.get(node.id) });
+        continue;
+      }
+      if (existing.node.kind !== node.kind) throw new Error(`Conflicting IR node kind for ${node.id}: ${existing.node.kind} vs ${node.kind}`);
+      const evidence = [...new Map([...existing.node.evidence, ...node.evidence].map((item) => [`${item.path}:${item.line}:${item.detector}`, item])).values()];
+      const sourcePaths = [...new Set([...(existing.node.sourcePaths ?? []), ...(node.sourcePaths ?? [])])].sort();
+      const mergedIds = [...new Set([...(existing.evidenceIds ?? evidenceIdsFor(existing.node.evidence)), ...(evidenceIds?.get(node.id) ?? evidenceIdsFor(node.evidence))])].sort();
+      sourceNodes.set(node.id, { node: { ...existing.node, evidence, sourcePaths }, scope: existing.scope, evidenceIds: mergedIds });
+    }
+    for (const edge of facts.edges) {
+      const existing = sourceEdges.get(edge.id);
+      if (!existing) {
+        sourceEdges.set(edge.id, { edge, evidenceIds: evidenceIds?.get(edge.id) });
+        continue;
+      }
+      if (existing.edge.from !== edge.from || existing.edge.to !== edge.to || existing.edge.kind !== edge.kind) throw new Error(`Conflicting IR edge identity for ${edge.id}`);
+      const mergedIds = [...new Set([...(existing.evidenceIds ?? evidenceIdsFor(existing.edge.evidence)), ...(evidenceIds?.get(edge.id) ?? evidenceIdsFor(edge.evidence))])].sort();
+      sourceEdges.set(edge.id, { edge: { ...existing.edge, evidence: [...new Map([...existing.edge.evidence, ...edge.evidence].map((item) => [`${item.path}:${item.line}:${item.detector}`, item])).values()] }, evidenceIds: mergedIds });
+    }
+  }
+  const nodes = [...sourceNodes.values()].map(({ node, scope, evidenceIds }) => {
     const paths = [...(node.sourcePaths ?? []), ...node.evidence.map((item) => item.path)];
     return {
       id: node.id,
       kind: node.kind,
       label: node.label,
-      owner: ownerFor(paths, input.census),
-      scope: "runtime-overview",
+      owner: ownerForPaths(paths),
+      scope,
       resolution: "unknown" as const,
       synthetic: node.synthetic === true,
       sourcePaths: [...new Set(node.sourcePaths ?? [])].sort(),
-      evidenceIds: evidenceIdsFor(node.evidence),
+      evidenceIds: evidenceIds ?? evidenceIdsFor(node.evidence),
       declarationIds: [...new Set(paths.flatMap(declarationIdsForPath))].sort(),
     };
   });
-  const edges = input.facts.edges.map((edge) => ({
+  const edges = [...sourceEdges.values()].map(({ edge, evidenceIds }) => ({
     id: edge.id,
     from: edge.from,
     to: edge.to,
     kind: edge.kind,
     label: edge.label,
-    direction: "outbound" as const,
+    direction: edge.kind === "callback" ? "inbound" as const : "outbound" as const,
     resolution: "unknown" as const,
-    evidenceIds: evidenceIdsFor(edge.evidence),
+    evidenceIds: evidenceIds ?? evidenceIdsFor(edge.evidence),
     declarationIds: [...new Set(edge.evidence.flatMap((item) => declarationIdsForPath(item.path)))].sort(),
   }));
   return architectureIrSchema.parse({
@@ -186,6 +229,13 @@ export function buildArchitectureIr(input: BuildIrInput): ArchitectureIr {
     // Operation facts come from route and unified candidate extractors; the
     // discriminated union remains stable for later queue/SQL/config facts.
     operations: input.operations ?? [],
+    viewOwners: (input.additionalFacts ?? []).filter((projection) => projection.owner !== undefined).map((projection) => ({
+      scope: projection.scope === "module-architecture" ? "module-architecture" as const : "protocol-flows" as const,
+      owner: projection.owner!,
+      nodeIds: [...new Set(projection.facts.nodes.map((node) => node.id))].sort(),
+      edgeIds: [...new Set(projection.facts.edges.map((edge) => edge.id))].sort(),
+      operationIds: [...new Set((projection.operations ?? []).map((operation) => operation.id))].sort(),
+    })),
     declarations: input.declarations.declarations,
     omissions: input.omissions ?? [],
     evidenceIndex: { path: "architecture.evidence.json", total: input.evidence.statistics.total },
@@ -218,6 +268,7 @@ export function buildProjectionManifest(input: { revision: string; view: string;
       { name: "architecture.route-graph.json", role: "route declarations, resolved handlers, bounded direct calls and parser evidence" },
       { name: "architecture.async-graph.json", role: "queue, channel, pub/sub and scheduler operations with independent declarations and evidence" },
       { name: "architecture.projection.json", role: "projection reconciliation manifest" },
+      { name: "architecture.views.json", role: "multi-view projection and round-trip manifest" },
       { name: "architecture.analysis.json", role: "signal inventory and coverage" },
       { name: "repomap.receipt.json", role: "delivery and cost receipt" },
     ],

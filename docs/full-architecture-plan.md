@@ -864,6 +864,8 @@ Easy Make PPT 当前依赖本地 clone，只能作为非 gating 开发样本，�
 
 **退出条件**：三个主样本均有概览与至少一个有实际语义的模块详图，投影可完整对账。
 
+**实现验收记录**：M6 已落地 `architecture.views.json`、overview/module/flow 分页 JSON/HTML、`aliasOf` 跨页投影、可逆 `aggregateOf` import 聚合、未聚合 operation 证据分区和独立 manifest round-trip 门禁。原始 detail facts 合入 IR v2，IR `viewOwners` 与 manifest `detailOwners` 独立对账；node/edge 记录可校验的 Archify `projectionId`，SQL/queue/schedule/GraphQL operation 通过 `relatedProjectionIds` 关联实际语义边。no-render 以确定性 grid 写出全部页面 JSON。详图按实际节点/出边打包，密集图使用确定性的标签布局 fallback；显示标签压缩不改变 IR 身份。固定 SHA 的 Authelia、WriteFreely、Commerce 分别交付 97、31、5 个页面 artifact，全部 Archify validation 与自动 visual-check 通过，manifest 的 missing/duplicate/dangling 均为零；代表性 light/dark 截图已人工抽查。该记录仍不等于 human Gold 或 M7 generator release qualification。
+
 ### M7：黄金评估、性能与发布候选
 
 **改动**

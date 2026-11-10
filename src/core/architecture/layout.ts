@@ -229,6 +229,14 @@ function labelPosition(path: GridPoint[], components: Component[], label: string
     const placement = segmentLabel(segment, width, obstacles, occupied);
     if (placement) return placement;
   }
+  const right = Math.max(...components.map((component) => component.pos[0] + component.size[0]), 0);
+  const x = right + width / 2 + 48;
+  const midpoint = path[Math.floor(path.length / 2)] ?? { x: right, y: 80 };
+  for (let row = 0; row < occupied.length + components.length + 4; row += 1) {
+    const candidate = { x, y: Math.max(32, midpoint.y) + row * 24 };
+    const placement = clearLabel(candidate, width, [], occupied);
+    if (placement) return placement;
+  }
   throw new Error(`No clear architecture label position: ${label}`);
 }
 

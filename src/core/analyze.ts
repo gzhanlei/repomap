@@ -1,17 +1,20 @@
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { analyzeRepositoryArchitecture } from "./architecture/repository.js";
 import type { LanguageAdapter } from "./architecture/project/adapter.js";
 import { externalCandidateSetSchema } from "./architecture/candidates.js";
-import { projectArchitectureDocument } from "./architecture/project.js";
-import { architectureDocumentSchema, type ArchitectureDocument } from "./architecture/document.js";
+import { buildViewManifest, validateViewManifest } from "./architecture/view-manifest.js";
+import { deliverViewArtifacts } from "./architecture/view-delivery.js";
 import type { ArchitectureRepositorySourceReceipt, ArchitectureSource } from "./architecture/source.js";
 import type { RepositoryFileEntry } from "./architecture/census.js";
+import { linkCensusEvidence } from "./architecture/census.js";
+import { mergeEvidenceIndex } from "./architecture/evidence-index.js";
+import { buildArchitectureIr, buildProjectionManifest } from "./architecture/ir.js";
 import { buildDeliveryStatement, defaultArchitectureView, repomapCapabilities, type DeclaredScopeInput } from "./architecture/scope.js";
 import { evaluateArchitectureViews } from "./architecture/coverage-matrix.js";
 import { runIndependenceMutations } from "./architecture/independence.js";
-import { deliverArchify, visualCheckArchify, type ArchifyReceipt } from "./archify-cli.js";
+import { type ArchifyReceipt, type deliverArchify, type visualCheckArchify } from "./archify-cli.js";
 import { parseGitHubRepository } from "./github/repository.js";
 import { loadGitHubRepositorySources, type GitHubSourceOptions } from "./github/archive.js";
 import { loadLocalRepositorySources, verifyLocalGitRevision } from "./source/local.js";
@@ -61,26 +64,8 @@ function slugify(value: string) {
   return slug || "repository";
 }
 
-function json(value: unknown) {
-  return `${JSON.stringify(value, null, 2)}\n`;
-}
-
 async function writeJson(path: string, value: unknown) {
   await writeJsonAtomic(path, value);
-}
-
-function withoutRepositoryEvidence(document: ArchitectureDocument) {
-  const meta = { ...document.meta };
-  delete meta.repository;
-  return architectureDocumentSchema.parse({
-    ...document,
-    meta,
-    components: document.components.map((component) => {
-      const next = { ...component };
-      delete next.sources;
-      return next;
-    }),
-  });
 }
 
 function fixedRevision(value: string) {
@@ -92,7 +77,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   const started = input.now?.() ?? Date.now();
   const outDir = resolve(input.outDir);
   await mkdir(outDir, { recursive: true });
-  const analysis = analyzeRepositoryArchitecture({
+  let analysis = analyzeRepositoryArchitecture({
     revision: input.identity.revision,
     sources: input.sources,
     sourceReceipt: input.sourceReceipt,
@@ -119,24 +104,47 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   const asyncGraphPath = join(outDir, "architecture.async-graph.json");
   const irPath = join(outDir, "architecture.ir.json");
   const projectionPath = join(outDir, "architecture.projection.json");
+  const viewsPath = join(outDir, "architecture.views.json");
   const receiptPath = join(outDir, "repomap.receipt.json");
   const specPath = join(outDir, "architecture.json");
   const artifactPath = join(outDir, "architecture.html");
 
-  // M1 dual-write: facts v1 stays byte-for-byte compatible; the lossless set is
-  // IR v2 + Evidence Index + Projection Manifest.
+  // M1/M6 dual-write: facts v1 stays byte-for-byte compatible; the lossless
+  // set is IR v2 + Evidence Index + Projection/View Manifests.
   await writeJson(factsPath, analysis.facts);
   await writeJson(candidatesPath, externalCandidateSetSchema.parse({ version: 1, revision: input.identity.revision, candidates: analysis.candidates }));
-  await writeJson(censusPath, analysis.census);
-  await writeJson(evidencePath, analysis.evidence);
   await writeJson(declarationsPath, analysis.declarations);
   await writeJson(projectPath, analysis.project);
   await writeJson(moduleGraphPath, analysis.moduleGraph);
   await writeJson(goModuleGraphPath, analysis.goModuleGraph);
   await writeJson(routeGraphPath, analysis.routeGraph);
   await writeJson(asyncGraphPath, analysis.asyncGraph);
+  let viewModel = buildViewManifest(analysis);
+  if (viewModel.detailFacts.length > 0 || viewModel.additionalEvidenceRecords.length > 0) {
+    const evidence = mergeEvidenceIndex(analysis.evidence, viewModel.additionalEvidenceRecords, []);
+    const ir = buildArchitectureIr({
+      revision: analysis.ir.revision,
+      view: analysis.ir.view,
+      scope: analysis.scope,
+      facts: analysis.facts,
+      evidence,
+      declarations: analysis.declarations,
+      census: analysis.census,
+      omissions: analysis.omissions,
+      operations: analysis.ir.operations,
+      additionalFacts: viewModel.detailFacts,
+    });
+    const projection = buildProjectionManifest({ revision: analysis.ir.revision, view: analysis.ir.view, evidence, ir });
+    const census = linkCensusEvidence(analysis.census, evidence);
+    analysis = { ...analysis, evidence, ir, projection, census };
+    viewModel = buildViewManifest(analysis);
+  }
+  await writeJson(censusPath, analysis.census);
+  await writeJson(evidencePath, analysis.evidence);
   await writeJson(irPath, analysis.ir);
+  viewModel = { ...viewModel, manifest: { ...viewModel.manifest, roundtrip: validateViewManifest(viewModel.manifest, viewModel.pages, analysis.evidence.records, analysis.ir, viewModel.detailFacts) } };
   await writeJson(projectionPath, analysis.projection);
+  await writeJson(viewsPath, viewModel.manifest);
 
   const rawBudgetExceeded = analysis.census.rawBudgetExceeded;
   const declarationBlocksRuntime = analysis.declarationCoverage.blockingViews.includes("runtime-overview");
@@ -154,7 +162,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
       buildContext: input.buildContext,
     })
     : undefined;
-  const evaluation = evaluateArchitectureViews(analysis, { strictExternalHosts: input.strictExternalHosts, independence });
+  const evaluation = evaluateArchitectureViews(analysis, { strictExternalHosts: input.strictExternalHosts, independence, viewManifest: viewModel.manifest, viewPages: viewModel.pages, viewDetails: viewModel.detailFacts });
   const fullArchitecture = evaluation.fullArchitecture && analysis.scope.requestedViews.includes("full-declared-scope");
   const publishable = evaluation.views["runtime-overview"].status === "passed";
   const evidenceProjection = {
@@ -170,6 +178,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     requestedViews: analysis.scope.requestedViews,
     fullArchitecture,
     viewCoverage: evaluation,
+    viewManifest: viewModel.manifest,
     declaredScope: analysis.scope,
     capabilities: repomapCapabilities,
     source: analysis.sourceReceipt,
@@ -228,7 +237,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     outputs: {
       facts: factsPath, analysis: analysisPath, candidates: candidatesPath, census: censusPath,
       evidence: evidencePath, declarations: declarationsPath, project: projectPath,
-      moduleGraph: moduleGraphPath, goModuleGraph: goModuleGraphPath, routeGraph: routeGraphPath, asyncGraph: asyncGraphPath, ir: irPath, projection: projectionPath, receipt: receiptPath,
+      moduleGraph: moduleGraphPath, goModuleGraph: goModuleGraphPath, routeGraph: routeGraphPath, asyncGraph: asyncGraphPath, ir: irPath, projection: projectionPath, views: viewsPath, receipt: receiptPath,
     },
   };
   const deliveryFor = (status: "accepted" | "facts-ready" | "failed", visualPassed?: boolean) => buildDeliveryStatement({
@@ -239,6 +248,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
       + analysis.declarationCoverage.missing.filter((declaration) => ["entrypoint", "deployable", "route"].includes(declaration.kind) || declaration.capability === "unresolved-submodule").length
       + (strictExternalHostsFailed ? unresolvedExternalHosts.length : 0),
   });
+  let viewArtifacts: Awaited<ReturnType<typeof deliverViewArtifacts>> = [];
   const analysisOutput = (status: "accepted" | "facts-ready" | "failed") => ({
     version: 2,
     view: defaultArchitectureView,
@@ -276,6 +286,8 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
       gates: analysis.asyncGraph.gates,
     },
     omissions: analysis.omissions,
+    viewManifest: viewModel.manifest,
+    viewArtifacts,
     externalHostGate: {
       required: input.strictExternalHosts === true,
       unresolved: unresolvedExternalHosts.map((candidate) => candidate.id),
@@ -314,25 +326,30 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   let validationReceipt: ArchifyReceipt | undefined;
   let visualReceipt: ArchifyReceipt | undefined;
   try {
-    if (render) {
-      const projected = projectArchitectureDocument({
-        productName: input.identity.repo,
-        productSlug: slugify(input.identity.repo),
-        owner: input.identity.owner,
-        provider: "github",
-        name: input.identity.repo,
-        revision: input.identity.revision,
-        locale: input.locale ?? "en",
-      }, analysis.facts);
-      const spec = withoutRepositoryEvidence(projected);
-      await writeFile(specPath, json(spec), { mode: 0o600 });
-      const deliver = input.deliver ?? deliverArchify;
-      validationReceipt = await deliver({ type: "architecture", input: specPath, output: artifactPath, quality: "standard" });
-      if (visualCheck) {
-        const check = input.check ?? visualCheckArchify;
-        visualReceipt = await check({ artifact: artifactPath });
-      }
-    }
+    viewArtifacts = await deliverViewArtifacts({
+      outDir,
+      productName: input.identity.repo,
+      productSlug: slugify(input.identity.repo),
+      owner: input.identity.owner,
+      revision: input.identity.revision,
+      locale: input.locale ?? "en",
+      pages: viewModel.pages,
+      manifest: viewModel.manifest,
+      render,
+      visualCheck,
+      renderPage: (page) => {
+        if (page.kind === "overview") {
+          const requested = analysis.scope.requestedViews.some((view) => view === "runtime-overview" || view === "system-context");
+          return requested && evaluation.views["runtime-overview"].status === "passed";
+        }
+        const view = page.kind === "modules" ? "module-architecture" : "protocol-flows";
+        return analysis.scope.requestedViews.includes(view) && evaluation.views[view].status === "passed";
+      },
+      deliver: input.deliver,
+      check: input.check,
+    });
+    validationReceipt = viewArtifacts.find((artifact) => artifact.kind === "overview" && artifact.page === 1)?.validationReceipt;
+    visualReceipt = viewArtifacts.find((artifact) => artifact.kind === "overview" && artifact.page === 1)?.visualReceipt;
     const status = render ? "accepted" as const : "facts-ready" as const;
     const delivery = deliveryFor(status, render && visualCheck && visualReceipt?.ok === true);
     const overallStatus = delivery.status;
@@ -343,9 +360,10 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
       delivery,
       error: overallStatus === "failed" ? delivery.reason : null,
       elapsedMs: (input.now?.() ?? Date.now()) - started,
-      outputs: { ...baseReceipt.outputs, ...(render ? { spec: specPath, artifact: artifactPath } : {}) },
+      outputs: { ...baseReceipt.outputs, viewArtifacts, ...(render && viewArtifacts.some((artifact) => artifact.kind === "overview" && artifact.page === 1) ? { spec: specPath, artifact: artifactPath } : {}) },
       validationReceipt,
       visualReceipt,
+      viewArtifacts,
       visualReview: render && visualCheck ? "pending" : "not-requested",
     };
     await writeJson(receiptPath, receipt);
@@ -361,6 +379,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
       elapsedMs: (input.now?.() ?? Date.now()) - started,
       validationReceipt,
       visualReceipt,
+      viewArtifacts,
       visualReview: "not-requested",
     };
     await writeJson(receiptPath, receipt);
