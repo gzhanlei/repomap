@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { excludedDirectoryRules } from "./file-roles.js";
+import type { ArchitectureViewEvaluation } from "./coverage-matrix.js";
 
 /** M0 contract: views, declared scope, capabilities and per-view delivery. */
 export const architectureViewSchema = z.enum(["system-context", "runtime-overview", "module-architecture", "protocol-flows", "full-declared-scope"]);
@@ -40,21 +41,21 @@ export const repomapCapabilities: Capability[] = [
   { id: "project-preparation", version: "1", status: "available" },
   { id: "evidence-index", version: "1", status: "available" },
   { id: "declaration-inventory", version: "1", status: "partial" },
-  { id: "mutation-harness", version: "1", status: "partial" },
+  { id: "mutation-harness", version: "1", status: "available" },
   { id: "regex-line-scan", version: "1", status: "partial" },
   { id: "external-candidates", version: "1", status: "partial" },
-  { id: "coverage-evaluator", version: "1", status: "partial" },
+  { id: "coverage-evaluator", version: "1", status: "available" },
   { id: "ast-typescript", version: "1", status: "partial" },
   { id: "ast-go", version: "1", status: "partial" },
   { id: "module-graph", version: "1", status: "partial" },
   { id: "module-graph-go", version: "1", status: "partial" },
   { id: "route-graph", version: "1", status: "partial" },
   { id: "route-graph-go", version: "1", status: "partial" },
-  { id: "protocol-flows", version: "0", status: "unavailable" },
+  { id: "protocol-flows", version: "1", status: "partial" },
   { id: "identity-resolution", version: "1", status: "partial" },
   { id: "async-operations", version: "1", status: "partial" },
   { id: "sql-operations", version: "1", status: "partial" },
-  { id: "gold-evaluation", version: "0", status: "unavailable" },
+  { id: "gold-evaluation", version: "1", status: "partial" },
 ];
 
 export function capabilityGaps(capabilities: Capability[] = repomapCapabilities) {
@@ -125,7 +126,7 @@ export const deliveryStatementSchema = z.object({
   requestedViews: z.array(architectureViewSchema),
   status: z.enum(["accepted", "facts-ready", "failed"]),
   publishable: z.boolean(),
-  fullArchitecture: z.literal(false),
+  fullArchitecture: z.boolean(),
   reason: z.string().min(1),
   views: z.array(z.object({
     view: architectureViewSchema,
@@ -134,10 +135,11 @@ export const deliveryStatementSchema = z.object({
     omissionCount: z.number().int().nonnegative(),
   }).strict()),
   strictExternalHosts: z.boolean(),
+  evaluation: z.custom<ArchitectureViewEvaluation>((value) => value !== undefined).optional(),
 }).strict();
 export type DeliveryStatement = z.infer<typeof deliveryStatementSchema>;
 
-const fullScopeReason = "Only runtime-overview is implemented and gated. full-declared-scope additionally requires module/route/protocol/identity gates, an independent gold evaluation and a lossless projection manifest; coverage of one view is not completeness.";
+const fullScopeReason = "full-declared-scope is evaluated per input and requires system, runtime, module and protocol views, independent mutations and projection reconciliation. It is not generator release qualification.";
 
 export interface DeliveryInput {
   status: "accepted" | "facts-ready" | "failed";
@@ -146,20 +148,37 @@ export interface DeliveryInput {
   visualPassed?: boolean;
   strictExternalHosts?: boolean;
   blockingOmissionCount?: number;
+  evaluation?: ArchitectureViewEvaluation;
 }
 
 export function buildDeliveryStatement(input: DeliveryInput): DeliveryStatement {
   const requested = resolveRequestedViews(input.requestedViews ?? []);
   const requestedSet = new Set(requested);
   const gaps = capabilityGaps();
+  const evaluation = input.evaluation;
+  const failedRequestedViews = evaluation ? requested.filter((view) => evaluation.views[view].status === "failed") : [];
+  const status = failedRequestedViews.length > 0 ? "failed" : input.status;
+  const fullArchitecture = requestedSet.has("full-declared-scope") && evaluation?.fullArchitecture === true;
+  const reason = evaluation
+    ? `${fullArchitecture ? "Per-input semantic full gates passed; this is not generator release qualification." : "Per-input semantic full is not available."}${failedRequestedViews.length > 0 ? ` Failed views: ${failedRequestedViews.join(", ")}.` : ""}`
+    : `${fullScopeReason}${input.visualPassed ? " A passing visual check does not change the declared view." : ""}`;
   return deliveryStatementSchema.parse({
     view: defaultArchitectureView,
     requestedViews: requested,
-    status: input.status,
-    publishable: input.publishable,
-    fullArchitecture: false,
-    reason: `${fullScopeReason}${input.visualPassed ? " A passing visual check does not change the declared view." : ""}`,
+    status,
+    publishable: evaluation ? evaluation.views["runtime-overview"].status === "passed" : input.publishable,
+    fullArchitecture,
+    reason,
     views: architectureViewSchema.options.map((view) => {
+      if (evaluation) {
+        const gate = evaluation.views[view];
+        return {
+          view,
+          status: requestedSet.has(view) ? (gate.status === "passed" ? input.status : "failed") : "not-requested",
+          blockingReasons: requestedSet.has(view) ? gate.blockingReasons : [],
+          omissionCount: requestedSet.has(view) ? gate.omissionCount : 0,
+        };
+      }
       if (view === defaultArchitectureView) {
         return {
           view,

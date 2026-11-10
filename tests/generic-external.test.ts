@@ -16,6 +16,8 @@ describe("generic external protocol detection", () => {
     expect(isArchitectureSourcePath("public/assets/plotly/plotly-full.js")).toBe(false);
     expect(isArchitectureSourcePath("src/mathjax/index.ts")).toBe(true);
     expect(isArchitectureSourcePath("static/js/ace.js")).toBe(false);
+    expect(isArchitectureSourcePath("static/js/mode-css.js")).toBe(false);
+    expect(isArchitectureSourcePath("static/js/theme-chrome.js")).toBe(false);
     expect(isArchitectureSourcePath("static/js/app.js")).toBe(true);
   });
 

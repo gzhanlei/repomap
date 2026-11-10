@@ -59,6 +59,7 @@ export interface TypeScriptResolutionRules {
 
 interface ProgramBundle {
   fileMap: Map<string, string>;
+  assetPaths: Set<string>;
   host: ts.CompilerHost;
   program: ts.Program;
   options: ts.CompilerOptions;
@@ -212,13 +213,14 @@ function buildBundle(snapshot: SourceSnapshot): ProgramBundle {
   const fileMap = new Map<string, string>();
   const packageOf = new Map<string, string>();
   for (const file of snapshot.files) {
+    packageOf.set(file.path, file.packageId);
     if (!tsExtension.test(file.path)) continue;
     const raw = snapshot.rawText(file.path);
     if (raw === undefined) continue;
     fileMap.set(virtualRoot + file.path, raw);
-    packageOf.set(file.path, file.packageId);
   }
   const rules = readTypeScriptResolutionRules(snapshot);
+  const assetPaths = new Set(snapshot.files.filter((file) => /\.css$/i.test(file.path)).map((file) => file.path));
   const options: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES2022,
     module: ts.ModuleKind.ESNext,
@@ -258,7 +260,7 @@ function buildBundle(snapshot: SourceSnapshot): ProgramBundle {
   };
   const program = ts.createProgram([...fileMap.keys()], options, host);
 
-  const known = (relative: string) => fileMap.has(virtualRoot + relative);
+  const known = (relative: string) => fileMap.has(virtualRoot + relative) || assetPaths.has(relative);
   const tryCandidate = (base: string): string | undefined => {
     const clean = base.replace(/^\/+/, "");
     for (const suffix of moduleCandidates) if (known(`${clean}${suffix}`)) return `${clean}${suffix}`;
@@ -309,6 +311,11 @@ function buildBundle(snapshot: SourceSnapshot): ProgramBundle {
       return { resolution: "unresolved", barrel: false, unresolvedReason: "external-package-not-in-snapshot" };
     }
     // 3. Relative paths, directory roots and barrels through the Compiler API.
+    if (isRelative) {
+      const base = posix.normalize(posix.join(posix.dirname(repoPath(containingFile)), source));
+      const direct = tryCandidate(base);
+      if (direct) return decorate(direct, "relative", source);
+    }
     const resolved = ts.resolveModuleName(source, containingFile, options, host).resolvedModule;
     if (resolved && known(repoPath(resolved.resolvedFileName))) {
       return decorate(repoPath(resolved.resolvedFileName), isRelative ? "relative" : "alias", source);
@@ -320,7 +327,7 @@ function buildBundle(snapshot: SourceSnapshot): ProgramBundle {
     };
   };
 
-  return { fileMap, host, program, options, rules, packageOf, resolve };
+  return { fileMap, assetPaths, host, program, options, rules, packageOf, resolve };
 }
 
 interface UnitInput { snapshot: SourceSnapshot; context: BuildContext }

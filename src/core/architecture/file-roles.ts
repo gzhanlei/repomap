@@ -3,7 +3,7 @@ import { z } from "zod";
 /** Path-level classification shared by the raw census, declarations and detectors. */
 export const sourceFileRoleSchema = z.enum([
   "source", "test", "fixture", "generated", "vendored", "schema", "migration",
-  "manifest", "lockfile", "config", "documentation", "binary", "unknown",
+  "manifest", "lockfile", "config", "documentation", "binary", "unknown", "asset",
 ]);
 export type SourceFileRole = z.infer<typeof sourceFileRoleSchema>;
 
@@ -22,7 +22,7 @@ const schemaPattern = /\.(?:sql|prisma|graphql|gql)$/i;
 const documentationPattern = /(?:^|\/)docs?\/|\.(?:md|mdx|rst)$|^(?:LICENSE|CHANGELOG|NOTICE|README)(?:\..*)?$/i;
 const binaryPattern = /\.(?:png|jpe?g|gif|webp|ico|svg|woff2?|ttf|eot|otf|mp3|mp4|wav|pdf|zip|gz|tgz|jar|class|so|dylib|dll|exe|wasm|pyc|lockb)$/i;
 const configPattern = /\.(?:ya?ml|toml|ini|conf|properties|env|xml|json)$|(?:^|\/)(?:Dockerfile|Makefile|\.env(?:\..*)?)$/i;
-const sourcePattern = /\.(?:go|ts|tsx|js|jsx|mjs|cjs|mts|cts|php|py|java|kt|kts|rs|cs|rb|swift|vue|svelte|sh)$/i;
+const sourcePattern = /\.(?:go|ts|tsx|js|jsx|mjs|cjs|mts|cts|php|py|java|kt|kts|rs|cs|rb|swift|vue|svelte|sh|css)$/i;
 
 export function isLockfilePath(path: string) { return lockfilePattern.test(path); }
 export function isManifestPath(path: string) { return manifestPattern.test(path); }
@@ -36,13 +36,14 @@ export function isRuntimeEvidencePath(path: string) {
 export function classifySourcePath(path: string): SourceFileRole {
   if (isLockfilePath(path)) return "lockfile";
   if (isManifestPath(path)) return "manifest";
-  if (migrationPattern.test(path)) return "migration";
   if (testPattern.test(path)) return /fixtures?|__snapshots__/i.test(path) ? "fixture" : "test";
   if (vendoredPattern.test(path)) return "vendored";
   if (generatedPattern.test(path)) return "generated";
   if (binaryPattern.test(path)) return "binary";
   if (documentationPattern.test(path)) return "documentation";
+  if (migrationPattern.test(path) && !sourcePattern.test(path)) return "migration";
   if (schemaPattern.test(path)) return "schema";
+  if (/\.css$/i.test(path)) return "asset";
   if (sourcePattern.test(path)) return "source";
   if (configPattern.test(path)) return "config";
   return "unknown";
@@ -51,7 +52,7 @@ export function classifySourcePath(path: string): SourceFileRole {
 const languageByExtension: Record<string, string> = {
   go: "go", ts: "typescript", tsx: "typescript", js: "javascript", jsx: "javascript", mjs: "javascript", cjs: "javascript", mts: "typescript", cts: "typescript",
   php: "php", py: "python", java: "java", kt: "kotlin", kts: "kotlin", rs: "rust", cs: "csharp", rb: "ruby", swift: "swift",
-  vue: "vue", svelte: "svelte", sh: "shell", sql: "sql", prisma: "prisma", graphql: "graphql", gql: "graphql",
+  vue: "vue", svelte: "svelte", sh: "shell", css: "css", sql: "sql", prisma: "prisma", graphql: "graphql", gql: "graphql",
   json: "json", yaml: "yaml", yml: "yaml", toml: "toml", md: "markdown", mdx: "markdown", xml: "xml",
 };
 

@@ -30,10 +30,10 @@ export type DeclarationInventory = z.infer<typeof declarationInventorySchema>;
 
 const knownFrameworks = new Set(["next", "vite", "react", "react-dom", "vue", "nuxt", "express", "fastify", "nestjs", "@nestjs/core", "svelte", "@sveltejs/kit", "remix", "koa", "hono", "angular"]);
 
-const protocolCapabilityRules: { name: string; markers: RegExp[] }[] = [
+const protocolCapabilityRules: { name: string; markers: RegExp[]; requirePath?: RegExp }[] = [
   { name: "grpc", markers: [/@grpc\/grpc-js/i, /\bgrpc\.(?:Client|Server)\b/, /\.proto\b/] },
   { name: "websocket", markers: [/\bnew WebSocket\s*\(/, /\bwss?:\/\//, /\bsocket\.io\b/] },
-  { name: "object-storage", markers: [/\bs3:\/\//, /\bPutObject\s*\(/, /\bcos\.tencentcloudapi\.com\b/, /\bGetObject\s*\(/] },
+  { name: "object-storage", markers: [/\bs3:\/\//, /\bPutObject\s*\(/, /\bcos\.tencentcloudapi\.com\b/, /\bGetObject\s*\(/], requirePath: /storage|object-store|s3|cos/i },
   { name: "cloud-messaging", markers: [/\bamqp:\/\//, /\bkafkajs\b/, /\bSQSClient\b/, /\bpubsub\b/] },
 ];
 
@@ -70,7 +70,7 @@ export function buildDeclarationInventory(input: BuildDeclarationInput): Declara
       capabilityGaps.add("unresolved-submodule");
       declarations.push(declaration("capability", file.path, file.packageId, "submodule requires its own fixed-SHA snapshot", true, "unresolved-submodule"));
     }
-    if (file.status === "unsupported") {
+    if (file.status === "unsupported" && file.role === "source") {
       capabilityGaps.add(`unsupported-language:${file.language}`);
     }
     // Excluded tests, generated files, documentation and user out-of-scope
@@ -108,6 +108,7 @@ export function buildDeclarationInventory(input: BuildDeclarationInput): Declara
     if (file.status === "selected" && classifySourcePath(file.path) === "source" && content) {
       const code = unnumbered(content);
       for (const rule of protocolCapabilityRules) {
+        if (rule.requirePath && !rule.requirePath.test(file.path)) continue;
         if (rule.markers.some((marker) => marker.test(code))) {
           protocolGaps.add(`unsupported-protocol:${rule.name}`);
           declarations.push(declaration("protocol", file.path, file.packageId, `protocol:${rule.name}`, true, `unsupported-protocol:${rule.name}`));

@@ -224,6 +224,16 @@ describe("M2 ts-module-graph: lossless delivery integration", () => {
     expect(JSON.stringify(facts)).not.toContain("moduleGraph");
   });
 
+  it("resolves stylesheet assets as modules without parsing them as TypeScript", () => {
+    const { moduleGraph } = graph({
+      "app/layout.tsx": 'import "./globals.css"; export default function Layout() {}',
+      "app/globals.css": 'body { color: red; }',
+    });
+    expect(moduleGraph.unresolvedImports).toEqual([]);
+    expect(moduleGraph.edges.some((edge) => edge.to === "module:package:root:app/globals.css")).toBe(true);
+    expect(moduleGraph.nodes.some((node) => node.path === "app/globals.css")).toBe(true);
+  });
+
   it("upgrades the module-graph capability without claiming full architecture", () => {
     const capability = repomapCapabilities.find((entry) => entry.id === "module-graph");
     expect(capability?.status).not.toBe("unavailable");

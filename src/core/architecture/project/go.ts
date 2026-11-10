@@ -87,6 +87,8 @@ function normalizeDir(path: string) {
 }
 
 function stripComment(line: string) {
+  const trimmed = line.trim();
+  if (trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*") || trimmed.startsWith("--")) return "";
   return line.replace(/\s+\/\/.*$/, "").trim();
 }
 

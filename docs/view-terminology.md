@@ -6,13 +6,13 @@
 
 | view | 本轮状态 | 说明 |
 | --- | --- | --- |
-| `system-context` | 未实现门禁 | 请求时返回 `failed` |
-| `runtime-overview` | 已实现、唯一可发布视图 | 沿用现有入口/runtime/store/external 门禁，新增 raw census、独立 declaration 和通用 package-script owner 门禁 |
-| `module-architecture` | 未实现门禁 | 已有 TypeScript/JavaScript 与 Go 两个 ModuleGraph 产物与各自独立分母，但**视图门禁仍未实现**，请求时依然 `failed` |
-| `protocol-flows` | 未实现门禁 | operation union 已在 IR v2 定义，但还没有 operation extractor |
-| `full-declared-scope` | 未实现门禁 | 不能发布 |
+| `system-context` | 已实现 per-view 门禁 | 外部候选必须有 target/resolution，unknown egress 阻塞 |
+| `runtime-overview` | 已实现、默认视图 | 沿用入口/runtime/store/external 门禁，新增 raw census、独立 declaration 和通用 package-script owner 门禁 |
+| `module-architecture` | 已实现 per-view 门禁 | 模块归属、parser、import、route-handler 和独立分母门禁通过时可发布 |
+| `protocol-flows` | 已实现 per-view 门禁 | route/async/operation 和外部 operation 证据门禁通过时可发布 |
+| `full-declared-scope` | 已实现 per-input 聚合门禁 | 四个基础视图、independence mutation 和 projection round-trip 全部通过时才允许 `fullArchitecture: true` |
 
-`architecture.html` 仍是默认 Runtime Overview。`repomap.receipt.json` 中的 `fullArchitecture` 恒为 `false`，因为 `full-declared-scope` 的门禁尚未实现。视觉检查通过不会改变视图等级。
+`architecture.html` 仍是默认 Runtime Overview。`fullArchitecture` 只有在请求 `full-declared-scope` 且所有基础视图、独立 mutation 和 projection round-trip 通过时才为 `true`；默认 runtime 请求保持 `false`。视觉检查通过不会改变视图等级，也不等于 generator release qualification 或人工 Gold 审核。
 
 **覆盖通过 ≠ 架构完整。** 当前 `coverage.publishable` 只说明 Runtime Overview 的既有信号被覆盖；它不证明模块、路由、异步、身份或协议细节完整。
 

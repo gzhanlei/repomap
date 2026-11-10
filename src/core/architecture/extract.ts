@@ -164,17 +164,20 @@ function withRouteDeclarations(base: ReturnType<typeof buildDeclarationInventory
 }
 
 function withAsyncDeclarations(base: ReturnType<typeof withRouteDeclarations>, graph: AsyncGraph, snapshot: ReturnType<typeof createSourceSnapshot>) {
-  const declarations: DeclarationRecord[] = graph.operations.map((operation) => ({
-    declarationId: operation.declarationIds[0],
-    kind: operation.kind === "schedule" ? "worker" : "operation",
-    owner: operation.owner,
-    required: true,
-    critical: true,
-    sourcePath: operation.callSite?.replace(/:\d+$/, "") ?? snapshot.files[0]?.path ?? "unknown",
-    detail: `${operation.kind}:${operation.action ?? "unknown"}`,
-    capability: "independent-async-structure",
-    evidenceIds: operation.evidenceIds,
-  }));
+  const declarations: DeclarationRecord[] = graph.declarations.map((declaration) => {
+    const operation = graph.operations.find((item) => item.declarationIds.includes(declaration.id));
+    return {
+      declarationId: declaration.id,
+      kind: operation?.kind === "schedule" ? "worker" : "operation",
+      owner: operation?.owner ?? snapshot.files.find((file) => file.path === declaration.path)?.packageId ?? "package:root",
+      required: true,
+      critical: true,
+      sourcePath: declaration.path,
+      detail: operation ? `${operation.kind}:${operation.action ?? "unknown"}` : `unresolved async declaration at ${declaration.path}:${declaration.line}`,
+      capability: "independent-async-structure",
+      evidenceIds: operation?.evidenceIds ?? [],
+    };
+  });
   const all = [...base.declarations, ...declarations].sort((a, b) => a.declarationId.localeCompare(b.declarationId));
   return {
     ...base,

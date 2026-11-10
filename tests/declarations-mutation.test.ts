@@ -60,6 +60,13 @@ describe("M0/M1 independent declarations and mutation harness", () => {
     expect(analysis.omissions.some((omission) => omission.reason === "unsupported-framework")).toBe(true);
   });
 
+  it("does not confuse ActivityPub object reads with cloud object storage", () => {
+    const analysis = analyzeArchitectureFacts(scope, [
+      { path: "activitypub.go", content: 'package app\nfunc read() { obj := raw.GetObject(0); _ = obj }' },
+    ]);
+    expect(analysis.declarations.protocolGaps).not.toContain("unsupported-protocol:object-storage");
+  });
+
   it("does not let a generic network candidate replace protocol operation coverage", () => {
     const sources = [
       { path: "package.json", content: '1: {"scripts":{"start":"next start"},"dependencies":{"next":"16.0.0"}}' },

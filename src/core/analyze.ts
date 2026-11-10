@@ -9,6 +9,8 @@ import { architectureDocumentSchema, type ArchitectureDocument } from "./archite
 import type { ArchitectureRepositorySourceReceipt, ArchitectureSource } from "./architecture/source.js";
 import type { RepositoryFileEntry } from "./architecture/census.js";
 import { buildDeliveryStatement, defaultArchitectureView, repomapCapabilities, type DeclaredScopeInput } from "./architecture/scope.js";
+import { evaluateArchitectureViews } from "./architecture/coverage-matrix.js";
+import { runIndependenceMutations } from "./architecture/independence.js";
 import { deliverArchify, visualCheckArchify, type ArchifyReceipt } from "./archify-cli.js";
 import { parseGitHubRepository } from "./github/repository.js";
 import { loadGitHubRepositorySources, type GitHubSourceOptions } from "./github/archive.js";
@@ -141,7 +143,20 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   const omissionBlocksRuntime = analysis.omissions.some((omission) => omission.blocking && omission.affectedViews.includes("runtime-overview"));
   const unresolvedExternalHosts = analysis.candidates.filter((candidate) => candidate.status === "omitted" || candidate.target?.kind !== "host" || candidate.target.resolution !== "static");
   const strictExternalHostsFailed = input.strictExternalHosts === true && unresolvedExternalHosts.length > 0;
-  const publishable = analysis.coverage.publishable && !rawBudgetExceeded && !declarationBlocksRuntime && !omissionBlocksRuntime && !strictExternalHostsFailed;
+  const independence = analysis.scope.requestedViews.includes("full-declared-scope")
+    ? runIndependenceMutations({ revision: input.identity.revision, scope: "repository" }, input.sources, {
+      baseline: analysis,
+      inventory: input.inventory,
+      include: input.include,
+      exclude: input.exclude,
+      userExclusions: input.userExclusions,
+      rawBudgets: input.rawBudgets,
+      buildContext: input.buildContext,
+    })
+    : undefined;
+  const evaluation = evaluateArchitectureViews(analysis, { strictExternalHosts: input.strictExternalHosts, independence });
+  const fullArchitecture = evaluation.fullArchitecture && analysis.scope.requestedViews.includes("full-declared-scope");
+  const publishable = evaluation.views["runtime-overview"].status === "passed";
   const evidenceProjection = {
     renderLimit: analysis.evidence.statistics.renderLimit,
     owners: analysis.projection.totals.owners,
@@ -153,7 +168,8 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     repository: input.identity,
     view: defaultArchitectureView,
     requestedViews: analysis.scope.requestedViews,
-    fullArchitecture: false,
+    fullArchitecture,
+    viewCoverage: evaluation,
     declaredScope: analysis.scope,
     capabilities: repomapCapabilities,
     source: analysis.sourceReceipt,
@@ -166,6 +182,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     evidenceProjection,
     declarationCoverage: analysis.declarationCoverage,
     mutation: analysis.mutation,
+    independence,
     project: {
       snapshotId: analysis.snapshotId,
       parsers: analysis.project.parsers,
@@ -217,6 +234,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   const deliveryFor = (status: "accepted" | "facts-ready" | "failed", visualPassed?: boolean) => buildDeliveryStatement({
     status, publishable, requestedViews: input.requestedViews, visualPassed,
     strictExternalHosts: input.strictExternalHosts,
+    evaluation,
     blockingOmissionCount: analysis.omissions.filter((omission) => omission.blocking).length
       + analysis.declarationCoverage.missing.filter((declaration) => ["entrypoint", "deployable", "route"].includes(declaration.kind) || declaration.capability === "unresolved-submodule").length
       + (strictExternalHostsFailed ? unresolvedExternalHosts.length : 0),
@@ -224,7 +242,8 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   const analysisOutput = (status: "accepted" | "facts-ready" | "failed") => ({
     version: 2,
     view: defaultArchitectureView,
-    fullArchitecture: false,
+    fullArchitecture,
+    viewCoverage: evaluation,
     delivery: deliveryFor(status),
     declaredScope: analysis.scope,
     capabilities: repomapCapabilities,
@@ -236,6 +255,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     },
     declarationCoverage: analysis.declarationCoverage,
     mutation: analysis.mutation,
+    independence,
     project: {
       snapshotId: analysis.snapshotId,
       buildContext: analysis.project.buildContext,
@@ -314,11 +334,14 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
       }
     }
     const status = render ? "accepted" as const : "facts-ready" as const;
-    await writeJson(analysisPath, analysisOutput(status));
+    const delivery = deliveryFor(status, render && visualCheck && visualReceipt?.ok === true);
+    const overallStatus = delivery.status;
+    await writeJson(analysisPath, analysisOutput(overallStatus));
     const receipt = {
       ...baseReceipt,
-      status,
-      delivery: deliveryFor(status, render && visualCheck && visualReceipt?.ok === true),
+      status: overallStatus,
+      delivery,
+      error: overallStatus === "failed" ? delivery.reason : null,
       elapsedMs: (input.now?.() ?? Date.now()) - started,
       outputs: { ...baseReceipt.outputs, ...(render ? { spec: specPath, artifact: artifactPath } : {}) },
       validationReceipt,

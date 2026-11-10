@@ -127,6 +127,7 @@ function disposition(entry: RepositoryFileEntry, excludedByUser: boolean): { rol
   if (!entry.selected) return { role, status: "excluded", reason: "not-runtime-source", parser: "none" };
   // Source selection and AST parsing are separate states. "selected" means
   // selected for deterministic analysis, not that an AST parser succeeded.
+  if (role === "asset") return { role, status: "selected", reason: "asset-module", parser: "asset" };
   return { role, status: "selected", reason: "selected-for-line-scan", parser: "regex-line-scan@1" };
 }
 

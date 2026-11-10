@@ -250,7 +250,7 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
   const rules = resolutionRulesSchema.parse(readTypeScriptResolutionRules(snapshot));
   const packageManifests = new Set(census.packages.filter((entry) => entry.manifests.length > 0).map((entry) => entry.id));
   const preparedUnits = project.units.filter((unit) => unit.status === "prepared" && unit.adapterId === "ast-typescript");
-  const modulePaths = [...new Set(preparedUnits.flatMap((unit) => unit.files))].sort();
+  const modulePaths = [...new Set([...preparedUnits.flatMap((unit) => unit.files), ...snapshot.files.filter((file) => file.role === "asset" && /\.css$/i.test(file.path)).map((file) => file.path)])].sort();
   const packageOf = new Map(snapshot.files.map((file) => [file.path, file.packageId]));
   const languageOf = new Map(snapshot.files.map((file) => [file.path, file.language]));
   const entrypoints = new Set(project.entrypoints.map((entry) => entry.path));
@@ -375,7 +375,8 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
   // Independent denominator: every syntactically declared import must have an
   // AST edge. A disabled extractor therefore produces missing declarations,
   // never a silently complete-looking graph.
-  const declarations = discoverImportDeclarations(snapshot, modulePaths);
+  const declarationPaths = snapshot.files.filter((file) => file.role === "source" && /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/i.test(file.path)).map((file) => file.path).sort();
+  const declarations = discoverImportDeclarations(snapshot, declarationPaths);
   const observedKeys = new Set(edges.map((edge) => `${edge.path}:${edge.line}`));
   const missing = declarations.filter((declaration) => !observedKeys.has(`${declaration.path}:${declaration.line}`));
   const importDeclarations = importCoverageSchema.parse({

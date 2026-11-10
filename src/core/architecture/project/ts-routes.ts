@@ -27,7 +27,7 @@ function exportedMethods(raw: string) {
   raw.split("\n").forEach((line, index) => {
     if (!/^\s*export\b/.test(line)) return;
     const direct = line.match(/\b(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\b/);
-    const braces = line.match(/\{([^}]+)\}/);
+    const braces = /^\s*export\s*\{/.test(line) ? line.match(/\{([^}]+)\}/) : undefined;
     if (braces) {
       for (const specifier of braces[1].split(",")) {
         const alias = specifier.trim().match(/\b(?:GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+as\s+(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\b/)?.[1];
