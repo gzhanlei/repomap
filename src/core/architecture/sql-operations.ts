@@ -25,23 +25,34 @@ function actionFor(evidence: ArchitectureEvidence, source: ArchitectureSource | 
 
 export function sqlOperationFacts(facts: ArchitectureFactSet, sources: ArchitectureSource[]): OperationFact[] {
   const byPath = new Map(sources.map((source) => [source.path, source]));
-  return facts.edges.filter((edge) => edge.to.startsWith("store:") && ["sql", "poll"].includes(edge.kind)).flatMap((edge) =>
-    edge.evidence.map((evidence) => {
+  const operations = new Map<string, OperationFact>();
+  for (const edge of facts.edges.filter((edge) => edge.to.startsWith("store:") && ["sql", "poll"].includes(edge.kind)).sort((a, b) => a.id.localeCompare(b.id))) {
+    for (const evidence of edge.evidence) {
       const action = actionFor(evidence, byPath.get(evidence.path), edge.kind);
-      return {
-        id: `operation:sql:${createHash("sha256").update(`${edge.id}|${evidence.path}|${evidence.line}|${action}`).digest("hex").slice(0, 16)}`,
+      const text = lineText(byPath.get(evidence.path), evidence.line).toUpperCase();
+      const migrationCall = action === "migration" && /MIGRATE|CREATESCHEMA|NEWDATASTORE/.test(text);
+      // Schema/migration evidence attached to every runtime edge is one resource
+      // operation, not N different runtime migrations. A real Migrate call keeps
+      // its runtime owner; schema-only evidence belongs to the store itself.
+      const owner = action === "migration" && !migrationCall ? edge.to : edge.from;
+      const driver = edge.to.replace(/^store:/, "");
+      const id = `operation:sql:${createHash("sha256").update(`${owner}|${driver}|${evidence.path}|${evidence.line}|${action}`).digest("hex").slice(0, 16)}`;
+      if (operations.has(id)) continue;
+      operations.set(id, {
+        id,
         kind: "sql",
-        owner: edge.from,
+        owner,
         declarationIds: [],
         evidenceIds: [evidenceRecord(evidence).id],
         targetKind: "database",
         resolution: "static",
         action,
-        driver: edge.to.replace(/^store:/, ""),
+        driver,
         callSite: `${evidence.path}:${evidence.line}`,
-      };
-    }),
-  );
+      });
+    }
+  }
+  return [...operations.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export function operationEvidenceReferences(operations: OperationFact[]): EvidenceReference[] {

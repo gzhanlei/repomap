@@ -23,4 +23,7 @@ export { mergeEvidenceIndex, astImportEvidenceRecord, astGoImportEvidenceRecord,
 export { buildRouteGraph, routeGraphEvidenceReferences, routeOperationFacts, candidateOperationFacts, routeGraphSchema, type RouteGraph, type RouteExtraction } from "./core/architecture/project/route-graph.js";
 export { analyzeGoRoutes } from "./core/architecture/project/go-routes.js";
 export { analyzeTypeScriptRoutes } from "./core/architecture/project/ts-routes.js";
+export { buildAsyncGraph, asyncGraphSchema, asyncDeclarationId, type AsyncGraph, type AsyncExtraction } from "./core/architecture/project/async-graph.js";
+export { analyzeGoAsync } from "./core/architecture/project/go-async.js";
+export { analyzeTypeScriptAsync } from "./core/architecture/project/ts-async.js";
 export { sqlOperationFacts, operationEvidenceReferences } from "./core/architecture/sql-operations.js";

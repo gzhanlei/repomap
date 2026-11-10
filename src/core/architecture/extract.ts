@@ -25,6 +25,9 @@ import { buildGoModuleGraph, goModuleGraphEvidenceReferences } from "./project/g
 import { analyzeGoRoutes } from "./project/go-routes.js";
 import { analyzeTypeScriptRoutes } from "./project/ts-routes.js";
 import { operationEvidenceReferences, sqlOperationFacts } from "./sql-operations.js";
+import { analyzeGoAsync } from "./project/go-async.js";
+import { analyzeTypeScriptAsync } from "./project/ts-async.js";
+import { buildAsyncGraph, type AsyncGraph } from "./project/async-graph.js";
 import { buildRouteGraph, candidateOperationFacts, routeGraphEvidenceReferences, routeOperationFacts, type RouteGraph } from "./project/route-graph.js";
 import type { LanguageAdapter } from "./project/adapter.js";
 
@@ -160,6 +163,30 @@ function withRouteDeclarations(base: ReturnType<typeof buildDeclarationInventory
   };
 }
 
+function withAsyncDeclarations(base: ReturnType<typeof withRouteDeclarations>, graph: AsyncGraph, snapshot: ReturnType<typeof createSourceSnapshot>) {
+  const declarations: DeclarationRecord[] = graph.operations.map((operation) => ({
+    declarationId: operation.declarationIds[0],
+    kind: operation.kind === "schedule" ? "worker" : "operation",
+    owner: operation.owner,
+    required: true,
+    critical: true,
+    sourcePath: operation.callSite?.replace(/:\d+$/, "") ?? snapshot.files[0]?.path ?? "unknown",
+    detail: `${operation.kind}:${operation.action ?? "unknown"}`,
+    capability: "independent-async-structure",
+    evidenceIds: operation.evidenceIds,
+  }));
+  const all = [...base.declarations, ...declarations].sort((a, b) => a.declarationId.localeCompare(b.declarationId));
+  return {
+    ...base,
+    declarations: all,
+    statistics: {
+      total: all.length,
+      critical: all.filter((declaration) => declaration.critical).length,
+      byKind: Object.fromEntries([...new Set(all.map((declaration) => declaration.kind))].sort().map((kind) => [kind, all.filter((declaration) => declaration.kind === kind).length])),
+    },
+  };
+}
+
 export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory, "revision" | "scope">, sources: ArchitectureSource[], options: ArchitectureAnalysisOptions = {}) {
   // Lockfiles remain in the raw census but never enter evidence or signal scans.
   const candidateSources = sources.filter((source) => isArchitectureSourcePath(source.path) && !isLockfilePath(source.path));
@@ -200,10 +227,18 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
       analyzeGoRoutes({ snapshot, context: project.buildContext, enabled: project.parsers.find((parser) => parser.id === "ast-go")?.status !== "unavailable" }),
     ],
   });
+  const asyncGraph = buildAsyncGraph({
+    revision: input.revision,
+    snapshotId: snapshot.snapshotId,
+    extractions: [
+      analyzeTypeScriptAsync(snapshot, project.parsers.find((parser) => parser.id === "ast-typescript")?.status !== "unavailable"),
+      analyzeGoAsync({ snapshot, context: project.buildContext, enabled: project.parsers.find((parser) => parser.id === "ast-go")?.status !== "unavailable" }),
+    ],
+  });
 
   // Independent declaration discovery runs before any semantic detector.
   const structuralDeclarations = buildDeclarationInventory({ revision: input.revision, census: baseCensus, sources: runtimeSources });
-  const rawDeclarations = withRouteDeclarations(structuralDeclarations, routeGraph, snapshot);
+  const rawDeclarations = withAsyncDeclarations(withRouteDeclarations(structuralDeclarations, routeGraph, snapshot), asyncGraph, snapshot);
   const censusWithDeclarations = linkCensusDeclarations(baseCensus, rawDeclarations);
 
   const inventory = collectArchitectureSignals(input, runtimeSources);
@@ -214,7 +249,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   const coverage = evaluateArchitectureCoverage(enrichedInventory, facts);
   const declarationCoverage = evaluateDeclarationCoverage(rawDeclarations, facts);
   const mutation = mutationCheck(rawDeclarations, facts);
-  const operationFacts = [...routeOperationFacts(routeGraph), ...candidateOperationFacts(candidates), ...sqlOperationFacts(facts, runtimeSources)];
+  const operationFacts = [...routeOperationFacts(routeGraph), ...candidateOperationFacts(candidates), ...sqlOperationFacts(facts, runtimeSources), ...asyncGraph.operations];
   const candidateEvidenceRecords = candidates.flatMap((candidate) => [
     evidenceRecord(candidate.evidence),
     ...(candidate.configEvidence ? [evidenceRecord(candidate.configEvidence)] : []),
@@ -236,8 +271,8 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   // One lossless index: regex runtime evidence, AST imports, routes and direct calls.
   const evidence = mergeEvidenceIndex(
     buildEvidenceIndex(input.revision, facts),
-    [...moduleGraph.evidenceRecords, ...goModuleGraph.evidenceRecords, ...routeGraph.evidenceRecords, ...candidateEvidenceRecords],
-    [...moduleGraphEvidenceReferences(moduleGraph), ...goModuleGraphEvidenceReferences(goModuleGraph), ...routeGraphEvidenceReferences(routeGraph), ...candidateEvidenceReferences, ...operationEvidenceReferences(operationFacts.filter((operation) => operation.kind === "sql"))],
+    [...moduleGraph.evidenceRecords, ...goModuleGraph.evidenceRecords, ...routeGraph.evidenceRecords, ...candidateEvidenceRecords, ...asyncGraph.evidenceRecords],
+    [...moduleGraphEvidenceReferences(moduleGraph), ...goModuleGraphEvidenceReferences(goModuleGraph), ...routeGraphEvidenceReferences(routeGraph), ...candidateEvidenceReferences, ...operationEvidenceReferences(operationFacts.filter((operation) => operation.kind === "sql" || operation.kind === "queue" || operation.kind === "schedule"))],
   );
   const declarations = {
     ...rawDeclarations,
@@ -259,7 +294,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     buildContext: options.buildContext,
     parsers: project.parsers,
   });
-  const omissions = [...omissionsFrom(baseCensus, rawDeclarations, facts), ...project.omissions, ...moduleGraph.omissions, ...goModuleGraph.omissions, ...routeGraph.omissions];
+  const omissions = [...omissionsFrom(baseCensus, rawDeclarations, facts), ...project.omissions, ...moduleGraph.omissions, ...goModuleGraph.omissions, ...routeGraph.omissions, ...asyncGraph.omissions];
   const ir = buildArchitectureIr({
     revision: input.revision,
     view: defaultArchitectureView,
@@ -277,7 +312,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   return {
     inventory: enrichedInventory, facts, coverage, candidates,
     census, evidence, declarations, declarationCoverage, mutation,
-    scope, ir, projection, omissions, project, moduleGraph, goModuleGraph, routeGraph, snapshotId: snapshot.snapshotId,
+    scope, ir, projection, omissions, project, moduleGraph, goModuleGraph, routeGraph, asyncGraph, snapshotId: snapshot.snapshotId,
     view: defaultArchitectureView,
   };
 }

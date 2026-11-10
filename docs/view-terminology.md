@@ -1,6 +1,6 @@
-# RepoMap 视图、声明范围与交付契约（M0 / M1 / M2 / M3）
+# RepoMap 视图、声明范围与交付契约（M0 / M1 / M2 / M3 / M4）
 
-本文对应 `docs/full-architecture-plan.md` 的 M0、M1、M2 和 M3 切片，说明当前实现到哪一步、以及**哪些结论还不能得出**。
+本文对应 `docs/full-architecture-plan.md` 的 M0、M1、M2、M3 和 M4 切片，说明当前实现到哪一步、以及**哪些结论还不能得出**。
 
 ## 1. 视图等级
 
@@ -98,7 +98,15 @@ repomap analyze <source> --view runtime --view full \
 - **覆盖**：WriteFreely 固定版本 128/128、Authelia 101/101、Commerce 1/1 route declarations resolved；这些是固定 SHA 回归结果，不是人工 Gold 完成声明。
 - **统一 External**：专用 external detector 和 reserved identity suppression 已删除；GitHub 等静态 host、COS upload/download、OAuth、Webhook callback、Archify process integration 与未知 provider 都进入同一候选和 operation 路径。
 
-## 9. 已知边界（不要越界宣称）
+## 9. SQL、异步与 Target/Config（M4）
+
+- `sqlOperationFacts` 将 read、write、transaction、migration 分为独立 operation，保留 runtime owner；schema-only migration 归属 store 资源，避免同一迁移被多个 runtime 重复计数。
+- 外部候选增加 `target.kind` 与 `target.resolution`，并保留 `configKey/defaultValue/override/configEvidence`。required env 无默认值不会伪造 host；Go 常量、`config.OrDefaultString`、composite-literal 字段和 receiver 字段表达式可解析为 configured host/protocol。
+- `--require-external-hosts` 只接受 static host；configured/dynamic host、protocol 和 unknown 均失败。默认模式仍允许明确披露的动态目标。
+- `architecture.async-graph.json` 记录 Queue/Worker、channel send/receive、Pub/Sub 和 ticker schedule 的 operation、方向、独立 declarations 和证据；`time.After` 类型签名、CI YAML schedule 和生成物 bundle 不进入运行时 async operation。
+- Authelia async 为 73/73 resolved，WriteFreely 为 5/5；这些仍不是 `protocol-flows` 或 full 的发布结果。
+
+## 10. 已知边界（不要越界宣称）
 
 - 有 RouteGraph 和统一 External operation，但 `module-architecture` / `protocol-flows` **视图门禁**、异步数据流、完整 Target/Config 解析和黄金人工评估仍未实现；
 - submodule 目前只记录 `unresolved-submodule`，不会作为独立 fixed-SHA 输入获取；

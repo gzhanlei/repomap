@@ -15,7 +15,8 @@ describe("M4 SQL operations", () => {
     const operations = analysis.ir.operations.filter((operation) => operation.kind === "sql");
     expect(operations.map((operation) => operation.action)).toEqual(expect.arrayContaining(["read", "write", "transaction", "migration"]));
     expect(operations.every((operation) => operation.targetKind === "database" && operation.driver === "postgres")).toBe(true);
-    expect(operations.every((operation) => operation.owner === "go:cmd/app")).toBe(true);
+    expect(operations.filter((operation) => operation.action !== "migration").every((operation) => operation.owner === "go:cmd/app")).toBe(true);
+    expect(operations.filter((operation) => operation.action === "migration").every((operation) => operation.owner === "store:postgres")).toBe(true);
     expect(operations.every((operation) => operation.evidenceIds.length > 0)).toBe(true);
     const evidenceIds = new Set(analysis.evidence.records.map((record) => record.id));
     expect(operations.every((operation) => operation.evidenceIds.every((id) => evidenceIds.has(id)))).toBe(true);

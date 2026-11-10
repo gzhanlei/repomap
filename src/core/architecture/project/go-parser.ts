@@ -64,11 +64,18 @@ export interface GoParseDiagnostic {
   message: string;
 }
 
+export interface GoParsedAsyncOperation {
+  kind: "send" | "receive";
+  channel: string;
+  line: number;
+}
+
 export interface GoParsedFile {
   packageName: string;
   imports: GoParsedImport[];
   symbols: GoParsedSymbol[];
   calls: GoParsedCall[];
+  asyncOperations: GoParsedAsyncOperation[];
   callExpressions: number;
   diagnostics: GoParseDiagnostic[];
 }
@@ -119,7 +126,7 @@ export function parseGoSource(raw: string): GoParsedFile | undefined {
   if (!parser) return undefined;
   const root = parser.parse(raw)?.rootNode;
   if (!root) {
-    return { packageName: "", imports: [], symbols: [], calls: [], callExpressions: 0, diagnostics: [{ line: 1, message: "Go grammar produced no syntax tree" }] };
+    return { packageName: "", imports: [], symbols: [], calls: [], asyncOperations: [], callExpressions: 0, diagnostics: [{ line: 1, message: "Go grammar produced no syntax tree" }] };
   }
   const packageClause = firstNamed(root, "package_clause");
   const packageName = firstNamed(packageClause ?? root, "package_identifier")?.text ?? "";
@@ -145,6 +152,7 @@ export function parseGoSource(raw: string): GoParsedFile | undefined {
 
   const symbols: GoParsedSymbol[] = [];
   const calls: GoParsedCall[] = [];
+  const asyncOperations: GoParsedAsyncOperation[] = [];
   let callExpressions = 0;
   const visit = (node: SyntaxNode) => {
     if (node.type === "call_expression") {
@@ -156,6 +164,10 @@ export function parseGoSource(raw: string): GoParsedFile | undefined {
         arguments: (args?.namedChildren ?? []).map((argument) => ({ text: argument.text, type: argument.type })),
         line: node.startPosition.row + 1,
       });
+    }
+    if (node.type === "send_statement" || node.type === "receive_expression" || (node.type === "unary_expression" && node.text.startsWith("<-"))) {
+      const channel = node.childForFieldName("channel") ?? node.childForFieldName("operand") ?? node.firstNamedChild;
+      if (channel) asyncOperations.push({ kind: node.type === "send_statement" ? "send" : "receive", channel: channel.text, line: node.startPosition.row + 1 });
     }
     if (node.type === "function_declaration") {
       const name = firstNamed(node, "identifier")?.text;
@@ -182,6 +194,7 @@ export function parseGoSource(raw: string): GoParsedFile | undefined {
     imports: imports.sort((a, b) => a.line - b.line || a.source.localeCompare(b.source)),
     symbols: symbols.sort((a, b) => a.line - b.line || a.name.localeCompare(b.name)),
     calls: calls.sort((a, b) => a.line - b.line || a.name.localeCompare(b.name)),
+    asyncOperations: asyncOperations.sort((a, b) => a.line - b.line || a.channel.localeCompare(b.channel)),
     callExpressions,
     diagnostics: collectDiagnostics(root),
   };

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "status": "bootstrap-pending-human-audit",
-  "purpose": "M0/M1/M2 versioned gold-standard manifest skeleton. Fixed SHAs and archive hashes are pinned for reproducibility, but no critical fact or human review has been recorded; this is NOT ground truth yet.",
+  "purpose": "M0/M1/M2/M3/M4 versioned gold-standard manifest skeleton. Fixed SHAs and archive hashes are pinned for reproducibility, but no critical fact or human review has been recorded; this is NOT ground truth yet.",
   "capabilitySlices": [
     {
       "id": "project-preparation",
@@ -26,6 +26,12 @@
       "status": "implemented",
       "goldStatus": "fixture-and-fixed-sha-verified-not-human-audited",
       "note": "M3 fixtures cover Next re-export/alias, Vite React Router, Go HTTP methods, middleware/factories, computed handlers, dynamic paths, multiple Methods, unresolved handlers and independent-denominator behavior. Fixed-SHA observations are Authelia 101/101, WriteFreely 128/128 and Commerce 1/1 route declarations resolved, with zero unresolved handlers. External unification covers static hosts, object operations, callbacks and process integrations without provider bypass. These observations are not human-reviewed Gold facts."
+    },
+    {
+      "id": "sql-async-target-operations",
+      "status": "implemented",
+      "goldStatus": "fixture-and-fixed-sha-verified-not-human-audited",
+      "note": "M4 fixtures cover SQL read/write/transaction/migration, Queue/Worker, channel send/receive, Pub/Sub, ticker schedules, required env without defaults, override defaults, cross-file receiver fields and strict static-host gating. Fixed-SHA observations are Authelia 73/73 and WriteFreely 5/5 async declarations resolved, with CI schedule negatives and zero blocking omissions. WriteAs and GitLab are configured hosts with defaults; Gitea/Generic OAuth are configured protocols; ActivityPub remains dynamic protocol. These observations are not human-reviewed Gold facts."
     }
   ],
   "rules": {

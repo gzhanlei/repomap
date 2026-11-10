@@ -79,12 +79,12 @@ const operationBase = {
   resolution: resolutionSchema,
 };
 export const operationSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("http"), method: z.string(), path: z.string(), callSite: z.string(), ...operationBase }).strict(),
-  z.object({ kind: z.literal("graphql"), operationName: z.string(), operationType: z.string(), documentHash: z.string(), callSite: z.string(), ...operationBase }).strict(),
-  z.object({ kind: z.literal("queue"), action: z.string(), topic: z.string(), ...operationBase }).strict(),
+  z.object({ kind: z.literal("http"), method: z.string(), path: z.string(), callSite: z.string(), action: z.string().min(1).optional(), ...operationBase }).strict(),
+  z.object({ kind: z.literal("graphql"), operationName: z.string(), operationType: z.string(), documentHash: z.string(), callSite: z.string(), action: z.string().min(1).optional(), ...operationBase }).strict(),
+  z.object({ kind: z.literal("queue"), action: z.string(), topic: z.string(), callSite: z.string().optional(), ...operationBase }).strict(),
   z.object({ kind: z.literal("sql"), action: z.string(), driver: z.string(), callSite: z.string(), ...operationBase }).strict(),
-  z.object({ kind: z.literal("schedule"), schedule: z.string(), jobOwner: z.string(), ...operationBase }).strict(),
-  z.object({ kind: z.literal("config-binding"), configKey: z.string(), defaultValue: z.string(), override: z.string(), usedAt: z.string(), ...operationBase }).strict(),
+  z.object({ kind: z.literal("schedule"), schedule: z.string(), jobOwner: z.string(), action: z.string().min(1).optional(), callSite: z.string().optional(), ...operationBase }).strict(),
+  z.object({ kind: z.literal("config-binding"), configKey: z.string(), defaultValue: z.string(), override: z.string(), usedAt: z.string(), action: z.string().min(1).optional(), callSite: z.string().optional(), ...operationBase }).strict(),
 ]);
 export type OperationFact = z.infer<typeof operationSchema>;
 
@@ -216,6 +216,7 @@ export function buildProjectionManifest(input: { revision: string; view: string;
       { name: "architecture.module-graph.json", role: "TypeScript/JavaScript source-module graph, cycles and AST import evidence" },
       { name: "architecture.go-module-graph.json", role: "Go package graph, build constraints, go.mod/go.work resolution and AST import evidence" },
       { name: "architecture.route-graph.json", role: "route declarations, resolved handlers, bounded direct calls and parser evidence" },
+      { name: "architecture.async-graph.json", role: "queue, channel, pub/sub and scheduler operations with independent declarations and evidence" },
       { name: "architecture.projection.json", role: "projection reconciliation manifest" },
       { name: "architecture.analysis.json", role: "signal inventory and coverage" },
       { name: "repomap.receipt.json", role: "delivery and cost receipt" },
