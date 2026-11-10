@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { lstat, readdir, stat } from "node:fs/promises";
 import { basename, resolve, sep } from "node:path";
 import { isArchitectureSourcePath, type ArchitectureRepositorySourceReceipt, type ArchitectureSource } from "../architecture/source.js";
-import { excludedDirectoryRules } from "../architecture/file-roles.js";
 import type { RepositoryFileEntry } from "../architecture/census.js";
 import { execCommand, type CommandRunner } from "../process.js";
 
@@ -22,7 +21,7 @@ export const defaultRepositorySourceBudgets: RepositorySourceBudgets = {
   contentCacheFiles: 64,
 };
 
-const excludedDirectories = new Set(excludedDirectoryRules);
+const metadataDirectories = new Set([".git"]);
 const maxInventoryFiles = 200_000;
 
 export function isSupportedRepositoryPath(path: string) {
@@ -109,7 +108,7 @@ export async function loadLocalRepositorySources(repositoryRoot: string, overrid
     const entries = await readdir(directory, { withFileTypes: true });
     entries.sort((a, b) => a.name.localeCompare(b.name));
     for (const entry of entries) {
-      if (entry.isDirectory() && excludedDirectories.has(entry.name)) continue;
+      if (entry.isDirectory() && metadataDirectories.has(entry.name)) continue;
       const absolute = resolve(directory, entry.name);
       if (!absolute.startsWith(`${root}${sep}`)) throw new Error("Repository path escapes the source root");
       const relative = absolute.slice(root.length + 1).split(sep).join("/");
@@ -121,6 +120,9 @@ export async function loadLocalRepositorySources(repositoryRoot: string, overrid
         continue;
       }
       if (entry.isDirectory()) {
+        // Vendor/generated/dependency directories are enumerated for the raw
+        // census but are never selected as runtime sources or read into the
+        // content cache. Only VCS metadata (.git) is outside the source tree.
         await visit(absolute);
         continue;
       }

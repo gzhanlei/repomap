@@ -7,7 +7,7 @@
 | view | 本轮状态 | 说明 |
 | --- | --- | --- |
 | `system-context` | 未实现门禁 | 请求时返回 `failed` |
-| `runtime-overview` | 已实现、唯一可发布视图 | 沿用现有入口/runtime/store/external 门禁，新增 raw census 预算门禁 |
+| `runtime-overview` | 已实现、唯一可发布视图 | 沿用现有入口/runtime/store/external 门禁，新增 raw census、独立 declaration 和通用 package-script owner 门禁 |
 | `module-architecture` | 未实现门禁 | 已有 TypeScript/JavaScript 与 Go 两个 ModuleGraph 产物与各自独立分母，但**视图门禁仍未实现**，请求时依然 `failed` |
 | `protocol-flows` | 未实现门禁 | operation union 已在 IR v2 定义，但还没有 operation extractor |
 | `full-declared-scope` | 未实现门禁 | 不能发布 |
@@ -25,7 +25,7 @@ repomap analyze <source> --view runtime --view full \
 ```
 
 - `--view` 可重复；`full` 自动要求四个基础视图。任何被请求但失败的视图都会让命令退出非零，较低视图自己的 `accepted` 状态不会伪造成总成功。
-- `--include` / `--exclude` 只表示用户声明的范围；用户排除记录为 `out-of-scope`，绝不会伪装成 detector 能力。
+- `--include` / `--exclude` 同时作用于 raw census disposition、独立声明分母和语义事实，并写入声明范围；用户排除记录为 `out-of-scope`，绝不会伪装成 detector 能力。
 - `--require-external-hosts` 打开额外严格门禁开关，目前只写入声明范围，不改变默认 full 判定。
 - `--no-render` 只写 JSON / coverage / receipt，不准备 Archify、不调用 Chromium、不写 HTML。
 - Go 构建上下文固定写入 `declaredScope.buildContext`（默认 `linux/amd64`、空 build tags），不继承宿主机隐式值。
@@ -40,8 +40,10 @@ repomap analyze <source> --view runtime --view full \
 - 绝不把文件标成 `parsed`；census 的 `parser` 只描述该 raw entry 被哪套行扫描器选中（`regex-line-scan@1` 或 `none`），AST 解析状态与 unit 归属另见 `architecture.project.json`；
 - `role` 区分 source / test / fixture / generated / vendored / schema / migration / manifest / lockfile / config / documentation / binary / unknown；
 - `packageId` 由最近的 manifest 目录决定，无法归属时落到 `package:root` 并记录原因；
-- `exclusions` 记录规则与数量，`totals.rawEntries` 与 `files.length` 必须对账；
-- raw entry / raw bytes 预算耗尽时，所有视图失败、不写 HTML，只保留诊断。
+- `exclusions` 记录规则、数量和完整路径；dependency/vendor/generated 等目录只枚举元数据、不读取内容，`.git` 元数据不属于源码树；重复 raw path 会使对账失败；
+- `totals.rawEntries` 与 `files.length` 必须对账，`totals.selected` 是用户 scope 后实际进入分析的文件数；
+- raw entry / raw bytes 预算耗尽时，所有视图失败、不写 HTML，只保留诊断；
+- include/exclude 不会只改变 receipt：被排除文件也不会进入 declaration 或 facts。
 
 ## 4. 独立声明、证据与 IR
 
@@ -60,7 +62,7 @@ repomap analyze <source> --view runtime --view full \
 - **TypeScript adapter**：**一个全快照级** Compiler API `Program` 在内存 compiler host 上运行（不是每 unit 一个，否则跨 workspace import 无法解析），覆盖静态 import / re-export / 动态 import / require、exported symbols、结构化入口候选和语法诊断；相对导入、tsconfig paths/baseUrl、project references、workspace 包名都只在 snapshot 内解析，裸包名诚实记为 `external-package-not-in-snapshot`。多 workspace 中同名 `src/index.ts` 按 `packageId` 分到不同 unit。
 - **显式 build context**：`goos` / `goarch` / `buildTags` 固定写入（默认 `linux/amd64/[]`），不读取宿主机 `GOOS`/`GOARCH`；`go.work use` 与 `go.mod replace` 从 snapshot 读取并记录。
 - **parser 门禁**：`ast-typescript` 与 `ast-go` 都从 snapshot 真实加载；只有当 grammar runtime（`web-tree-sitter` WASM）初始化失败时才报告 `parser-unavailable`。parser 缺失只产生 `parser-unavailable` omission，影响 `module-architecture` / `protocol-flows` / `full-declared-scope`；`gates.runtimeOverviewUnaffected` 恒为 `true`，绝不影响默认视图。
-- **生产依赖**：`typescript` 与 `web-tree-sitter` / `tree-sitter-go` 位于 `dependencies`。`npm run pack:dry-run` 与 `npm run smoke:production` 验证仅安装生产依赖的打包 CLI 仍能运行并输出 `architecture.project.json`。Go parser 取舍见 [ADR](docs/adr-go-parser.md)。
+- **生产依赖**：`typescript` 与 `web-tree-sitter` / `tree-sitter-go` 位于 `dependencies`。`npm run pack:dry-run` 与 `npm run smoke:production` 验证仅安装生产依赖的打包 CLI 仍能运行并输出 `architecture.project.json`。Go parser 取舍见 [ADR](adr-go-parser.md)。
 
 ## 6. ModuleGraph（M2 第二个切片）
 
@@ -88,8 +90,8 @@ repomap analyze <source> --view runtime --view full \
 
 - 有 TypeScript/JavaScript 与 Go 两个 ModuleGraph，但 `module-architecture` **视图门禁**、RouteGraph、protocol operation extractor、身份解析和黄金评估仍未实现；
 - submodule 目前只记录 `unresolved-submodule`，不会作为独立 fixed-SHA 输入获取；
-- evidence / census 尚未流式分片写出；
-- `docs/gold-manifest.v1.json` 只是版本化骨架，未经过人工审核，不能当作真值；
-- 未建立 Authelia 数值性能基线，也未做 fixed-SHA 公共仓库评估与视觉复核。
+- evidence / census / IR / receipt 已通过带回压和原子替换的流式 JSON writer 写出；内存中的语义分析对象尚未全流式化，固定 CI 性能门槛仍需复核；
+- `docs/gold-manifest.v1.json` 已固定三个仓库的 SHA/archive hash，但仍未经过人工审核，不能当作真值；
+- 已建立 Authelia 本地三次数值基线（见 `docs/performance-baseline.v1.json`），固定 CI 与视觉发布资格仍需独立验证。
 
 上述缺口全部写入 `declaredScope.capabilityGaps` 与 `delivery.views[*].blockingReasons`，因此本轮任何输出都只能称为 Runtime Overview，不能称为完整架构。

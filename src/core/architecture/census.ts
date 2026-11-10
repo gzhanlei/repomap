@@ -94,11 +94,22 @@ function ownerFor(path: string, packages: PackageDraft[]) {
   return packages.filter((entry) => entry.root === "." || path.startsWith(`${entry.root}/`)).sort((a, b) => b.root.length - a.root.length)[0]?.id ?? packages[0].id;
 }
 
-function userExcluded(path: string, patterns: string[]) {
-  return patterns.some((pattern) => {
-    const prefix = pattern.replace(/\/\*\*$/, "").replace(/\*\*/g, "");
-    return prefix.length > 0 && (path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(prefix));
-  });
+function globMatches(path: string, pattern: string) {
+  const normalized = pattern.replace(/^\.\//, "");
+  if (normalized === "**" || normalized === "*") return true;
+  const base = normalized.replace(/\/\*\*$/, "");
+  if (normalized.endsWith("/**") && path === base) return true;
+  const escaped = normalized.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  const regex = escaped
+    .replace(/\*\*/g, "\0")
+    .replace(/\*/g, "[^/]*")
+    .replace(/\?/g, "[^/]")
+    .replace(/\0/g, ".*");
+  return new RegExp(`^${regex}$`).test(path);
+}
+
+function userExcluded(path: string, patterns: string[], include: string[]) {
+  return patterns.some((pattern) => globMatches(path, pattern)) || (include.length > 0 && !include.some((pattern) => globMatches(path, pattern)));
 }
 
 const excludedReasons: Partial<Record<ReturnType<typeof classifySourcePath>, string>> = {
@@ -110,12 +121,12 @@ function disposition(entry: RepositoryFileEntry, excludedByUser: boolean): { rol
   const role = classifySourcePath(entry.path);
   if (excludedByUser) return { role, status: "excluded", reason: "out-of-scope", parser: "none" };
   if (entry.entryKind !== "file") return { role, status: "inventoried", reason: entry.entryKind === "gitlink" ? "submodule-gitlink" : `${entry.entryKind}-not-followed`, parser: "none" };
+  if (detectSourceLanguage(entry.path) === "unknown") return { role, status: "unsupported", reason: "unsupported-language", parser: "none" };
   const reason = excludedReasons[role];
   if (reason) return { role, status: "excluded", reason, parser: "none" };
   if (!entry.selected) return { role, status: "excluded", reason: "not-runtime-source", parser: "none" };
-  if (detectSourceLanguage(entry.path) === "unknown") return { role, status: "unsupported", reason: "unsupported-language", parser: "none" };
-  // No AST adapter is wired yet. "selected" is the honest state: the file was
-  // scanned by a deterministic line scanner, not parsed.
+  // Source selection and AST parsing are separate states. "selected" means
+  // selected for deterministic analysis, not that an AST parser succeeded.
   return { role, status: "selected", reason: "selected-for-line-scan", parser: "regex-line-scan@1" };
 }
 
@@ -127,6 +138,8 @@ export interface BuildSourceCensusInput {
   revision: string;
   inventory: RepositoryFileEntry[];
   userExclusions?: string[];
+  exclude?: string[];
+  include?: string[];
   budgets?: Partial<typeof defaultRawBudgets>;
 }
 
@@ -135,12 +148,13 @@ export function buildSourceCensus(input: BuildSourceCensusInput): SourceCensus {
   const unique = new Map(input.inventory.map((entry) => [entry.path, entry]));
   const entries = [...unique.values()].sort((a, b) => a.path.localeCompare(b.path));
   const packages = discoverPackages(entries);
-  const exclusionsByUser = input.userExclusions ?? [];
+  const exclusionsByUser = [...new Set([...(input.userExclusions ?? []), ...(input.exclude ?? [])])].sort();
+  const include = input.include ?? [];
   const omissions: SourceCensus["omissions"] = [];
-  const rawBytes = entries.reduce((total, entry) => total + entry.size, 0);
-  const rawBudgetExceeded = entries.length > budgets.maxRawEntries || rawBytes > budgets.maxRawBytes || entries.some((entry) => entry.size > budgets.maxRawEntryBytes);
+  const rawBytes = input.inventory.reduce((total, entry) => total + entry.size, 0);
+  const rawBudgetExceeded = input.inventory.length > budgets.maxRawEntries || rawBytes > budgets.maxRawBytes || input.inventory.some((entry) => entry.size > budgets.maxRawEntryBytes);
   const files: RawEntryRecord[] = entries.map((entry) => {
-    const result = disposition(entry, userExcluded(entry.path, exclusionsByUser));
+    const result = disposition(entry, userExcluded(entry.path, exclusionsByUser, include));
     const omissionIds: string[] = [];
     if (result.status === "unsupported" || result.status === "parse-error" || result.reason === "submodule-gitlink") {
       const id = `census:${result.reason}:${entry.path}`;
@@ -169,18 +183,24 @@ export function buildSourceCensus(input: BuildSourceCensusInput): SourceCensus {
   const byReason = tally(files.map((file) => file.reason));
   const reasonRules = Object.entries(byReason).filter(([reason]) => reason !== "selected-for-line-scan").map(([reason, count]) => ({
     rule: `disposition:${reason}`, reason, count,
-    paths: files.filter((file) => file.reason === reason).map((file) => file.path).slice(0, 20),
+    paths: files.filter((file) => file.reason === reason).map((file) => file.path),
   }));
-  const directoryRules = excludedDirectoryRules.map((directory) => ({ rule: `${directory}/**`, reason: "directory-excluded-before-enumeration", count: 0, paths: [] as string[] }));
+  const directoryRules = excludedDirectoryRules.map((directory) => {
+    const paths = files.filter((file) => file.path === directory || file.path.startsWith(`${directory}/`)).map((file) => file.path);
+    return { rule: `${directory}/**`, reason: "runtime-source-directory-excluded", count: paths.length, paths };
+  });
   if (exclusionsByUser.length > 0) {
-    directoryRules.push({ rule: exclusionsByUser.join(","), reason: "user-exclusion", count: files.filter((file) => file.reason === "out-of-scope").length, paths: files.filter((file) => file.reason === "out-of-scope").map((file) => file.path).slice(0, 20) });
+    directoryRules.push({ rule: exclusionsByUser.join(","), reason: "user-exclusion", count: files.filter((file) => file.reason === "out-of-scope").length, paths: files.filter((file) => file.reason === "out-of-scope").map((file) => file.path) });
+  }
+  if (include.length > 0) {
+    directoryRules.push({ rule: include.join(","), reason: "user-inclusion", count: files.filter((file) => file.reason === "out-of-scope").length, paths: files.filter((file) => file.reason === "out-of-scope").map((file) => file.path) });
   }
   return sourceCensusSchema.parse({
     version: 1,
     revision: input.revision,
     totals: {
       rawEntries: files.length, rawBytes,
-      selected: entries.filter((entry) => entry.selected).length,
+      selected: files.filter((file) => file.status === "selected").length,
       excluded: files.filter((file) => file.status === "excluded").length,
       inventoried: files.filter((file) => file.status === "inventoried").length,
       unsupported: files.filter((file) => file.status === "unsupported").length,
@@ -196,7 +216,7 @@ export function buildSourceCensus(input: BuildSourceCensusInput): SourceCensus {
     exclusions: [...directoryRules, ...reasonRules],
     files, omissions,
     capabilityGaps: capabilityGaps(),
-    reconciled: files.length === entries.length && new Set(files.map((file) => file.path)).size === entries.length && files.every((file) => file.status.length > 0 && file.reason.length > 0),
+    reconciled: unique.size === input.inventory.length && files.length === entries.length && new Set(files.map((file) => file.path)).size === entries.length && files.every((file) => file.status.length > 0 && file.reason.length > 0),
   });
 }
 

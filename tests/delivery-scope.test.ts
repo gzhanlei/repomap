@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { analyzeSources } from "../src/core/analyze.js";
 import { architectureFactSetSchema } from "../src/core/architecture/facts.js";
+import { analyzeArchitectureFacts } from "../src/core/architecture/extract.js";
 import { buildDeclaredScope, buildDeliveryStatement, defaultArchitectureView, deliveryExitCode, resolveRequestedViews } from "../src/core/architecture/scope.js";
 import { parseCliArguments } from "../src/cli.js";
 import { loadLocalRepositorySources } from "../src/core/source/local.js";
@@ -88,6 +89,7 @@ describe("M0 delivery contract", () => {
     expect(deliver).not.toHaveBeenCalled();
     expect(check).not.toHaveBeenCalled();
     expect(receipt.visualReview).toBe("not-requested");
+    expect(receipt.delivery.reason).not.toContain("passing visual check");
     expect(existsSync(join(input.outDir, "architecture.html"))).toBe(false);
     expect(existsSync(join(input.outDir, "architecture.json"))).toBe(false);
   });
@@ -112,6 +114,33 @@ describe("M0 delivery contract", () => {
     };
     const parsed = architectureFactSetSchema.parse(legacy);
     expect(JSON.stringify(parsed)).not.toContain("evidenceIds");
+  });
+
+  it("applies user scope to facts and independent declarations, not only receipt metadata", () => {
+    const sources = [
+      { path: "package.json", content: '1: {"scripts":{"start":"next start"},"dependencies":{"next":"16.0.0"}}' },
+      { path: "app/page.tsx", content: "1: export default function Page() {}" },
+      { path: "app/api/products/route.ts", content: "1: export async function GET() {}" },
+    ];
+    const analysis = analyzeArchitectureFacts({ revision, scope: "repository" }, sources, { include: ["app/page.tsx", "package.json"] });
+    expect(analysis.facts.nodes.some((node) => node.id === "next:root:ui")).toBe(true);
+    expect(analysis.facts.nodes.some((node) => node.id === "next:root:api")).toBe(false);
+    expect(analysis.census.files.find((file) => file.path === "app/api/products/route.ts")?.reason).toBe("out-of-scope");
+    expect(analysis.census.totals.selected).toBe(2);
+    expect(analysis.declarations.declarations.some((declaration) => declaration.sourcePath === "app/api/products/route.ts")).toBe(false);
+  });
+
+  it("blocks delivery when an independent runtime declaration has no fact owner", async () => {
+    const outDir = await mkdtemp(join(tmpdir(), "repomap-declaration-gate-"));
+    const receipt = await analyzeSources({
+      identity: { kind: "local", owner: "local", repo: "demo", revision },
+      sources: [{ path: "app/api/products/route.ts", content: "1: const value = 1;" }],
+      sourceReceipt: { scope: "repository", directories: 1, files: 1, bytes: 25 },
+      outDir, render: false, deliver: vi.fn(),
+    });
+    expect(receipt.declarationCoverage.blockingViews).toContain("runtime-overview");
+    expect(receipt).toMatchObject({ status: "failed", error: expect.stringContaining("Independent declaration coverage") });
+    expect(receipt.delivery.views.find((entry) => entry.view === "runtime-overview")?.omissionCount).toBeGreaterThan(0);
   });
 
   it("parses the new CLI view and scope flags", () => {

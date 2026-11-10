@@ -1,8 +1,8 @@
 # RepoMap 接手文档
 
-更新日期：2026-11-08
+更新日期：2026-11-09
 
-> 当前补充：项目已发布到 `https://github.com/gzhanlei/repomap`。本轮已完成大仓库懒加载、Go/SQLite/PostgreSQL、Vite/React、Go 出站 HTTP 和动态外部候选验证；当前全量检查为 13 个测试文件、46 项测试。通用完整架构的后续实施计划见 [full-architecture-plan.md](full-architecture-plan.md)。以下 2026-11-05 的接手记录保留作历史背景，后续状态以 README、通用协议文档、完整架构计划和 Git 历史为准。
+> 当前补充：项目已发布到 `https://github.com/gzhanlei/repomap`。已完成大仓库懒加载、Go/SQLite/PostgreSQL、Vite/React、Go 出站 HTTP，以及 M0/M1 契约、census、独立声明、证据索引和 M2 项目/模块图切片；当前全量检查为 23 个测试文件、125 项测试。通用完整架构的后续实施计划见 [full-architecture-plan.md](full-architecture-plan.md)。以下 2026-11-05 的接手记录保留作历史背景，后续状态以 README、通用协议文档、完整架构计划和 Git 历史为准。
 
 ## 已确认的产品边界
 

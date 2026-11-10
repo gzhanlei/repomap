@@ -68,7 +68,7 @@ function nextNode(id: string, kind: "frontend" | "api", root: string, source: Ar
     kind,
     label: `${root || framework} ${kind === "frontend" ? "Web UI" : "API"}`,
     runtimeUnit: root || (framework === "Vite" ? "vite-root" : "next-root"),
-    sourcePaths,
+    sourcePaths: [...new Set(paths)].sort(),
     signalIds,
     evidence: [evidence],
   };

@@ -17,7 +17,7 @@ function source(path: string, raw: string) {
 }
 
 /** Mirror the project-preparation test helper, plus a direct Go package graph build. */
-function goGraph(files: Record<string, string>, overrides: Parameters<typeof prepareProjects>[0] = {} as never) {
+function goGraph(files: Record<string, string>, overrides: Partial<Parameters<typeof prepareProjects>[0]> = {}) {
   const sources = Object.entries(files).map(([path, raw]) => source(path, raw));
   const census = buildSourceCensus({
     revision,
@@ -106,8 +106,8 @@ describe("M2 go-module-graph: explicit build-context file selection", () => {
     expect(base.graph.statistics.parsedFiles).toBe(2); // main.go + tagged_linux.go
 
     const windows = goGraph(files, {
-      buildContext: { goos: "windows", goarch: "amd64", buildTags: [], workspaces: [], replaces: [] },
-    } as never);
+      buildContext: { goos: "windows", goarch: "amd64", buildTags: [] },
+    });
     expect(windows.graph.excludedFiles.map((item) => item.path).sort()).toEqual(["tagged_linux.go"]);
     expect(windows.graph.statistics.parsedFiles).toBe(3); // main.go + os_windows.go + disabled.go
   });

@@ -73,6 +73,9 @@ export function buildDeclarationInventory(input: BuildDeclarationInput): Declara
     if (file.status === "unsupported") {
       capabilityGaps.add(`unsupported-language:${file.language}`);
     }
+    // Excluded tests, generated files, documentation and user out-of-scope
+    // entries stay in the census but cannot expand the semantic denominator.
+    if (file.status !== "selected") continue;
     if (file.role === "manifest" && file.path.endsWith("package.json") && content) {
       let parsed: Record<string, unknown> = {};
       try { parsed = JSON.parse(unnumbered(content)) as Record<string, unknown>; } catch { capabilityGaps.add("unparseable-manifest"); }
@@ -132,6 +135,14 @@ export interface DeclarationCoverage {
   covered: number;
   missing: DeclarationRecord[];
   blocking: boolean;
+  blockingViews: string[];
+}
+
+function declarationBlockingViews(declaration: DeclarationRecord) {
+  if (declaration.kind === "entrypoint" || declaration.kind === "deployable" || declaration.kind === "route") return ["runtime-overview", "module-architecture", "full-declared-scope"];
+  if (declaration.kind === "protocol" || declaration.kind === "operation" || declaration.kind === "worker") return ["protocol-flows", "full-declared-scope"];
+  if (declaration.capability === "unresolved-submodule") return ["system-context", "runtime-overview", "module-architecture", "protocol-flows", "full-declared-scope"];
+  return ["module-architecture", "full-declared-scope"];
 }
 
 /** Bootstrap evaluator: a critical declaration is covered when a published fact owns its source path. */
@@ -144,7 +155,13 @@ export function evaluateDeclarationCoverage(inventory: DeclarationInventory, fac
   for (const edge of facts.edges) for (const item of edge.evidence) owned.add(item.path);
   const critical = inventory.declarations.filter((item) => item.critical);
   const missing = critical.filter((item) => !owned.has(item.sourcePath)).sort((a, b) => a.declarationId.localeCompare(b.declarationId));
-  return { total: critical.length, covered: critical.length - missing.length, missing, blocking: missing.length > 0 };
+  return {
+    total: critical.length,
+    covered: critical.length - missing.length,
+    missing,
+    blocking: missing.length > 0,
+    blockingViews: [...new Set(missing.flatMap(declarationBlockingViews))].sort(),
+  };
 }
 
 export interface MutationResult {

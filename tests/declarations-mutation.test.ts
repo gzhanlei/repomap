@@ -69,5 +69,7 @@ describe("M0/M1 independent declarations and mutation harness", () => {
     const analysis = analyzeArchitectureFacts(scope, sources);
     expect(analysis.ir.operations).toEqual([]);
     expect(analysis.omissions.some((omission) => omission.reason === "unsupported-protocol" && omission.affectedViews.includes("full-declared-scope"))).toBe(true);
+    expect(analysis.declarationCoverage.blockingViews).toContain("protocol-flows");
+    expect(analysis.declarationCoverage.blockingViews).not.toContain("runtime-overview");
   });
 });

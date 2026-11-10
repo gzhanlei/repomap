@@ -14,7 +14,7 @@ export const excludedDirectoryRules = [".git", "node_modules", "vendor", "third_
 
 const lockfilePattern = /(?:^|\/)(?:package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.ya?ml|bun\.lockb?|composer\.lock|Gemfile\.lock|Cargo\.lock|poetry\.lock|Pipfile\.lock|go\.sum|flake\.lock|deno\.lock|packages\.lock\.json)$/i;
 const manifestPattern = /(?:^|\/)(?:package\.json|go\.mod|go\.work|pnpm-workspace\.ya?ml|Cargo\.toml|pyproject\.toml|composer\.json|pom\.xml|build\.gradle(?:\.kts)?|Gemfile|requirements\.txt|[^/]+\.csproj)$/i;
-const testPattern = /(?:^|\/)(?:__tests__|tests?|fixtures?|mocks?|spec|suites?)(?:\/|\.)|\.(?:test|spec)\.[a-z]+$|_test\.(?:go|py)$|\.d\.ts$/i;
+const testPattern = /(?:^|\/)(?:__tests__|tests?|fixtures?|mocks?|spec)(?:\/|\.)|\.(?:test|spec)\.[a-z]+$|_test\.(?:go|py)$|\.d\.ts$/i;
 const generatedPattern = /(?:^|\/)(?:generated|gen|__generated__)(?:\/|$)|(?:^|\/)(?:static|public|assets)\/(?:.*\/)?(?:mathjax|katex|plotly|monaco|codemirror|ckeditor|tinymce)(?:\/|$)|(?:^|\/)(?:static|public|assets)\/.*-full\.js$|\.min\.js$/i;
 const vendoredPattern = /(?:^|\/)(?:vendor|third_party|node_modules|bower_components|dist|build|out|coverage)(?:\/|$)/i;
 const migrationPattern = /(?:^|\/)(?:migrations?|migrate|alembic|db\/migrate)(?:\/|$)/i;

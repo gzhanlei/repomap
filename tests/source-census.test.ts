@@ -42,7 +42,11 @@ describe("M1 raw source census", () => {
     expect(census.reconciled).toBe(true);
     expect(sourceCensusSchema.parse(census).reconciled).toBe(true);
     expect(() => assertSourceCensusReconciled(census)).not.toThrow();
-    expect(census.totals.selected).toBe(loaded.sources.length);
+    expect(census.totals.selected).toBe(census.files.filter((file) => file.status === "selected").length);
+    expect(census.totals.selected).toBeLessThan(loaded.sources.length); // lockfile remains raw-only
+    expect(loaded.inventory.some((entry) => entry.path === "node_modules/dep/index.js")).toBe(true);
+    const vendored = census.files.find((file) => file.path === "node_modules/dep/index.js");
+    expect(vendored).toMatchObject({ role: "vendored", status: "excluded", reason: "vendored" });
   });
 
   it("uses honest raw states instead of pretending files were AST parsed", async () => {
@@ -59,6 +63,8 @@ describe("M1 raw source census", () => {
     expect(byPath.get("web/src/index.ts")?.parser).toBe("regex-line-scan@1");
     expect(byPath.get("link-to-mod")?.status).toBe("inventoried");
     expect(byPath.get("link-to-mod")?.entryKind).toBe("symlink");
+    expect(byPath.get("extensionless-exec")?.status).toBe("unsupported");
+    expect(byPath.get("extensionless-exec")?.reason).toBe("unsupported-language");
     expect(census.files.every((file) => file.status !== "parse-error")).toBe(true);
     expect(census.capabilityGaps).toContain("ast-go");
   });
@@ -147,6 +153,29 @@ describe("M1 raw source census", () => {
     const loaded = await loadLocalRepositorySources(root);
     const census = buildSourceCensus({ revision, inventory: loaded.inventory });
     expect(() => assertSourceCensusReconciled({ ...census, files: census.files.slice(1) })).toThrow("reconcile");
+  });
+
+  it("rejects duplicate raw paths instead of silently reconciling a deduplicated subset", () => {
+    const inventory = [
+      { path: "src/index.ts", size: 1, entryKind: "file" as const, selected: true },
+      { path: "src/index.ts", size: 1, entryKind: "file" as const, selected: true },
+    ];
+    const census = buildSourceCensus({ revision, inventory });
+    expect(census.reconciled).toBe(false);
+    expect(() => assertSourceCensusReconciled(census)).toThrow("reconcile");
+  });
+
+  it("applies include globs to whole path segments, not unrelated prefixes", () => {
+    const census = buildSourceCensus({
+      revision,
+      include: ["src/**"],
+      inventory: [
+        { path: "src/index.ts", size: 1, entryKind: "file", selected: true },
+        { path: "src2/index.ts", size: 1, entryKind: "file", selected: true },
+      ],
+    });
+    expect(census.files.find((file) => file.path === "src/index.ts")?.status).toBe("selected");
+    expect(census.files.find((file) => file.path === "src2/index.ts")?.reason).toBe("out-of-scope");
   });
 
   it("links evidence and declaration IDs back to raw entries", () => {

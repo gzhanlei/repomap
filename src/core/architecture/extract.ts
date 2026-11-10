@@ -10,6 +10,7 @@ import { linkStorageRelationships, storageArchitectureDetector } from "./detecto
 import { externalArchitectureDetector, externalCallbackRelationships, linkExternalRelationships } from "./detectors/external.js";
 import { miniProgramApiRelationships, miniProgramArchitectureDetector } from "./detectors/mini-program.js";
 import { goInternalHttpRelationships } from "./detectors/go-http.js";
+import { packageDeployableFragment } from "./detectors/package.js";
 import { emptyArchitectureFragment, type ArchitectureContext, type ArchitectureFragment } from "./detectors/types.js";
 import { detectGenericExternal, genericExternalCandidates } from "./detectors/generic-external.js";
 import type { ExternalCandidate } from "./candidates.js";
@@ -69,8 +70,9 @@ function extractWithInventory(input: Pick<ArchitectureSignalInventory, "revision
   const context: ArchitectureContext = { ...input, sources, signals: inventory.signals };
   const fragments = detectors.map((detector) => detector.detect(context));
   const base = mergeArchitectureFragments(input.revision, fragments);
-  const generic = detectGenericExternal(context, base.nodes);
-  const augmented = mergeArchitectureFragments(input.revision, [base, generic]);
+  const withDeployables = mergeArchitectureFragments(input.revision, [base, packageDeployableFragment(context, base.nodes)]);
+  const generic = detectGenericExternal(context, withDeployables.nodes);
+  const augmented = mergeArchitectureFragments(input.revision, [withDeployables, generic]);
   const storageEdges = linkStorageRelationships(context, augmented.nodes);
   const relationshipEdges = [
     ...storageEdges,
@@ -103,10 +105,15 @@ function omissionsFrom(census: ReturnType<typeof buildSourceCensus>, declaration
     });
   }
   for (const gap of declarations.capabilityGaps) {
+    const repositoryWide = gap === "unresolved-submodule" || gap === "unparseable-manifest";
     result.push({
       id: `omission:capability:${gap}`, owner: "capability-discovery",
-      reason: gap.startsWith("unsupported-framework") ? "unsupported-framework" : gap.startsWith("unsupported-language") ? "unsupported-language" : "parser-unavailable",
-      detail: gap, declarationIds: [], evidenceIds: [], affectedViews: ["module-architecture", "full-declared-scope"], blocking: false,
+      reason: gap.startsWith("unsupported-framework") ? "unsupported-framework" : gap.startsWith("unsupported-language") ? "unsupported-language" : gap === "unresolved-submodule" ? "unresolved-submodule" : "parser-unavailable",
+      detail: gap,
+      declarationIds: [],
+      evidenceIds: [],
+      affectedViews: repositoryWide ? ["system-context", "runtime-overview", "module-architecture", "protocol-flows", "full-declared-scope"] : ["module-architecture", "full-declared-scope"],
+      blocking: true,
     });
   }
   for (const gap of declarations.protocolGaps) {
@@ -127,10 +134,19 @@ function omissionsFrom(census: ReturnType<typeof buildSourceCensus>, declaration
 
 export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory, "revision" | "scope">, sources: ArchitectureSource[], options: ArchitectureAnalysisOptions = {}) {
   // Lockfiles remain in the raw census but never enter evidence or signal scans.
-  const runtimeSources = sources.filter((source) => isArchitectureSourcePath(source.path) && !isLockfilePath(source.path));
+  const candidateSources = sources.filter((source) => isArchitectureSourcePath(source.path) && !isLockfilePath(source.path));
   const rawEntries: RepositoryFileEntry[] = options.inventory ?? sources.map((source) => ({ path: source.path, size: 0, entryKind: "file" as const, selected: true }));
-  const baseCensus = buildSourceCensus({ revision: input.revision, inventory: rawEntries, userExclusions: options.userExclusions, budgets: options.rawBudgets });
+  const baseCensus = buildSourceCensus({
+    revision: input.revision,
+    inventory: rawEntries,
+    userExclusions: options.userExclusions,
+    exclude: options.exclude,
+    include: options.include,
+    budgets: options.rawBudgets,
+  });
   assertSourceCensusReconciled(baseCensus);
+  const selectedPaths = new Set(baseCensus.files.filter((file) => file.status === "selected").map((file) => file.path));
+  const runtimeSources = candidateSources.filter((source) => selectedPaths.has(source.path));
 
   // Project preparation consumes immutable raw text; it never changes facts v1.
   const snapshot = createSourceSnapshot({ revision: input.revision, sources: runtimeSources, census: baseCensus });

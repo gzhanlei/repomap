@@ -1,7 +1,7 @@
 {
   "version": 1,
   "status": "bootstrap-pending-human-audit",
-  "purpose": "M0/M2 versioned gold-standard manifest skeleton. This is NOT ground truth: no fixed SHA, critical fact or human review has been recorded yet.",
+  "purpose": "M0/M1/M2 versioned gold-standard manifest skeleton. Fixed SHAs and archive hashes are pinned for reproducibility, but no critical fact or human review has been recorded; this is NOT ground truth yet.",
   "capabilitySlices": [
     {
       "id": "project-preparation",
@@ -32,24 +32,27 @@
     {
       "id": "authelia",
       "repository": "authelia/authelia",
-      "revision": null,
-      "status": "revision-not-pinned",
+      "revision": "32b0bdac395efc707bc098757afa232177965736",
+      "archiveSha256": "6c2d77b8832dfb4f32d727178cbdc95dac3e43d6ad479c5465b1ef7c9022aa86",
+      "status": "pinned-not-audited",
       "intendedCoverage": ["go-mains", "vite-frontend", "sql-dialects", "external-calls"],
       "criticalFacts": []
     },
     {
       "id": "writefreely",
       "repository": "writefreely/writefreely",
-      "revision": null,
-      "status": "revision-not-pinned",
+      "revision": "8ff3647e9a094dbcf09c9c84d8e2305543ee5cfb",
+      "archiveSha256": "74de0234f41a2185295de0955f65f7f9fa513fcfcdd1818239363b9007e3e2a2",
+      "status": "pinned-not-audited",
       "intendedCoverage": ["root-go-module", "oauth", "activitypub", "mysql-sqlite", "lockfile-negative"],
       "criticalFacts": []
     },
     {
       "id": "commerce",
       "repository": "vercel/commerce",
-      "revision": null,
-      "status": "revision-not-pinned",
+      "revision": "f7521d57d29f0eb3d23c1399cf9bb299d61fcd21",
+      "archiveSha256": "7d5a71c51312c8c957fcdb5d737150434f06ae585ffd43711dae7123805f8345",
+      "status": "pinned-not-audited",
       "intendedCoverage": ["next-app-router", "graphql-operations", "provider-identity"],
       "criticalFacts": []
     }

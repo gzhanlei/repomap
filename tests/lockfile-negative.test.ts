@@ -62,6 +62,23 @@ describe("M1 lockfile and evidence bloat negatives", () => {
     expect(analysis.evidence.records.length).toBeLessThan(40);
   });
 
+  it("does not truncate semantic SQL evidence; only projection evidence is sampled", () => {
+    const sql = Array.from({ length: 20 }, (_, index) => `CREATE TABLE table_${index} (id TEXT PRIMARY KEY);`).join("\n");
+    const analysis = analyzeArchitectureFacts(scope, [
+      { path: "go.mod", content: "module example.com/app" },
+      { path: "cmd/app/main.go", content: 'package main\nimport "example.com/app"\nfunc main() { app.Serve() }' },
+      { path: "app.go", content: 'package app\nimport "database/sql"\nfunc init() { db, _ = sql.Open("postgres", "dsn") }' },
+      { path: "internal/storage/migrations/postgres/V0001.up.sql", content: sql },
+    ]);
+    const store = analysis.facts.nodes.find((node) => node.id === "store:postgres");
+    const schemaEvidence = store?.evidence.filter((item) => item.path.endsWith(".sql")) ?? [];
+    expect(schemaEvidence).toHaveLength(20);
+    const reference = analysis.evidence.references.find((item) => item.ownerId === "store:postgres");
+    expect(reference?.renderedEvidenceIds).toHaveLength(3);
+    expect(reference?.remainingEvidenceIds.length).toBeGreaterThan(0);
+    expect(reference?.evidenceIds.length).toBe((reference?.renderedEvidenceIds.length ?? 0) + (reference?.remainingEvidenceIds.length ?? 0));
+  });
+
   it("keeps the existing Prisma datasource declaration as valid store evidence", () => {
     const analysis = analyzeArchitectureFacts(scope, [
       { path: "package.json", content: '{"scripts":{"start":"next start"},"dependencies":{"next":"16.0.0","mysql2":"3.0.0"}}' },

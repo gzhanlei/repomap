@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "status": "measured-local-baseline-not-release-qualification",
+  "measuredAt": "2026-11-09",
+  "generator": {
+    "baseRevision": "0732fc7009e8da48a5b2cb514c8810188ce270fa",
+    "change": "M0/M1 completion patch; the final M0/M1 commit is the immutable reference for this baseline",
+    "node": "v25.5.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "note": "Three local runs on Darwin arm64. A fixed CI runner must reproduce or replace these values before generator release qualification."
+  },
+  "source": {
+    "repository": "authelia/authelia",
+    "revision": "32b0bdac395efc707bc098757afa232177965736",
+    "archiveSha256": "6c2d77b8832dfb4f32d727178cbdc95dac3e43d6ad479c5465b1ef7c9022aa86",
+    "archiveBytes": 12777177,
+    "cacheHit": true,
+    "httpRequests": 0,
+    "aiRequests": 0,
+    "rawEntries": 3573,
+    "rawBytes": 29674378,
+    "selectedSourceFiles": 1360,
+    "selectedSourceBytes": 7474801,
+    "directories": 255
+  },
+  "command": "npm run cli -- analyze authelia/authelia@32b0bdac395efc707bc098757afa232177965736 --no-render --out <output-directory>",
+  "runs": [
+    {
+      "run": 1,
+      "status": "facts-ready",
+      "elapsedMs": 7981,
+      "peakRssBytes": 508018688,
+      "jsonBytes": 23732161,
+      "evidenceBytes": 5996226
+    },
+    {
+      "run": 2,
+      "status": "facts-ready",
+      "elapsedMs": 7620,
+      "peakRssBytes": 550436864,
+      "jsonBytes": 23732161,
+      "evidenceBytes": 5996226
+    },
+    {
+      "run": 3,
+      "status": "facts-ready",
+      "elapsedMs": 8156,
+      "peakRssBytes": 565329920,
+      "jsonBytes": 23732161,
+      "evidenceBytes": 5996226
+    }
+  ],
+  "summary": {
+    "medianElapsedMs": 7981,
+    "worstElapsedMs": 8156,
+    "maxPeakRssBytes": 565329920,
+    "maxJsonBytes": 23732161,
+    "evidenceBytes": 5996226
+  },
+  "thresholds": {
+    "medianElapsedMs": 60000,
+    "worstElapsedMs": 90000,
+    "maxPeakRssBytes": 1073741824,
+    "maxJsonBytes": 262144000,
+    "maxEvidenceBytes": 104857600,
+    "maximumUnreviewedRegressionFraction": 0.2
+  },
+  "results": {
+    "medianElapsed": "pass",
+    "worstElapsed": "pass",
+    "peakRss": "pass",
+    "jsonSize": "pass",
+    "evidenceSize": "pass",
+    "semanticStatus": "facts-ready in all three runs",
+    "truncation": "none; all outputs were written completely"
+  },
+  "limitations": [
+    "This is a local M1 baseline, not a fixed-CI release qualification.",
+    "The elapsed value is read from repomap.receipt.json; peak RSS is measured by /usr/bin/time -l.",
+    "Output paths can change JSON byte counts by a few bytes; semantic record counts must remain identical.",
+    "Browser and human visual qualification are separate from this no-render semantic/performance baseline."
+  ]
+}

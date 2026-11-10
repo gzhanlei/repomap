@@ -13,6 +13,7 @@ import { deliverArchify, visualCheckArchify, type ArchifyReceipt } from "./archi
 import { parseGitHubRepository } from "./github/repository.js";
 import { loadGitHubRepositorySources, type GitHubSourceOptions } from "./github/archive.js";
 import { loadLocalRepositorySources, verifyLocalGitRevision } from "./source/local.js";
+import { writeJsonAtomic } from "./json.js";
 
 interface RepositoryIdentity {
   kind: "github" | "local";
@@ -63,7 +64,7 @@ function json(value: unknown) {
 }
 
 async function writeJson(path: string, value: unknown) {
-  await writeFile(path, json(value), { mode: 0o600 });
+  await writeJsonAtomic(path, value);
 }
 
 function withoutRepositoryEvidence(document: ArchitectureDocument) {
@@ -132,7 +133,9 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   await writeJson(projectionPath, analysis.projection);
 
   const rawBudgetExceeded = analysis.census.rawBudgetExceeded;
-  const publishable = analysis.coverage.publishable && !rawBudgetExceeded;
+  const declarationBlocksRuntime = analysis.declarationCoverage.blockingViews.includes("runtime-overview");
+  const omissionBlocksRuntime = analysis.omissions.some((omission) => omission.blocking && omission.affectedViews.includes("runtime-overview"));
+  const publishable = analysis.coverage.publishable && !rawBudgetExceeded && !declarationBlocksRuntime && !omissionBlocksRuntime;
   const evidenceProjection = {
     renderLimit: analysis.evidence.statistics.renderLimit,
     owners: analysis.projection.totals.owners,
@@ -190,7 +193,8 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   const deliveryFor = (status: "accepted" | "facts-ready" | "failed", visualPassed?: boolean) => buildDeliveryStatement({
     status, publishable, requestedViews: input.requestedViews, visualPassed,
     strictExternalHosts: input.strictExternalHosts,
-    blockingOmissionCount: analysis.omissions.filter((omission) => omission.blocking).length,
+    blockingOmissionCount: analysis.omissions.filter((omission) => omission.blocking).length
+      + analysis.declarationCoverage.missing.filter((declaration) => ["entrypoint", "deployable", "route"].includes(declaration.kind) || declaration.capability === "unresolved-submodule").length,
   });
   const analysisOutput = (status: "accepted" | "facts-ready" | "failed") => ({
     version: 2,
@@ -230,7 +234,13 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     await writeJson(analysisPath, analysisOutput(status));
     const receipt = {
       ...baseReceipt, status, delivery: deliveryFor(status),
-      error: rawBudgetExceeded ? "Raw source entry budget exceeded; no view is publishable" : "Architecture coverage is not publishable",
+      error: rawBudgetExceeded
+        ? "Raw source entry budget exceeded; no view is publishable"
+        : declarationBlocksRuntime
+          ? "Independent declaration coverage is not publishable"
+          : omissionBlocksRuntime
+            ? "Architecture omissions are not publishable"
+            : "Architecture coverage is not publishable",
       elapsedMs: (input.now?.() ?? Date.now()) - started,
       visualReview: "not-requested",
     };
@@ -267,7 +277,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     const receipt = {
       ...baseReceipt,
       status,
-      delivery: deliveryFor(status, visualCheck),
+      delivery: deliveryFor(status, render && visualCheck && visualReceipt?.ok === true),
       elapsedMs: (input.now?.() ?? Date.now()) - started,
       outputs: { ...baseReceipt.outputs, ...(render ? { spec: specPath, artifact: artifactPath } : {}) },
       validationReceipt,
