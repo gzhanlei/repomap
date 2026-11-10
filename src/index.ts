@@ -20,3 +20,6 @@ export { readTypeScriptResolutionRules, type TypeScriptResolutionRules } from ".
 export { buildModuleGraph, moduleGraphEvidenceReferences, viewsBlockedByModuleGraph, moduleGraphSchema, moduleNodeSchema, moduleEdgeSchema, cycleSchema, findCycles, type ModuleGraph, type ModuleNode, type ModuleEdge, type ModuleCycle, type BuildModuleGraphInput } from "./core/architecture/project/module-graph.js";
 export { buildGoModuleGraph, goModuleGraphEvidenceReferences, viewsBlockedByGoModuleGraph, goModuleGraphSchema, goModuleNodeSchema, goModuleEdgeSchema, discoverGoImportDeclarations, type GoModuleGraph, type GoModuleNode, type GoModuleEdge, type BuildGoModuleGraphInput } from "./core/architecture/project/go-module-graph.js";
 export { mergeEvidenceIndex, astImportEvidenceRecord, astGoImportEvidenceRecord, stableEvidenceId, evidenceReferenceSchema, type EvidenceReference } from "./core/architecture/evidence-index.js";
+export { buildRouteGraph, routeGraphEvidenceReferences, routeOperationFacts, candidateOperationFacts, routeGraphSchema, type RouteGraph, type RouteExtraction } from "./core/architecture/project/route-graph.js";
+export { analyzeGoRoutes } from "./core/architecture/project/go-routes.js";
+export { analyzeTypeScriptRoutes } from "./core/architecture/project/ts-routes.js";

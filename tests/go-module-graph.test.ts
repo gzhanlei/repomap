@@ -38,6 +38,9 @@ describe("M2 go-module-graph: fixed WASM parser runtime", () => {
     expect(parsed?.imports[1].form).toBe("blank");
     expect(parsed?.symbols.map((item) => item.name)).toContain("main");
     expect(parsed?.callExpressions).toBe(1);
+    expect(parsed?.symbols).toContainEqual(expect.objectContaining({ name: "main", kind: "function" }));
+    const withVariable = parseGoSource('package main\nfunc main() { handler := func() {}; _ = handler }');
+    expect(withVariable?.symbols).toContainEqual(expect.objectContaining({ name: "handler", kind: "var" }));
     expect(parsed?.diagnostics).toHaveLength(0);
   });
 });

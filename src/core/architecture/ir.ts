@@ -135,6 +135,7 @@ export interface BuildIrInput {
   declarations: DeclarationInventory;
   census: SourceCensus;
   omissions?: IrOmission[];
+  operations?: OperationFact[];
 }
 
 function ownerFor(paths: string[], census: SourceCensus) {
@@ -182,9 +183,9 @@ export function buildArchitectureIr(input: BuildIrInput): ArchitectureIr {
     capabilities: repomapCapabilities,
     nodes,
     edges,
-    // Operation facts are populated by M3/M4 extractors; the union schema is
-    // defined now so that adding them is not a breaking change.
-    operations: [],
+    // Operation facts come from route and unified candidate extractors; the
+    // discriminated union remains stable for later queue/SQL/config facts.
+    operations: input.operations ?? [],
     declarations: input.declarations.declarations,
     omissions: input.omissions ?? [],
     evidenceIndex: { path: "architecture.evidence.json", total: input.evidence.statistics.total },
@@ -214,6 +215,7 @@ export function buildProjectionManifest(input: { revision: string; view: string;
       { name: "architecture.project.json", role: "immutable raw snapshot, project units and parser capabilities" },
       { name: "architecture.module-graph.json", role: "TypeScript/JavaScript source-module graph, cycles and AST import evidence" },
       { name: "architecture.go-module-graph.json", role: "Go package graph, build constraints, go.mod/go.work resolution and AST import evidence" },
+      { name: "architecture.route-graph.json", role: "route declarations, resolved handlers, bounded direct calls and parser evidence" },
       { name: "architecture.projection.json", role: "projection reconciliation manifest" },
       { name: "architecture.analysis.json", role: "signal inventory and coverage" },
       { name: "repomap.receipt.json", role: "delivery and cost receipt" },

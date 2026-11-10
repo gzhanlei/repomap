@@ -15,13 +15,16 @@ import { detectGenericExternal, genericExternalCandidates } from "./detectors/ge
 import type { ExternalCandidate } from "./candidates.js";
 import { assertSourceCensusReconciled, buildSourceCensus, linkCensusDeclarations, linkCensusEvidence, type RepositoryFileEntry } from "./census.js";
 import { buildDeclarationInventory, evaluateDeclarationCoverage, mutationCheck } from "./declarations.js";
-import { assertEvidenceReferences, buildEvidenceIndex, mergeEvidenceIndex } from "./evidence-index.js";
-import { buildArchitectureIr, buildProjectionManifest, irEvidenceIds, type IrOmission } from "./ir.js";
+import { assertEvidenceReferences, buildEvidenceIndex, evidenceRecord, mergeEvidenceIndex } from "./evidence-index.js";
+import { buildArchitectureIr, buildProjectionManifest, irEvidenceIds, type DeclarationRecord, type IrOmission } from "./ir.js";
 import { buildDeclaredScope, defaultArchitectureView, type DeclaredScopeInput } from "./scope.js";
 import { createSourceSnapshot } from "./project/snapshot.js";
 import { prepareProjects } from "./project/prepare.js";
 import { buildModuleGraph, moduleGraphEvidenceReferences } from "./project/module-graph.js";
 import { buildGoModuleGraph, goModuleGraphEvidenceReferences } from "./project/go-module-graph.js";
+import { analyzeGoRoutes } from "./project/go-routes.js";
+import { analyzeTypeScriptRoutes } from "./project/ts-routes.js";
+import { buildRouteGraph, candidateOperationFacts, routeGraphEvidenceReferences, routeOperationFacts, type RouteGraph } from "./project/route-graph.js";
 import type { LanguageAdapter } from "./project/adapter.js";
 
 const detectors = [nextArchitectureDetector, goArchitectureDetector, phpArchitectureDetector, miniProgramArchitectureDetector, storageArchitectureDetector];
@@ -129,6 +132,33 @@ function omissionsFrom(census: ReturnType<typeof buildSourceCensus>, declaration
   return result;
 }
 
+function withRouteDeclarations(base: ReturnType<typeof buildDeclarationInventory>, graph: RouteGraph, snapshot: ReturnType<typeof createSourceSnapshot>) {
+  const routeDeclarations: DeclarationRecord[] = graph.declarations.map((declaration) => {
+    const route = graph.routes.find((item) => item.id === declaration.id);
+    return {
+      declarationId: declaration.id,
+      kind: "route",
+      owner: route?.packageId ?? snapshot.files.find((file) => file.path === declaration.path)?.packageId ?? "package:root",
+      required: true,
+      critical: true,
+      sourcePath: declaration.path,
+      detail: route ? `${route.framework} ${route.method} ${route.path}` : `unresolved route declaration at ${declaration.path}:${declaration.line}`,
+      capability: "independent-route-structure",
+      evidenceIds: route?.evidenceIds ?? [],
+    };
+  });
+  const declarations = [...base.declarations, ...routeDeclarations].sort((a, b) => a.declarationId.localeCompare(b.declarationId));
+  return {
+    ...base,
+    declarations,
+    statistics: {
+      total: declarations.length,
+      critical: declarations.filter((declaration) => declaration.critical).length,
+      byKind: Object.fromEntries([...new Set(declarations.map((declaration) => declaration.kind))].sort().map((kind) => [kind, declarations.filter((declaration) => declaration.kind === kind).length])),
+    },
+  };
+}
+
 export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory, "revision" | "scope">, sources: ArchitectureSource[], options: ArchitectureAnalysisOptions = {}) {
   // Lockfiles remain in the raw census but never enter evidence or signal scans.
   const candidateSources = sources.filter((source) => isArchitectureSourcePath(source.path) && !isLockfilePath(source.path));
@@ -161,9 +191,18 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   // from the SAME immutable snapshot and project units. Neither graph mutates
   // facts v1, and both feed the single lossless evidence index.
   const goModuleGraph = buildGoModuleGraph({ revision: input.revision, snapshot, census: baseCensus, project });
+  const routeGraph = buildRouteGraph({
+    revision: input.revision,
+    snapshotId: snapshot.snapshotId,
+    extractions: [
+      analyzeTypeScriptRoutes(snapshot, project.parsers.find((parser) => parser.id === "ast-typescript")?.status !== "unavailable"),
+      analyzeGoRoutes({ snapshot, context: project.buildContext, enabled: project.parsers.find((parser) => parser.id === "ast-go")?.status !== "unavailable" }),
+    ],
+  });
 
   // Independent declaration discovery runs before any semantic detector.
-  const rawDeclarations = buildDeclarationInventory({ revision: input.revision, census: baseCensus, sources: runtimeSources });
+  const structuralDeclarations = buildDeclarationInventory({ revision: input.revision, census: baseCensus, sources: runtimeSources });
+  const rawDeclarations = withRouteDeclarations(structuralDeclarations, routeGraph, snapshot);
   const censusWithDeclarations = linkCensusDeclarations(baseCensus, rawDeclarations);
 
   const inventory = collectArchitectureSignals(input, runtimeSources);
@@ -174,11 +213,24 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   const coverage = evaluateArchitectureCoverage(enrichedInventory, facts);
   const declarationCoverage = evaluateDeclarationCoverage(rawDeclarations, facts);
   const mutation = mutationCheck(rawDeclarations, facts);
-  // One lossless index: regex runtime evidence + TS AST import evidence + Go AST import evidence.
+  const operationFacts = [...routeOperationFacts(routeGraph), ...candidateOperationFacts(candidates)];
+  const candidateEvidenceRecords = candidates.map((candidate) => evidenceRecord(candidate.evidence));
+  const candidateEvidenceReferences = candidates.map((candidate) => {
+    const id = evidenceRecord(candidate.evidence).id;
+    return {
+      ownerType: "operation" as const,
+      ownerId: `operation:${candidate.id}`,
+      evidenceIds: [id],
+      renderedEvidenceIds: [id],
+      remainingEvidenceIds: [],
+      selectionReason: "unified candidate operation evidence, including unresolved identities",
+    };
+  });
+  // One lossless index: regex runtime evidence, AST imports, routes and direct calls.
   const evidence = mergeEvidenceIndex(
     buildEvidenceIndex(input.revision, facts),
-    [...moduleGraph.evidenceRecords, ...goModuleGraph.evidenceRecords],
-    [...moduleGraphEvidenceReferences(moduleGraph), ...goModuleGraphEvidenceReferences(goModuleGraph)],
+    [...moduleGraph.evidenceRecords, ...goModuleGraph.evidenceRecords, ...routeGraph.evidenceRecords, ...candidateEvidenceRecords],
+    [...moduleGraphEvidenceReferences(moduleGraph), ...goModuleGraphEvidenceReferences(goModuleGraph), ...routeGraphEvidenceReferences(routeGraph), ...candidateEvidenceReferences],
   );
   const declarations = {
     ...rawDeclarations,
@@ -200,15 +252,25 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     buildContext: options.buildContext,
     parsers: project.parsers,
   });
-  const omissions = [...omissionsFrom(baseCensus, rawDeclarations, facts), ...project.omissions, ...moduleGraph.omissions, ...goModuleGraph.omissions];
-  const ir = buildArchitectureIr({ revision: input.revision, view: defaultArchitectureView, scope, facts, evidence, declarations, census: censusWithDeclarations, omissions });
+  const omissions = [...omissionsFrom(baseCensus, rawDeclarations, facts), ...project.omissions, ...moduleGraph.omissions, ...goModuleGraph.omissions, ...routeGraph.omissions];
+  const ir = buildArchitectureIr({
+    revision: input.revision,
+    view: defaultArchitectureView,
+    scope,
+    facts,
+    evidence,
+    declarations,
+    census: censusWithDeclarations,
+    omissions,
+    operations: operationFacts,
+  });
   assertEvidenceReferences(evidence, irEvidenceIds(ir));
   const projection = buildProjectionManifest({ revision: input.revision, view: defaultArchitectureView, evidence, ir });
   const census = linkCensusEvidence(censusWithDeclarations, evidence);
   return {
     inventory: enrichedInventory, facts, coverage, candidates,
     census, evidence, declarations, declarationCoverage, mutation,
-    scope, ir, projection, omissions, project, moduleGraph, goModuleGraph, snapshotId: snapshot.snapshotId,
+    scope, ir, projection, omissions, project, moduleGraph, goModuleGraph, routeGraph, snapshotId: snapshot.snapshotId,
     view: defaultArchitectureView,
   };
 }

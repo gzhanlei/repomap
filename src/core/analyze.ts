@@ -113,6 +113,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   const projectPath = join(outDir, "architecture.project.json");
   const moduleGraphPath = join(outDir, "architecture.module-graph.json");
   const goModuleGraphPath = join(outDir, "architecture.go-module-graph.json");
+  const routeGraphPath = join(outDir, "architecture.route-graph.json");
   const irPath = join(outDir, "architecture.ir.json");
   const projectionPath = join(outDir, "architecture.projection.json");
   const receiptPath = join(outDir, "repomap.receipt.json");
@@ -129,6 +130,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   await writeJson(projectPath, analysis.project);
   await writeJson(moduleGraphPath, analysis.moduleGraph);
   await writeJson(goModuleGraphPath, analysis.goModuleGraph);
+  await writeJson(routeGraphPath, analysis.routeGraph);
   await writeJson(irPath, analysis.ir);
   await writeJson(projectionPath, analysis.projection);
 
@@ -180,6 +182,13 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
       blockedViews: analysis.goModuleGraph.gates.blockedViews,
       runtimeOverviewUnaffected: analysis.goModuleGraph.gates.runtimeOverviewUnaffected,
     },
+    routeGraph: {
+      snapshotId: analysis.routeGraph.snapshotId,
+      coverage: analysis.routeGraph.coverage,
+      statistics: analysis.routeGraph.statistics,
+      blockedViews: analysis.routeGraph.gates.blockedViews,
+      runtimeOverviewUnaffected: analysis.routeGraph.gates.runtimeOverviewUnaffected,
+    },
     archive: input.archive,
     aiRequests: 0,
     candidateSummary: { total: analysis.candidates.length, omitted: analysis.candidates.filter((candidate) => candidate.status === "omitted").length },
@@ -187,7 +196,7 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     outputs: {
       facts: factsPath, analysis: analysisPath, candidates: candidatesPath, census: censusPath,
       evidence: evidencePath, declarations: declarationsPath, project: projectPath,
-      moduleGraph: moduleGraphPath, goModuleGraph: goModuleGraphPath, ir: irPath, projection: projectionPath, receipt: receiptPath,
+      moduleGraph: moduleGraphPath, goModuleGraph: goModuleGraphPath, routeGraph: routeGraphPath, ir: irPath, projection: projectionPath, receipt: receiptPath,
     },
   };
   const deliveryFor = (status: "accepted" | "facts-ready" | "failed", visualPassed?: boolean) => buildDeliveryStatement({
@@ -220,6 +229,11 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     },
     moduleGraph: analysis.moduleGraph.statistics,
     goModuleGraph: analysis.goModuleGraph.statistics,
+    routeGraph: {
+      coverage: analysis.routeGraph.coverage,
+      statistics: analysis.routeGraph.statistics,
+      gates: analysis.routeGraph.gates,
+    },
     omissions: analysis.omissions,
     evidenceProjection,
     rawBudgetExceeded,

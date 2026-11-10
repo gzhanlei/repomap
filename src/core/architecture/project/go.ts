@@ -341,7 +341,7 @@ export function createGoAdapter(): LanguageAdapter {
       adapterCapabilitySchema.parse({ id: "tree-sitter-go", version: GO_PARSER_VERSION, status: grammarStatus, detail: goParserStatus().detail }),
       adapterCapabilitySchema.parse({ id: "ast-go", version: "1", status, detail: "Package-aware Go syntax tree: package clause, imports, symbols, call expressions and ERROR/MISSING diagnostics; no type/SSA/receiver/route resolution" }),
       adapterCapabilitySchema.parse({ id: "module-graph-go", version: "1", status, detail: "Go package graph from go.mod/go.work/replace and build constraints; delivered in architecture.go-module-graph.json" }),
-      adapterCapabilitySchema.parse({ id: "route-graph-go", version: "0", status: "unavailable", detail: "Go route/handler and call summaries land in route-and-call-graph" }),
+      adapterCapabilitySchema.parse({ id: "route-graph-go", version: "1", status, detail: "net/http, mux and chi-style route registrations with local/package handlers and bounded direct package calls" }),
     ];
   };
 

@@ -50,6 +50,13 @@ export interface GoParsedSymbol {
   kind: string;
   exported: boolean;
   line: number;
+  endLine: number;
+}
+
+export interface GoParsedCall {
+  name: string;
+  arguments: { text: string; type: string }[];
+  line: number;
 }
 
 export interface GoParseDiagnostic {
@@ -61,6 +68,7 @@ export interface GoParsedFile {
   packageName: string;
   imports: GoParsedImport[];
   symbols: GoParsedSymbol[];
+  calls: GoParsedCall[];
   callExpressions: number;
   diagnostics: GoParseDiagnostic[];
 }
@@ -111,7 +119,7 @@ export function parseGoSource(raw: string): GoParsedFile | undefined {
   if (!parser) return undefined;
   const root = parser.parse(raw)?.rootNode;
   if (!root) {
-    return { packageName: "", imports: [], symbols: [], callExpressions: 0, diagnostics: [{ line: 1, message: "Go grammar produced no syntax tree" }] };
+    return { packageName: "", imports: [], symbols: [], calls: [], callExpressions: 0, diagnostics: [{ line: 1, message: "Go grammar produced no syntax tree" }] };
   }
   const packageClause = firstNamed(root, "package_clause");
   const packageName = firstNamed(packageClause ?? root, "package_identifier")?.text ?? "";
@@ -136,18 +144,34 @@ export function parseGoSource(raw: string): GoParsedFile | undefined {
   }
 
   const symbols: GoParsedSymbol[] = [];
+  const calls: GoParsedCall[] = [];
   let callExpressions = 0;
   const visit = (node: SyntaxNode) => {
-    if (node.type === "call_expression") callExpressions += 1;
+    if (node.type === "call_expression") {
+      callExpressions += 1;
+      const fn = node.childForFieldName("function") ?? node.firstNamedChild;
+      const args = node.childForFieldName("arguments") ?? firstNamed(node, "argument_list");
+      calls.push({
+        name: fn?.text ?? "",
+        arguments: (args?.namedChildren ?? []).map((argument) => ({ text: argument.text, type: argument.type })),
+        line: node.startPosition.row + 1,
+      });
+    }
     if (node.type === "function_declaration") {
       const name = firstNamed(node, "identifier")?.text;
-      if (name) symbols.push({ name, kind: "function", exported: exported(name), line: node.startPosition.row + 1 });
+      if (name) symbols.push({ name, kind: "function", exported: exported(name), line: node.startPosition.row + 1, endLine: node.endPosition.row + 1 });
     } else if (node.type === "method_declaration") {
       const name = firstNamed(node, "field_identifier")?.text;
-      if (name) symbols.push({ name, kind: "method", exported: exported(name), line: node.startPosition.row + 1 });
+      if (name) symbols.push({ name, kind: "method", exported: exported(name), line: node.startPosition.row + 1, endLine: node.endPosition.row + 1 });
+    } else if (node.type === "short_var_declaration") {
+      const left = node.childForFieldName("left") ?? firstNamed(node, "expression_list");
+      for (const identifier of childrenOf(left ?? node, "identifier")) {
+        symbols.push({ name: identifier.text, kind: "var", exported: exported(identifier.text), line: node.startPosition.row + 1, endLine: node.endPosition.row + 1 });
+      }
     } else if (node.type === "type_spec" || node.type === "var_spec" || node.type === "const_spec") {
-      const name = firstNamed(node, "type_identifier", "identifier")?.text;
-      if (name) symbols.push({ name, kind: node.type.replace("_spec", ""), exported: exported(name), line: node.startPosition.row + 1 });
+      for (const identifier of childrenOf(node, "identifier")) {
+        symbols.push({ name: identifier.text, kind: node.type.replace("_spec", ""), exported: exported(identifier.text), line: node.startPosition.row + 1, endLine: node.endPosition.row + 1 });
+      }
     }
     for (const child of node.namedChildren) visit(child);
   };
@@ -157,6 +181,7 @@ export function parseGoSource(raw: string): GoParsedFile | undefined {
     packageName,
     imports: imports.sort((a, b) => a.line - b.line || a.source.localeCompare(b.source)),
     symbols: symbols.sort((a, b) => a.line - b.line || a.name.localeCompare(b.name)),
+    calls: calls.sort((a, b) => a.line - b.line || a.name.localeCompare(b.name)),
     callExpressions,
     diagnostics: collectDiagnostics(root),
   };

@@ -1,6 +1,6 @@
-# RepoMap 视图、声明范围与交付契约（M0 / M1 / M2 project-preparation / M2 ts-module-graph / M2 go-module-graph）
+# RepoMap 视图、声明范围与交付契约（M0 / M1 / M2 / M3）
 
-本文对应 `docs/full-architecture-plan.md` 的 M0、M1 和 M2 三个切片，说明当前实现到哪一步、以及**哪些结论还不能得出**。
+本文对应 `docs/full-architecture-plan.md` 的 M0、M1、M2 和 M3 切片，说明当前实现到哪一步、以及**哪些结论还不能得出**。
 
 ## 1. 视图等级
 
@@ -86,9 +86,21 @@ repomap analyze <source> --view runtime --view full \
 - **独立分母与 mutation test**：`importDeclarations` 由独立行扫描声明「哪里存在 import 语法」（不依赖 AST），禁用 Go AST 提取器后分母不变、`missing` 为全部声明、模块视图被阻断——证明覆盖分母不来自被评估的提取器。
 - **降级**：当 `web-tree-sitter` WASM 无法初始化时，`ast-go` 报告 `parser-unavailable`，产物退化为 `buildContext` + `excludedFiles` + `importDeclarations`（独立分母仍在），`gates.runtimeOverviewUnaffected` 恒为 `true`。
 
-## 8. 已知边界（不要越界宣称）
+## 8. RouteGraph 与统一 External（M3）
 
-- 有 TypeScript/JavaScript 与 Go 两个 ModuleGraph，但 `module-architecture` **视图门禁**、RouteGraph、protocol operation extractor、身份解析和黄金评估仍未实现；
+`architecture.route-graph.json` 是路由与有限调用图数据，不是 `module-architecture` 或 `protocol-flows` 的发布结果：
+
+- **独立 declarations**：行扫描只声明 route method/path/位置，不能生成 handler edge；禁用 parser 后 declaration 仍保留并阻断 module/flows/full。
+- **Next.js**：支持文件路由、HTTP method 函数/变量、命名 re-export 与 alias，handler 关联到真实模块和直接 import call。
+- **Vite React Router**：支持有 AST 证据的 path/component，解析到组件模块，不把普通对象属性猜成路由。
+- **Go HTTP**：支持 net/http、mux/chi 风格、大小写 HTTP 方法、middleware/factory、computed handler、`Path(...).Handler(...)`、动态路径表达式和多 `Methods`；`csrf.Path` 等非 router 调用被排除。
+- **有限调用摘要**：只记录 handler 直接 import/package call，不宣称全函数调用图；每个 route/handler/call 都有 evidenceIds，并合入统一 evidence index。
+- **覆盖**：WriteFreely 固定版本 128/128、Authelia 101/101、Commerce 1/1 route declarations resolved；这些是固定 SHA 回归结果，不是人工 Gold 完成声明。
+- **统一 External**：专用 external detector 和 reserved identity suppression 已删除；GitHub 等静态 host、COS upload/download、OAuth、Webhook callback、Archify process integration 与未知 provider 都进入同一候选和 operation 路径。
+
+## 9. 已知边界（不要越界宣称）
+
+- 有 RouteGraph 和统一 External operation，但 `module-architecture` / `protocol-flows` **视图门禁**、异步数据流、完整 Target/Config 解析和黄金人工评估仍未实现；
 - submodule 目前只记录 `unresolved-submodule`，不会作为独立 fixed-SHA 输入获取；
 - evidence / census / IR / receipt 已通过带回压和原子替换的流式 JSON writer 写出；内存中的语义分析对象尚未全流式化，固定 CI 性能门槛仍需复核；
 - `docs/gold-manifest.v1.json` 已固定三个仓库的 SHA/archive hash，但仍未经过人工审核，不能当作真值；

@@ -20,7 +20,7 @@ export const evidenceRecordSchema = z.object({
 export type EvidenceRecord = z.infer<typeof evidenceRecordSchema>;
 
 export const evidenceReferenceSchema = z.object({
-  ownerType: z.enum(["node", "edge", "operation", "module", "module-edge", "go-module-edge"]),
+  ownerType: z.enum(["node", "edge", "operation", "module", "module-edge", "go-module-edge", "route", "route-edge", "call-edge"]),
   ownerId: z.string().min(1),
   evidenceIds: z.array(z.string().min(1)),
   renderedEvidenceIds: z.array(z.string().min(1)),

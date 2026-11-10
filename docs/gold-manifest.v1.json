@@ -20,6 +20,12 @@
       "status": "implemented",
       "goldStatus": "not-audited",
       "note": "Fixture tests cover go.mod module/replace resolution, go.work workspace use, build-tag/GOOS/GOARCH file selection, standard-library/external/internal-cross-module edge classification, cycles, syntax errors, parser-unavailable degradation, an independent-denominator mutation test and an end-to-end production-dependency check. Fixed Go grammar versions are web-tree-sitter@0.27.2 + tree-sitter-go@0.25.0 (see docs/adr-go-parser.md). No fixed-SHA corpus or human-reviewed critical Go module facts exist yet."
+    },
+    {
+      "id": "route-graph-and-unified-external",
+      "status": "implemented",
+      "goldStatus": "fixture-and-fixed-sha-verified-not-human-audited",
+      "note": "M3 fixtures cover Next re-export/alias, Vite React Router, Go HTTP methods, middleware/factories, computed handlers, dynamic paths, multiple Methods, unresolved handlers and independent-denominator behavior. Fixed-SHA observations are Authelia 101/101, WriteFreely 128/128 and Commerce 1/1 route declarations resolved, with zero unresolved handlers. External unification covers static hosts, object operations, callbacks and process integrations without provider bypass. These observations are not human-reviewed Gold facts."
     }
   ],
   "rules": {

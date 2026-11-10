@@ -67,12 +67,26 @@ interface ProgramBundle {
   resolve(source: string, containingFile: string, config?: TsConfigRule): ResolvedImport;
 }
 
-interface ResolvedImport {
+export type TypeScriptProgramBundle = ProgramBundle;
+
+export interface ResolvedImport {
   resolvedPath?: string;
   targetPackageId?: string;
   resolution: ImportResolution;
   barrel: boolean;
   unresolvedReason?: string;
+}
+
+export function typeScriptFileName(path: string) {
+  return virtualPath(path);
+}
+
+export function resolveTypeScriptImport(bundle: TypeScriptProgramBundle, source: string, containingFile: string) {
+  return bundle.resolve(source, containingFile, configFor(repoPath(containingFile), bundle.rules));
+}
+
+export function createTypeScriptProgramBundle(snapshot: SourceSnapshot) {
+  return buildBundle(snapshot);
 }
 
 function virtualPath(fileName: string) {
@@ -327,7 +341,7 @@ export function createTypeScriptAdapter(): LanguageAdapter {
     adapterCapabilitySchema.parse({ id: "typescript-compiler", version: ts.version, status: "available", detail: "One project-wide TypeScript Compiler API Program over the immutable raw snapshot" }),
     adapterCapabilitySchema.parse({ id: "ast-typescript", version: "1", status: "partial", detail: "syntax diagnostics, imports/re-exports, symbols, tsconfig/workspace resolution; routes and call summaries are not implemented" }),
     adapterCapabilitySchema.parse({ id: "module-graph", version: "1", status: "partial", detail: "TypeScript/JavaScript source-module graph with cycles, barrels, aliases and workspace packages; the Go package graph is a separate artifact" }),
-    adapterCapabilitySchema.parse({ id: "route-graph", version: "0", status: "unavailable", detail: "route-to-handler resolution lands in route-and-call-graph" }),
+    adapterCapabilitySchema.parse({ id: "route-graph", version: "1", status: "partial", detail: "Next.js file routes and Vite React Router routes with re-export/component handlers and bounded direct calls" }),
   ];
 
   function parseProject(project: ProjectUnit): ParseProjectResult {
