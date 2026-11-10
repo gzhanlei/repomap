@@ -214,15 +214,21 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   const declarationCoverage = evaluateDeclarationCoverage(rawDeclarations, facts);
   const mutation = mutationCheck(rawDeclarations, facts);
   const operationFacts = [...routeOperationFacts(routeGraph), ...candidateOperationFacts(candidates)];
-  const candidateEvidenceRecords = candidates.map((candidate) => evidenceRecord(candidate.evidence));
+  const candidateEvidenceRecords = candidates.flatMap((candidate) => [
+    evidenceRecord(candidate.evidence),
+    ...(candidate.configEvidence ? [evidenceRecord(candidate.configEvidence)] : []),
+  ]);
   const candidateEvidenceReferences = candidates.map((candidate) => {
-    const id = evidenceRecord(candidate.evidence).id;
+    const ids = [
+      evidenceRecord(candidate.evidence).id,
+      ...(candidate.configEvidence ? [evidenceRecord(candidate.configEvidence).id] : []),
+    ];
     return {
       ownerType: "operation" as const,
       ownerId: `operation:${candidate.id}`,
-      evidenceIds: [id],
-      renderedEvidenceIds: [id],
-      remainingEvidenceIds: [],
+      evidenceIds: ids,
+      renderedEvidenceIds: ids.slice(0, 3),
+      remainingEvidenceIds: ids.slice(3),
       selectionReason: "unified candidate operation evidence, including unresolved identities",
     };
   });

@@ -27,6 +27,9 @@ RepoMap 现在支持**不依赖服务商专用 detector 的外部依赖提取**�
 
 - 静态 host 使用 host 作为节点 ID 和标签；
 - 动态 endpoint 使用环境变量或模块身份，并在标签中标记 `动态 endpoint`；
+- 每个候选额外记录 `target.kind`（host/service/protocol/unknown）与 `target.resolution`（static/configured/dynamic/unknown）；
+- 配置绑定保留 `configKey`、可选 `defaultValue`、`override` 和真实 `configEvidence`；required env 没有默认值时不会伪造 host；
+- Go 简单跨文件数据流支持常量、`config.OrDefaultString`、composite-literal 字段和 receiver 字段表达式，因此默认 host 可标为 configured，只有协议信息时标为 configured protocol；
 - 候选必须同时具有运行时调用证据，单纯 import 或请求构造不会自动创建外部系统；
 - Go 静态常量 URL 可以解析 host；若环境变量可以覆盖默认值，保留 host 证据但仍标记 `dynamic: true`；
 - 无法确定身份时保留 `unknown` 候选和 omission，**阻止发布**，不生成貌似完整的图。

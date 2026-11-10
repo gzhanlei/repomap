@@ -212,28 +212,51 @@ export function routeOperationFacts(graph: RouteGraph): OperationFact[] {
   }));
 }
 
+function configBinding(candidate: ExternalCandidate, primary: OperationFact): OperationFact {
+  const configKey = candidate.target?.configKey as string;
+  return {
+    id: `${primary.id}:config`,
+    kind: "config-binding",
+    owner: primary.owner,
+    declarationIds: [],
+    evidenceIds: primary.evidenceIds,
+    targetKind: primary.targetKind,
+    resolution: primary.resolution,
+    configKey,
+    defaultValue: candidate.target?.defaultValue ?? "",
+    override: candidate.target?.override ?? `env:${configKey}`,
+    usedAt: candidate.configEvidence ? `${candidate.configEvidence.path}:${candidate.configEvidence.line}` : `${candidate.evidence.path}:${candidate.evidence.line}`,
+  };
+}
+
 export function candidateOperationFacts(candidates: ExternalCandidate[]): OperationFact[] {
   return candidates.flatMap((candidate): OperationFact[] => {
-    const targetKind: OperationFact["targetKind"] = candidate.status === "omitted" ? "unknown" : candidate.identity.includes(".") ? "host" : "service";
-    const resolution: OperationFact["resolution"] = candidate.status === "omitted" ? "unknown" : candidate.dynamic ? "dynamic" : "static";
+    const targetKind: OperationFact["targetKind"] = candidate.target?.kind ?? (candidate.status === "omitted" ? "unknown" : candidate.identity.includes(".") ? "host" : "service");
+    const resolution: OperationFact["resolution"] = candidate.target?.resolution ?? (candidate.status === "omitted" ? "unknown" : candidate.dynamic ? "dynamic" : "static");
+    const evidenceIds = [
+      evidenceRecord(candidate.evidence).id,
+      ...(candidate.configEvidence ? [evidenceRecord(candidate.configEvidence).id] : []),
+    ];
     const base = {
       id: `operation:${candidate.id}`,
       owner: candidate.evidence.path,
       declarationIds: [],
-      evidenceIds: [evidenceRecord(candidate.evidence).id],
+      evidenceIds,
       targetKind,
       resolution,
       callSite: `${candidate.evidence.path}:${candidate.evidence.line}`,
     };
     if (candidate.protocol === "graphql" && candidate.operation) {
-      return [{
+      const primary: OperationFact = {
         ...base,
         kind: "graphql",
         operationName: candidate.operation.name,
         operationType: candidate.operation.kind,
         documentHash: hash(candidate.id),
-      }];
+      };
+      return candidate.target?.configKey ? [primary, configBinding(candidate, primary)] : [primary];
     }
-    return [{ ...base, kind: "http", method: (candidate.operation?.name ?? "request").toUpperCase(), path: "" }];
+    const primary: OperationFact = { ...base, kind: "http", method: (candidate.operation?.name ?? "request").toUpperCase(), path: "" };
+    return candidate.target?.configKey ? [primary, configBinding(candidate, primary)] : [primary];
   });
 }

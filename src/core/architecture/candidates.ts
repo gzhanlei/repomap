@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { architectureEvidenceSchema, type ArchitectureEvidence } from "./facts.js";
 
+export const externalTargetSchema = z.object({
+  kind: z.enum(["host", "service", "protocol", "queue", "database", "unknown"]),
+  resolution: z.enum(["static", "configured", "dynamic", "unknown"]),
+  configKey: z.string().min(1).optional(),
+  defaultValue: z.string().optional(),
+  override: z.string().min(1).optional(),
+}).strict();
+
 export const externalCandidateSchema = z.object({
   id: z.string().min(1),
   identity: z.string().min(1),
@@ -13,6 +21,8 @@ export const externalCandidateSchema = z.object({
   status: z.enum(["resolved", "omitted"]),
   reason: z.string().min(1).optional(),
   evidence: architectureEvidenceSchema,
+  target: externalTargetSchema.optional(),
+  configEvidence: architectureEvidenceSchema.optional(),
 }).strict();
 
 export const externalCandidateSetSchema = z.object({
@@ -22,5 +32,6 @@ export const externalCandidateSetSchema = z.object({
 }).strict();
 
 export type ExternalCandidate = z.infer<typeof externalCandidateSchema>;
+export type ExternalTarget = z.infer<typeof externalTargetSchema>;
 export type ExternalCandidateSet = z.infer<typeof externalCandidateSetSchema>;
 export type { ArchitectureEvidence };

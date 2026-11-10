@@ -137,7 +137,9 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
   const rawBudgetExceeded = analysis.census.rawBudgetExceeded;
   const declarationBlocksRuntime = analysis.declarationCoverage.blockingViews.includes("runtime-overview");
   const omissionBlocksRuntime = analysis.omissions.some((omission) => omission.blocking && omission.affectedViews.includes("runtime-overview"));
-  const publishable = analysis.coverage.publishable && !rawBudgetExceeded && !declarationBlocksRuntime && !omissionBlocksRuntime;
+  const unresolvedExternalHosts = analysis.candidates.filter((candidate) => candidate.status === "omitted" || candidate.target?.kind !== "host" || candidate.target.resolution !== "static");
+  const strictExternalHostsFailed = input.strictExternalHosts === true && unresolvedExternalHosts.length > 0;
+  const publishable = analysis.coverage.publishable && !rawBudgetExceeded && !declarationBlocksRuntime && !omissionBlocksRuntime && !strictExternalHostsFailed;
   const evidenceProjection = {
     renderLimit: analysis.evidence.statistics.renderLimit,
     owners: analysis.projection.totals.owners,
@@ -155,6 +157,10 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     source: analysis.sourceReceipt,
     census: analysis.census.totals,
     rawBudgetExceeded,
+    externalHostGate: {
+      required: input.strictExternalHosts === true,
+      unresolved: unresolvedExternalHosts.map((candidate) => candidate.id),
+    },
     evidenceProjection,
     declarationCoverage: analysis.declarationCoverage,
     mutation: analysis.mutation,
@@ -203,7 +209,8 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
     status, publishable, requestedViews: input.requestedViews, visualPassed,
     strictExternalHosts: input.strictExternalHosts,
     blockingOmissionCount: analysis.omissions.filter((omission) => omission.blocking).length
-      + analysis.declarationCoverage.missing.filter((declaration) => ["entrypoint", "deployable", "route"].includes(declaration.kind) || declaration.capability === "unresolved-submodule").length,
+      + analysis.declarationCoverage.missing.filter((declaration) => ["entrypoint", "deployable", "route"].includes(declaration.kind) || declaration.capability === "unresolved-submodule").length
+      + (strictExternalHostsFailed ? unresolvedExternalHosts.length : 0),
   });
   const analysisOutput = (status: "accepted" | "facts-ready" | "failed") => ({
     version: 2,
@@ -235,6 +242,10 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
       gates: analysis.routeGraph.gates,
     },
     omissions: analysis.omissions,
+    externalHostGate: {
+      required: input.strictExternalHosts === true,
+      unresolved: unresolvedExternalHosts.map((candidate) => candidate.id),
+    },
     evidenceProjection,
     rawBudgetExceeded,
     repository: input.identity,
@@ -250,7 +261,9 @@ export async function analyzeSources(input: AnalyzeSourcesInput) {
       ...baseReceipt, status, delivery: deliveryFor(status),
       error: rawBudgetExceeded
         ? "Raw source entry budget exceeded; no view is publishable"
-        : declarationBlocksRuntime
+        : strictExternalHostsFailed
+          ? `External hosts are not fully resolved: ${unresolvedExternalHosts.map((candidate) => candidate.id).join(", ")}`
+          : declarationBlocksRuntime
           ? "Independent declaration coverage is not publishable"
           : omissionBlocksRuntime
             ? "Architecture omissions are not publishable"

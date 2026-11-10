@@ -51,7 +51,7 @@ export const repomapCapabilities: Capability[] = [
   { id: "route-graph", version: "1", status: "partial" },
   { id: "route-graph-go", version: "1", status: "partial" },
   { id: "protocol-flows", version: "0", status: "unavailable" },
-  { id: "identity-resolution", version: "0", status: "unavailable" },
+  { id: "identity-resolution", version: "1", status: "partial" },
   { id: "gold-evaluation", version: "0", status: "unavailable" },
 ];
 

@@ -26,7 +26,7 @@ repomap analyze <source> --view runtime --view full \
 
 - `--view` 可重复；`full` 自动要求四个基础视图。任何被请求但失败的视图都会让命令退出非零，较低视图自己的 `accepted` 状态不会伪造成总成功。
 - `--include` / `--exclude` 同时作用于 raw census disposition、独立声明分母和语义事实，并写入声明范围；用户排除记录为 `out-of-scope`，绝不会伪装成 detector 能力。
-- `--require-external-hosts` 打开额外严格门禁开关，目前只写入声明范围，不改变默认 full 判定。
+- `--require-external-hosts` 启用严格门禁：只有 `target.kind=host` 且 `resolution=static` 的候选才能通过。configured/dynamic host、协议目标和 unknown 均会失败；默认模式仍允许带明确动态披露的候选发布。
 - `--no-render` 只写 JSON / coverage / receipt，不准备 Archify、不调用 Chromium、不写 HTML。
 - Go 构建上下文固定写入 `declaredScope.buildContext`（默认 `linux/amd64`、空 build tags），不继承宿主机隐式值。
 
