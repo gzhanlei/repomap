@@ -7,7 +7,6 @@ import { nextArchitectureDetector } from "./detectors/next.js";
 import { goArchitectureDetector } from "./detectors/go.js";
 import { phpArchitectureDetector } from "./detectors/php.js";
 import { linkStorageRelationships, storageArchitectureDetector } from "./detectors/storage.js";
-import { externalArchitectureDetector, externalCallbackRelationships, linkExternalRelationships } from "./detectors/external.js";
 import { miniProgramApiRelationships, miniProgramArchitectureDetector } from "./detectors/mini-program.js";
 import { goInternalHttpRelationships } from "./detectors/go-http.js";
 import { packageDeployableFragment } from "./detectors/package.js";
@@ -25,7 +24,7 @@ import { buildModuleGraph, moduleGraphEvidenceReferences } from "./project/modul
 import { buildGoModuleGraph, goModuleGraphEvidenceReferences } from "./project/go-module-graph.js";
 import type { LanguageAdapter } from "./project/adapter.js";
 
-const detectors = [nextArchitectureDetector, goArchitectureDetector, phpArchitectureDetector, miniProgramArchitectureDetector, storageArchitectureDetector, externalArchitectureDetector];
+const detectors = [nextArchitectureDetector, goArchitectureDetector, phpArchitectureDetector, miniProgramArchitectureDetector, storageArchitectureDetector];
 
 function uniqueStrings(values: string[]) {
   return [...new Set(values)].sort();
@@ -76,12 +75,10 @@ function extractWithInventory(input: Pick<ArchitectureSignalInventory, "revision
   const storageEdges = linkStorageRelationships(context, augmented.nodes);
   const relationshipEdges = [
     ...storageEdges,
-    ...linkExternalRelationships(context, augmented.nodes),
-    ...externalCallbackRelationships(context, augmented.nodes),
     ...miniProgramApiRelationships(context, base.nodes),
     ...goInternalHttpRelationships(context, base.nodes),
   ];
-  const callbackRoots = relationshipEdges.filter((edge) => edge.kind === "callback").map((edge) => edge.from);
+  const callbackRoots = [...augmented.edges, ...relationshipEdges].filter((edge) => edge.kind === "callback").map((edge) => edge.from);
   const facts = mergeArchitectureFragments(input.revision, [{ ...emptyArchitectureFragment(), nodes: augmented.nodes, edges: augmented.edges, roots: [...augmented.roots, ...callbackRoots], omissions: augmented.omissions }, { ...emptyArchitectureFragment(), edges: relationshipEdges }]);
   return { facts, candidates: generic.candidates };
 }

@@ -4,17 +4,17 @@ import type { ArchitectureSignal } from "../signals.js";
 import { emptyArchitectureFragment, factEdge, type ArchitectureContext, type ArchitectureFragment } from "./types.js";
 import type { ExternalCandidate } from "../candidates.js";
 
-const reservedIdentities = new Set(["cos", "wechat", "xpay", "aiphoto", "seedance", "chandler", "github", "api.github.com", "llm", "archify"]);
 const genericSegments = new Set(["app", "api", "lib", "src", "core", "common", "shared", "utils", "util", "helpers", "helper", "types", "models", "config", "constants", "components", "pages", "clients", "services", "server", "providers", "integrations", "hooks", "store", "stores", "database", "db"]);
 const genericEnvPrefixes = new Set(["NEXT", "NEXT_PUBLIC", "APP", "APP_URL", "API", "API_URL", "SERVICE", "SERVICE_URL", "DEFAULT", "PUBLIC", "SERVER", "BACKEND", "FRONTEND", "BASE", "BASE_URL"]);
-const identitySegments = new Set(["lib", "src", "services", "server", "clients", "providers", "integrations"]);
+const identitySegments = new Set(["lib", "src", "services", "server", "clients", "providers", "integrations", "webhooks"]);
 const protocolModulePattern = /(?:^|[_-])(oauth|activitypub|federation|webhook|graphql|grpc|monetization|payments?)(?:[_-]|$)/i;
 
 interface CandidateDraft {
   identity?: string;
   dynamic: boolean;
   protocol: "http" | "graphql";
-  operation?: { name: string; kind: "query" | "mutation" | "subscription" | "http" };
+  operation?: { name: string; kind: "query" | "mutation" | "subscription" | "http" | "upload" | "download" | "oauth" | "callback" | "process" };
+  nodeKind?: "external" | "object-store";
   evidence: { path: string; line: number; detector: string };
   omissionReason?: string;
 }
@@ -153,6 +153,57 @@ function goOutboundDrafts(source: { path: string; content: string }): CandidateD
   return drafts;
 }
 
+const sdkOperationRules: { pattern: RegExp; kind: NonNullable<CandidateDraft["operation"]>["kind"]; nodeKind?: CandidateDraft["nodeKind"] }[] = [
+  { pattern: /\b(PresignPut|PutObject|UploadURL)\s*\(/, kind: "upload", nodeKind: "object-store" },
+  { pattern: /\b(PresignGet|GetObject|DownloadURL)\s*\(/, kind: "download", nodeKind: "object-store" },
+  { pattern: /\b(Code2Session|ImgSecCheck|requestVirtualPayment|CreateTask|Generate)\s*\(/, kind: "http" },
+  { pattern: /\b(Whoami)\s*\(/, kind: "oauth" },
+  { pattern: /\b(deliverArchify|visualCheckArchify)\s*\(/, kind: "process" },
+  { pattern: /\b(chat\.completions\.create)\s*\(/, kind: "http" },
+  { pattern: /\b(http\.(?:Get|Post|Head))\s*\(/, kind: "http" },
+];
+
+function sdkDrafts(source: { path: string; content: string }): CandidateDraft[] {
+  if (!/\.(?:ts|tsx|js|jsx|mjs|cjs)$/i.test(source.path)) return [];
+  const identity = serviceIdentity(source);
+  if (!identity) return [];
+  const drafts: CandidateDraft[] = [];
+  const lines = source.content.split("\n");
+  lines.forEach((line, index) => {
+    const code = line.replace(/^\s*\d+:\s?/, "").trim();
+    if (["//", "#", "*", "/*"].some((prefix) => code.startsWith(prefix))) return;
+    for (const rule of sdkOperationRules) {
+      const match = code.match(rule.pattern);
+      if (!match) continue;
+      drafts.push({
+        identity: identity.identity,
+        dynamic: identity.dynamic,
+        protocol: "http",
+        operation: { name: match[1], kind: rule.kind },
+        nodeKind: rule.nodeKind,
+        evidence: { path: source.path, line: architectureLineNumber(lines[index], index), detector: "generic-sdk-operation" },
+      });
+    }
+  });
+  return drafts;
+}
+
+function callbackDrafts(source: { path: string; content: string }): CandidateDraft[] {
+  if (!/(?:^|\/)webhooks?\//i.test(source.path) || !/(?:webhook|push|xpay_goods_deliver_notify|xpay_refund_notify)/i.test(source.content)) return [];
+  const identity = serviceIdentity(source);
+  const lines = source.content.split("\n");
+  const index = lines.findIndex((line) => /\bexport\s+(?:async\s+)?function\s+POST\b/.test(line));
+  if (index < 0) return [];
+  return [{
+    identity: identity?.identity,
+    dynamic: identity?.dynamic ?? true,
+    protocol: "http",
+    operation: { name: "webhook", kind: "callback" },
+    evidence: { path: source.path, line: architectureLineNumber(lines[index], index), detector: "generic-webhook-callback" },
+    omissionReason: identity ? undefined : "Webhook callback has no statically identifiable sender identity",
+  }];
+}
+
 function candidateId(draft: CandidateDraft) {
   const operation = draft.operation ? `${draft.operation.kind}-${draft.operation.name}` : "http-request";
   return `external:${draft.evidence.path}:${draft.evidence.line}:${operation}`;
@@ -220,32 +271,44 @@ function graphQLDrafts(source: { path: string; content: string }): CandidateDraf
 export function detectGenericExternal(context: ArchitectureContext, runtimeNodes: NodeFact[] = []): ArchitectureFragment & { candidates: ExternalCandidate[] } {
   const fragment = emptyArchitectureFragment();
   const candidates: ExternalCandidate[] = [];
-  const drafts = [...context.sources.flatMap(fetchDrafts), ...context.sources.flatMap(goOutboundDrafts), ...context.sources.flatMap(graphQLDrafts)];
-  const externalNodes = new Map<string, { identity: string; dynamic: boolean; evidence: { path: string; line: number; detector: string }[] }>();
-  const edgeGroups = new Map<string, { source: string; target: string; kind: "http" | "download" | "upload"; protocol: "http" | "graphql"; operationKind?: "query" | "mutation" | "subscription" | "http"; operations: string[]; evidence: { path: string; line: number; detector: string }[] }>();
+  const drafts = [
+    ...context.sources.flatMap(fetchDrafts),
+    ...context.sources.flatMap(goOutboundDrafts),
+    ...context.sources.flatMap(graphQLDrafts),
+    ...context.sources.flatMap(sdkDrafts),
+    ...context.sources.flatMap(callbackDrafts),
+  ];
+  const externalNodes = new Map<string, { identity: string; dynamic: boolean; nodeKind: CandidateDraft["nodeKind"]; evidence: { path: string; line: number; detector: string }[] }>();
+  const edgeGroups = new Map<string, { source: string; target: string; kind: "http" | "download" | "upload" | "oauth" | "callback" | "process"; protocol: "http" | "graphql"; operationKind?: NonNullable<CandidateDraft["operation"]>["kind"]; operations: string[]; evidence: { path: string; line: number; detector: string }[] }>();
   const runtimes = runtimeNodes.filter((node) => ["frontend", "api", "worker", "agent", "cli"].includes(node.kind));
 
   for (const draft of drafts) {
     const candidate = draft.identity
       ? toCandidate(draft, draft.identity, draft.dynamic, draft.omissionReason ? "omitted" : "resolved", draft.omissionReason)
       : toCandidate(draft, "unknown", true, "omitted", draft.omissionReason ?? "External identity is unknown");
-    if (draft.identity && reservedIdentities.has(draft.identity)) continue;
     candidates.push(candidate);
     if (candidate.status === "omitted") {
       fragment.omissions.push({ signalId: candidate.id, reason: "uncertain", detail: candidate.reason ?? "External identity is unknown" });
       continue;
     }
 
-    const node = externalNodes.get(candidate.identity) ?? { identity: candidate.identity, dynamic: candidate.dynamic, evidence: [] };
+    const node = externalNodes.get(candidate.identity) ?? { identity: candidate.identity, dynamic: candidate.dynamic, nodeKind: draft.nodeKind ?? "external", evidence: [] };
     node.evidence.push(candidate.evidence);
     externalNodes.set(candidate.identity, node);
-    const id = `external:${candidate.identity}`;
+    const id = `${draft.nodeKind === "object-store" ? "store" : "external"}:${candidate.identity}`;
     for (const runtime of runtimes) {
       const sources = architectureRuntimeSources(runtime, context.sources);
       if (!sources.some((source) => source.path === candidate.evidence.path)) continue;
-      const kind = candidate.protocol === "graphql" && candidate.operation?.kind === "query" ? "download" : candidate.protocol === "graphql" && candidate.operation?.kind === "mutation" ? "upload" : "http";
-      const groupKey = `${runtime.id}->${id}:${kind}`;
-      const group = edgeGroups.get(groupKey) ?? { source: runtime.id, target: id, kind, protocol: candidate.protocol, operationKind: candidate.operation?.kind, operations: [], evidence: [] };
+      const kind = candidate.operation?.kind === "query" ? "download"
+        : candidate.operation?.kind === "mutation" || candidate.operation?.kind === "upload" ? "upload"
+          : candidate.operation?.kind === "download" ? "download"
+            : candidate.operation?.kind === "oauth" ? "oauth"
+              : candidate.operation?.kind === "callback" ? "callback"
+                : candidate.operation?.kind === "process" ? "process" : "http";
+      const source = kind === "callback" ? id : runtime.id;
+      const target = kind === "callback" ? runtime.id : id;
+      const groupKey = `${source}->${target}:${kind}`;
+      const group = edgeGroups.get(groupKey) ?? { source, target, kind, protocol: candidate.protocol, operationKind: candidate.operation?.kind, operations: [], evidence: [] };
       if (candidate.operation && !group.operations.includes(candidate.operation.name)) group.operations.push(candidate.operation.name);
       group.evidence.push(candidate.evidence);
       edgeGroups.set(groupKey, group);
@@ -257,7 +320,11 @@ export function detectGenericExternal(context: ArchitectureContext, runtimeNodes
     const prefix = group.operations.length === 1 ? "GraphQL" : "GQL";
     const label = group.protocol === "graphql"
       ? `${prefix} ${operationKind}${group.operations.length === 1 ? ` ${group.operations[0]}` : ` ×${group.operations.length}`}`
-      : "HTTP request";
+      : operationKind === "callback" ? "Webhook callback"
+        : operationKind === "process" ? "Process integration"
+          : operationKind === "oauth" ? "OAuth request"
+            : operationKind === "upload" ? "Object upload"
+              : operationKind === "download" ? "Object download" : "HTTP request";
     fragment.edges.push(factEdge(`${group.kind}:${key}`, group.source, group.target, group.kind, label, group.evidence, signalIdsForEvidence(context.signals, group.evidence)));
   }
 
@@ -265,8 +332,8 @@ export function detectGenericExternal(context: ArchitectureContext, runtimeNodes
   for (const node of externalNodes.values()) {
     const evidence = node.evidence.sort((a, b) => `${a.path}:${a.line}`.localeCompare(`${b.path}:${b.line}`));
     fragment.nodes.push({
-      id: `external:${node.identity}`,
-      kind: "external",
+      id: `${node.nodeKind === "object-store" ? "store" : "external"}:${node.identity}`,
+      kind: node.nodeKind ?? "external",
       label: node.dynamic ? `${node.identity}（动态 endpoint）` : node.identity,
       sourcePaths: [...new Set(evidence.map((item) => item.path))].sort(),
       signalIds: signalIdsForEvidence(context.signals, evidence),

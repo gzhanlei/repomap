@@ -8,7 +8,7 @@ export const externalCandidateSchema = z.object({
   protocol: z.enum(["http", "graphql"]),
   operation: z.object({
     name: z.string().min(1),
-    kind: z.enum(["query", "mutation", "subscription", "http"]),
+    kind: z.enum(["query", "mutation", "subscription", "http", "upload", "download", "oauth", "callback", "process"]),
   }).optional(),
   status: z.enum(["resolved", "omitted"]),
   reason: z.string().min(1).optional(),

@@ -41,7 +41,7 @@ RepoMap 现在支持**不依赖服务商专用 detector 的外部依赖提取**�
 
 `NewRequest` 本身只是请求构造，不是网络调用证据。相对路径、注释、文档字符串和 `ListenAndServe` 不生成外部候选。协议模块身份只说明“该模块发起动态外部 HTTP 调用”，并不表示静态分析已经知道最终域名。
 
-现有专用 external detector 保留，通用规则不会重复处理其已注册身份。
+专用 external detector 和 reserved identity suppression 已移除。已知与未知 provider 共用候选、operation 和 target 解析路径；对象上传/下载、OAuth、Webhook callback 与本地 process integration 也在同一候选清单中保留方向，不再由厂商别名决定是否发布。
 
 ## GraphQL
 

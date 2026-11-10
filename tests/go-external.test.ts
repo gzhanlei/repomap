@@ -23,13 +23,14 @@ describe("generic Go outbound HTTP", () => {
     expect(analysis.coverage.publishable).toBe(true);
   });
 
-  it("deduplicates a generic host against an existing dedicated external identity", () => {
+  it("keeps a static host in the unified candidate path without provider aliases", () => {
     const analysis = analyzeArchitectureFacts(scope, [
       { path: "go.mod", content: "module example.com/demo" },
       { path: "cmd/server/main.go", content: 'package main\nimport "net/http"\nfunc main() { http.Get("https://api.github.com/repos/example/demo") }' },
     ]);
-    expect(analysis.facts.nodes.some((node) => node.id === "external:github")).toBe(true);
-    expect(analysis.facts.nodes.some((node) => node.id === "external:api.github.com")).toBe(false);
+    expect(analysis.facts.nodes.some((node) => node.id === "external:api.github.com")).toBe(true);
+    expect(analysis.facts.nodes.some((node) => node.id === "external:github")).toBe(false);
+    expect(analysis.candidates.some((candidate) => candidate.identity === "api.github.com" && candidate.status === "resolved")).toBe(true);
   });
 
   it("uses environment evidence for a dynamic Go endpoint", () => {

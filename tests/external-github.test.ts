@@ -11,7 +11,9 @@ describe("external evidence independent of provider path names", () => {
       { path: "app/page.tsx", content: 'import { getRelease } from "../lib/client";\nexport default async function Page() { await getRelease(); }' },
       { path: "lib/client.ts", content: 'export async function getRelease() { return http.Get("https://api.github.com/repos/swagger-api/swagger-ui/releases/latest"); }' },
     ]);
-    expect(analysis.facts.nodes.some((node) => node.id === "external:github")).toBe(true);
-    expect(analysis.facts.edges.some((edge) => edge.from === "next:root:ui" && edge.to === "external:github" && edge.kind === "http")).toBe(true);
+    expect(analysis.facts.nodes.some((node) => node.id === "external:api.github.com")).toBe(true);
+    expect(analysis.facts.nodes.some((node) => node.id === "external:github")).toBe(false);
+    expect(analysis.facts.edges.some((edge) => edge.from === "next:root:ui" && edge.to === "external:api.github.com" && edge.kind === "http")).toBe(true);
+    expect(analysis.candidates.some((candidate) => candidate.identity === "api.github.com" && candidate.status === "resolved")).toBe(true);
   });
 });
