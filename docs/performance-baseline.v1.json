@@ -132,6 +132,40 @@
       "change": "evidence-id-to-edges index built once per fact set; mergeEvidenceIds skips by array identity; projections push into arrays; per-operation candidate lookup map; per-source cached line arrays with a diff-prefix line index.",
       "behaviorProof": "semantic artifacts (ir/evidence/facts/declarations/candidates/route-graph/async-graph) byte-identical to the pre-fix run on authelia@32b0bdac; analysis/delivery/receipt differ only in the output directory path string."
     },
-    "note": "Measured after the migration-marker coverage fix; authelia gained 69 executable migration statements. Median remains ~4x the M1 baseline by real analysis growth; thresholds unchanged."
+    "note": "Measured after the migration-marker coverage fix; authelia gained 69 executable migration statements. Median remains ~4x the M1 baseline by real analysis growth; thresholds unchanged.",
+    "ciMeasurements": {
+      "status": "measured-peak-rss-exceeds-darwin-threshold-not-ratified",
+      "measuredAt": "2026-11-11",
+      "runner": "ubuntu-latest (GitHub Actions), node 22, workflow run 43064704274",
+      "runs": [
+        {
+          "elapsedMs": 27230,
+          "peakRssBytes": 1252622336,
+          "jsonBytes": 93240641,
+          "evidenceBytes": 12251095,
+          "status": "facts-ready"
+        },
+        {
+          "elapsedMs": 28308,
+          "peakRssBytes": 1227427840,
+          "jsonBytes": 93240641,
+          "evidenceBytes": 12251095,
+          "status": "facts-ready"
+        },
+        {
+          "elapsedMs": 27001,
+          "peakRssBytes": 1243029504,
+          "jsonBytes": 93240641,
+          "evidenceBytes": 12251095,
+          "status": "facts-ready"
+        }
+      ],
+      "verdict": {
+        "medianElapsed": "pass 27230 <= 60000",
+        "worstElapsed": "pass 28308 <= 90000",
+        "peakRss": "FAIL ~1.22-1.25GB > 1073741824"
+      },
+      "finding": "First fixed-CI measurement. Elapsed comfortably within darwin thresholds; peak RSS is ~0.7GB above them (node 22 on linux). The gate stays non-blocking until a CI threshold is explicitly re-ratified (memory optimization or a documented CI-specific limit); thresholds are not silently raised."
+    }
   }
 }
