@@ -1,7 +1,7 @@
 # RepoMap 接手文档
 
-- 更新日期：2026-11-11
-- 代码基线：`cad62c29b859e6ccf9b1271f9b99984804098da7`
+- 更新日期：2026-11-12
+- 代码基线：`e097293`（273aa93 gold 评估、beb3c32 人工 Gold、e097293 性能门槛）
 - 远程仓库：`https://github.com/gzhanlei/repomap`
 - 当前分支：`main`
 
@@ -13,13 +13,14 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 已完成：
 
+- M7 第一切片：targeted human-reviewed Gold 机制（`src/core/architecture/corpus-gold.ts`、`npm run gold:evaluate`）、fastapi-template 首个 59 条人工审核 Gold（`docs/gold/fastapi-template.v1.json`，7 个 precision scope，59/59 recall、0 FP）、固定性能门槛（`npm run perf:gate`，阈值来自 `docs/performance-baseline.v1.json`）。
 - M0–M6：scope、census、独立 declarations、Evidence Index、IR v2、TypeScript/Go 项目图、RouteGraph、统一 External、Target/Config、SQL/Async operations、逐视图门禁、独立 mutation 和多视图无损投影。
 - M8 第一个 Python 切片：项目准备、Tree-sitter/WASM、src-layout、import/module graph、CLI 入口和 module 详图。
 - M8 第二个 Python 切片：FastAPI/Flask routes、常见 DB-API/SQLAlchemy/Alembic operations、asyncio/queue/Celery/broker operations 和 Python 外部 HTTP candidates。
 
 尚未完成：
 
-- M7：targeted human-reviewed critical Gold、可复现 corpus 评估、固定 CI 性能门槛和 generator release qualification。
+- M7 其余部分：更多 corpus 条目的 targeted Gold、把评估接入 CI、性能回归定位（见第 9 节）和 generator release qualification。
 - Django、RQ、完整动态依赖注入/ORM/SSA，以及更多语言和真实仓库审查。
 - 可选 Harness/LLM enrichment 尚未实现；默认分析保持 `aiRequests: 0`。
 
@@ -116,7 +117,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 在代码基线 `cad62c2` 上：
 
-- `npm test`：**35 个测试文件、232 项测试通过**。
+- `npm test`：**36 个测试文件、257 项测试通过**（在 e097293 上）。
 - `npm run typecheck`：通过。
 - `npm run build`：通过。
 - `npm run smoke:production`：通过；生产包中 Go/Python parser 可用，Python route 为 1 条、总 route 为 2 条、Python async operations 为 3 条。
@@ -269,6 +270,8 @@ node dist/cli.js analyze \
 ## 9. 当前阻塞与注意事项
 
 - 已完成的 Python 两个切片没有已知未提交实现或当前代码阻塞。
+- **性能回归（perf:gate 失败中）**：Authelia 固定 corpus median elapsed 78234ms > 60000ms 阈值（M1 基线 7981ms，M2–M8 累计 ~10x 退化），peak RSS 1020MB 距 1GiB 阈值仅 53MB 余量。测量记录见 `docs/performance-baseline.v1.json` 的 `gate` 段；阈值未被抬高掩盖，下一步应做 profiling 定位或由人工重新批准基线。
+- **migration 语句欠报候选（Gold 审核发现）**：人工清点 5 个 alembic 文件共 62 条 `op.*` 语句，产物只报告 31 条 migration operation（9c0a 0/8、d98d 22/38、1a31 1/6），多行 `op.alter_column`/`op.add_column` 语句疑似未生成可执行 SQL 证据。已作为 candidate false-negative 记录在 `docs/gold-manifest.v1.json` 的 audit 块，待专门切片量化处置；不应据此降低门禁。
 - M7 未完成是后续资格评估工作，不影响已提交切片作为 per-input 能力使用。
 - Click 和不受支持的动态 Python 输入失败关闭是预期行为，不要为了“全绿”删除 omission。
 - GitHub anonymous API 可能限流；优先使用固定 SHA 和已有 archive cache，不在命令或日志中暴露 token。
