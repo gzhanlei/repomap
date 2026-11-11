@@ -34,6 +34,7 @@ export { deliverViewArtifacts, withoutRepositoryEvidence, type ViewArtifact } fr
 export { evaluateArchitectureViews, architectureViewEvaluationSchema, type ArchitectureViewEvaluation, type ViewEvaluationOptions } from "./core/architecture/coverage-matrix.js";
 export { runIndependenceMutations, independenceResultSchema, type IndependenceResult } from "./core/architecture/independence.js";
 export { evaluateCriticalGold, criticalGoldSetSchema, criticalGoldEvaluationSchema, type CriticalGoldSet, type CriticalGoldEvaluation } from "./core/architecture/gold.js";
+export { evaluateCorpusGold, corpusGoldSetSchema, corpusGoldEvaluationSchema, goldFactSchema, precisionScopeSchema, type CorpusGoldSet, type CorpusGoldEvaluation, type CorpusGoldArtifacts, type GoldFact, type PrecisionScope } from "./core/architecture/corpus-gold.js";
 export { buildAsyncGraph, asyncGraphSchema, asyncDeclarationId, type AsyncGraph, type AsyncExtraction } from "./core/architecture/project/async-graph.js";
 export { analyzeGoAsync } from "./core/architecture/project/go-async.js";
 export { analyzeTypeScriptAsync } from "./core/architecture/project/ts-async.js";
