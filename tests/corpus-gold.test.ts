@@ -62,6 +62,17 @@ describe("corpus gold schema", () => {
   it("rejects a revision that is not a 40-char hex", () => {
     expect(() => corpusGoldSetSchema.parse({ ...goldDefaults, revision: "short" })).toThrow();
   });
+
+  it("accepts auditor notes on the set, facts and scopes", () => {
+    const parsed = corpusGoldSetSchema.parse({
+      ...goldDefaults,
+      note: "downgrade-path migration statements are deliberately out of scope",
+      facts: [{ id: "items-get", kind: "route", method: "GET", path: "/api/v1/items/", sourcePath: "backend/app/api/routes/items.py", note: "decorator at items.py:20" }],
+      precisionScopes: [{ id: "scope-items", kind: "route", sourcePathPrefix: "backend/app/api/routes/items.py", note: "complete enumeration" }],
+    });
+    expect(parsed.facts[0].note).toContain("items.py:20");
+    expect(parsed.precisionScopes[0].note).toBe("complete enumeration");
+  });
 });
 
 describe("corpus gold recall", () => {

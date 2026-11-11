@@ -1,0 +1,530 @@
+{
+  "version": 1,
+  "corpusId": "fastapi-template",
+  "revision": "aabb90126964a164e02aff39e7c385bb0598236d",
+  "auditedBy": "Lei Han",
+  "auditedAt": "2026-11-11",
+  "note": "Human-audited targeted critical facts, derived by reading the pinned archive source under backend/app (routes, crud.py, alembic/versions) with the production output closed. Route paths are composed from each router prefix plus the /api/v1 mount prefix (backend/app/main.py:35 with settings.API_V1_STR from backend/app/core/config.py:22). SQL actions use the documented read/write/transaction/migration vocabulary. Migration scope covers both upgrade and downgrade op.* statements of the smallest alembic file fe56fa70289e (4 statements: upgrade add_column at :22/:23, downgrade drop_column at :29/:30), all verified as executable runtime SQL. Audit finding recorded for follow-up: multi-line op.alter_column/op.add_column statements in the other alembic files are under-reported by the current extractor (hand count 62 op.* statements across 5 files vs 31 emitted migration operations; 9c0a54914c78 emits 0 of 8, d98dd8ec85a3 emits 22 of 38, 1a31ce608336 emits 1 of 6). This is a known false-negative candidate for the next audit slice, not a ratified disposition. The private router is mounted only when FASTAPI_ENV is development, the repository default, so its route is a critical fact.",
+  "facts": [
+    {
+      "id": "route-items-read-all",
+      "kind": "route",
+      "method": "GET",
+      "path": "/api/v1/items/",
+      "sourcePath": "backend/app/api/routes/items.py",
+      "evidencePath": "backend/app/api/routes/items.py"
+    },
+    {
+      "id": "route-items-read-one",
+      "kind": "route",
+      "method": "GET",
+      "path": "/api/v1/items/{id}",
+      "sourcePath": "backend/app/api/routes/items.py",
+      "evidencePath": "backend/app/api/routes/items.py"
+    },
+    {
+      "id": "route-items-create",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/v1/items/",
+      "sourcePath": "backend/app/api/routes/items.py",
+      "evidencePath": "backend/app/api/routes/items.py"
+    },
+    {
+      "id": "route-items-update",
+      "kind": "route",
+      "method": "PUT",
+      "path": "/api/v1/items/{id}",
+      "sourcePath": "backend/app/api/routes/items.py",
+      "evidencePath": "backend/app/api/routes/items.py"
+    },
+    {
+      "id": "route-items-delete",
+      "kind": "route",
+      "method": "DELETE",
+      "path": "/api/v1/items/{id}",
+      "sourcePath": "backend/app/api/routes/items.py",
+      "evidencePath": "backend/app/api/routes/items.py"
+    },
+    {
+      "id": "route-login-access-token",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/v1/login/access-token",
+      "sourcePath": "backend/app/api/routes/login.py",
+      "evidencePath": "backend/app/api/routes/login.py"
+    },
+    {
+      "id": "route-login-test-token",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/v1/login/test-token",
+      "sourcePath": "backend/app/api/routes/login.py",
+      "evidencePath": "backend/app/api/routes/login.py"
+    },
+    {
+      "id": "route-login-recover-password",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/v1/password-recovery/{email}",
+      "sourcePath": "backend/app/api/routes/login.py",
+      "evidencePath": "backend/app/api/routes/login.py"
+    },
+    {
+      "id": "route-login-reset-password",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/v1/reset-password/",
+      "sourcePath": "backend/app/api/routes/login.py",
+      "evidencePath": "backend/app/api/routes/login.py"
+    },
+    {
+      "id": "route-login-recovery-html",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/v1/password-recovery-html-content/{email}",
+      "sourcePath": "backend/app/api/routes/login.py",
+      "evidencePath": "backend/app/api/routes/login.py"
+    },
+    {
+      "id": "route-users-read-all",
+      "kind": "route",
+      "method": "GET",
+      "path": "/api/v1/users/",
+      "sourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "route-users-create",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/v1/users/",
+      "sourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "route-users-update-me",
+      "kind": "route",
+      "method": "PATCH",
+      "path": "/api/v1/users/me",
+      "sourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "route-users-update-my-password",
+      "kind": "route",
+      "method": "PATCH",
+      "path": "/api/v1/users/me/password",
+      "sourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "route-users-read-me",
+      "kind": "route",
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "sourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "route-users-delete-me",
+      "kind": "route",
+      "method": "DELETE",
+      "path": "/api/v1/users/me",
+      "sourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "route-users-signup",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/v1/users/signup",
+      "sourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "route-users-read-by-id",
+      "kind": "route",
+      "method": "GET",
+      "path": "/api/v1/users/{user_id}",
+      "sourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "route-users-update-by-id",
+      "kind": "route",
+      "method": "PATCH",
+      "path": "/api/v1/users/{user_id}",
+      "sourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "route-users-delete-by-id",
+      "kind": "route",
+      "method": "DELETE",
+      "path": "/api/v1/users/{user_id}",
+      "sourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "route-utils-test-email",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/v1/utils/test-email/",
+      "sourcePath": "backend/app/api/routes/utils.py",
+      "evidencePath": "backend/app/api/routes/utils.py"
+    },
+    {
+      "id": "route-utils-health-check",
+      "kind": "route",
+      "method": "GET",
+      "path": "/api/v1/utils/health-check/",
+      "sourcePath": "backend/app/api/routes/utils.py",
+      "evidencePath": "backend/app/api/routes/utils.py"
+    },
+    {
+      "id": "route-private-create-user",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/v1/private/users/",
+      "sourcePath": "backend/app/api/routes/private.py",
+      "evidencePath": "backend/app/api/routes/private.py"
+    },
+    {
+      "id": "handler-items-read-all",
+      "kind": "route-handler",
+      "method": "GET",
+      "path": "/api/v1/items/",
+      "handlerSourcePath": "backend/app/api/routes/items.py",
+      "evidencePath": "backend/app/api/routes/items.py"
+    },
+    {
+      "id": "handler-items-read-one",
+      "kind": "route-handler",
+      "method": "GET",
+      "path": "/api/v1/items/{id}",
+      "handlerSourcePath": "backend/app/api/routes/items.py",
+      "evidencePath": "backend/app/api/routes/items.py"
+    },
+    {
+      "id": "handler-items-create",
+      "kind": "route-handler",
+      "method": "POST",
+      "path": "/api/v1/items/",
+      "handlerSourcePath": "backend/app/api/routes/items.py",
+      "evidencePath": "backend/app/api/routes/items.py"
+    },
+    {
+      "id": "handler-items-update",
+      "kind": "route-handler",
+      "method": "PUT",
+      "path": "/api/v1/items/{id}",
+      "handlerSourcePath": "backend/app/api/routes/items.py",
+      "evidencePath": "backend/app/api/routes/items.py"
+    },
+    {
+      "id": "handler-items-delete",
+      "kind": "route-handler",
+      "method": "DELETE",
+      "path": "/api/v1/items/{id}",
+      "handlerSourcePath": "backend/app/api/routes/items.py",
+      "evidencePath": "backend/app/api/routes/items.py"
+    },
+    {
+      "id": "handler-login-access-token",
+      "kind": "route-handler",
+      "method": "POST",
+      "path": "/api/v1/login/access-token",
+      "handlerSourcePath": "backend/app/api/routes/login.py",
+      "evidencePath": "backend/app/api/routes/login.py"
+    },
+    {
+      "id": "handler-login-test-token",
+      "kind": "route-handler",
+      "method": "POST",
+      "path": "/api/v1/login/test-token",
+      "handlerSourcePath": "backend/app/api/routes/login.py",
+      "evidencePath": "backend/app/api/routes/login.py"
+    },
+    {
+      "id": "handler-login-recover-password",
+      "kind": "route-handler",
+      "method": "POST",
+      "path": "/api/v1/password-recovery/{email}",
+      "handlerSourcePath": "backend/app/api/routes/login.py",
+      "evidencePath": "backend/app/api/routes/login.py"
+    },
+    {
+      "id": "handler-login-reset-password",
+      "kind": "route-handler",
+      "method": "POST",
+      "path": "/api/v1/reset-password/",
+      "handlerSourcePath": "backend/app/api/routes/login.py",
+      "evidencePath": "backend/app/api/routes/login.py"
+    },
+    {
+      "id": "handler-login-recovery-html",
+      "kind": "route-handler",
+      "method": "POST",
+      "path": "/api/v1/password-recovery-html-content/{email}",
+      "handlerSourcePath": "backend/app/api/routes/login.py",
+      "evidencePath": "backend/app/api/routes/login.py"
+    },
+    {
+      "id": "handler-users-read-all",
+      "kind": "route-handler",
+      "method": "GET",
+      "path": "/api/v1/users/",
+      "handlerSourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "handler-users-create",
+      "kind": "route-handler",
+      "method": "POST",
+      "path": "/api/v1/users/",
+      "handlerSourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "handler-users-update-me",
+      "kind": "route-handler",
+      "method": "PATCH",
+      "path": "/api/v1/users/me",
+      "handlerSourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "handler-users-update-my-password",
+      "kind": "route-handler",
+      "method": "PATCH",
+      "path": "/api/v1/users/me/password",
+      "handlerSourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "handler-users-read-me",
+      "kind": "route-handler",
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "handlerSourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "handler-users-delete-me",
+      "kind": "route-handler",
+      "method": "DELETE",
+      "path": "/api/v1/users/me",
+      "handlerSourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "handler-users-signup",
+      "kind": "route-handler",
+      "method": "POST",
+      "path": "/api/v1/users/signup",
+      "handlerSourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "handler-users-read-by-id",
+      "kind": "route-handler",
+      "method": "GET",
+      "path": "/api/v1/users/{user_id}",
+      "handlerSourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "handler-users-update-by-id",
+      "kind": "route-handler",
+      "method": "PATCH",
+      "path": "/api/v1/users/{user_id}",
+      "handlerSourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "handler-users-delete-by-id",
+      "kind": "route-handler",
+      "method": "DELETE",
+      "path": "/api/v1/users/{user_id}",
+      "handlerSourcePath": "backend/app/api/routes/users.py",
+      "evidencePath": "backend/app/api/routes/users.py"
+    },
+    {
+      "id": "handler-utils-test-email",
+      "kind": "route-handler",
+      "method": "POST",
+      "path": "/api/v1/utils/test-email/",
+      "handlerSourcePath": "backend/app/api/routes/utils.py",
+      "evidencePath": "backend/app/api/routes/utils.py"
+    },
+    {
+      "id": "handler-utils-health-check",
+      "kind": "route-handler",
+      "method": "GET",
+      "path": "/api/v1/utils/health-check/",
+      "handlerSourcePath": "backend/app/api/routes/utils.py",
+      "evidencePath": "backend/app/api/routes/utils.py"
+    },
+    {
+      "id": "handler-private-create-user",
+      "kind": "route-handler",
+      "method": "POST",
+      "path": "/api/v1/private/users/",
+      "handlerSourcePath": "backend/app/api/routes/private.py",
+      "evidencePath": "backend/app/api/routes/private.py"
+    },
+    {
+      "id": "sql-crud-read-user-by-email",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "backend/app/crud.py:36",
+      "evidencePath": "backend/app/crud.py",
+      "note": "session.exec(statement).first() in get_user_by_email"
+    },
+    {
+      "id": "sql-crud-create-user-add",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "backend/app/crud.py:14",
+      "evidencePath": "backend/app/crud.py",
+      "note": "session.add(db_obj) in create_user"
+    },
+    {
+      "id": "sql-crud-create-user-commit",
+      "kind": "sql-operation",
+      "action": "transaction",
+      "callSite": "backend/app/crud.py:15",
+      "evidencePath": "backend/app/crud.py",
+      "note": "session.commit() in create_user"
+    },
+    {
+      "id": "sql-crud-update-user-add",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "backend/app/crud.py:28",
+      "evidencePath": "backend/app/crud.py",
+      "note": "session.add(db_user) in update_user"
+    },
+    {
+      "id": "sql-crud-update-user-commit",
+      "kind": "sql-operation",
+      "action": "transaction",
+      "callSite": "backend/app/crud.py:29",
+      "evidencePath": "backend/app/crud.py",
+      "note": "session.commit() in update_user"
+    },
+    {
+      "id": "sql-crud-authenticate-add",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "backend/app/crud.py:57",
+      "evidencePath": "backend/app/crud.py",
+      "note": "session.add(db_user) in authenticate failed-login counter"
+    },
+    {
+      "id": "sql-crud-authenticate-commit",
+      "kind": "sql-operation",
+      "action": "transaction",
+      "callSite": "backend/app/crud.py:58",
+      "evidencePath": "backend/app/crud.py",
+      "note": "session.commit() in authenticate failed-login counter"
+    },
+    {
+      "id": "sql-crud-create-item-add",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "backend/app/crud.py:65",
+      "evidencePath": "backend/app/crud.py",
+      "note": "session.add(db_item) in create_item"
+    },
+    {
+      "id": "sql-crud-create-item-commit",
+      "kind": "sql-operation",
+      "action": "transaction",
+      "callSite": "backend/app/crud.py:66",
+      "evidencePath": "backend/app/crud.py",
+      "note": "session.commit() in create_item"
+    },
+    {
+      "id": "sql-fe56-add-created-at-item",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/fe56fa70289e_add_created_at_to_user_and_item.py:22",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/fe56fa70289e_add_created_at_to_user_and_item.py",
+      "note": "upgrade path op.add_column('item', created_at)"
+    },
+    {
+      "id": "sql-fe56-add-created-at-user",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/fe56fa70289e_add_created_at_to_user_and_item.py:23",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/fe56fa70289e_add_created_at_to_user_and_item.py",
+      "note": "upgrade path op.add_column('user', created_at)"
+    },
+    {
+      "id": "sql-fe56-drop-created-at-user",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/fe56fa70289e_add_created_at_to_user_and_item.py:29",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/fe56fa70289e_add_created_at_to_user_and_item.py",
+      "note": "downgrade path op.drop_column('user', created_at), verified as executable runtime SQL"
+    },
+    {
+      "id": "sql-fe56-drop-created-at-item",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/fe56fa70289e_add_created_at_to_user_and_item.py:30",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/fe56fa70289e_add_created_at_to_user_and_item.py",
+      "note": "downgrade path op.drop_column('item', created_at), verified as executable runtime SQL"
+    }
+  ],
+  "precisionScopes": [
+    {
+      "id": "scope-routes-items",
+      "kind": "route",
+      "sourcePathPrefix": "backend/app/api/routes/items.py",
+      "note": "complete route enumeration for this file"
+    },
+    {
+      "id": "scope-routes-login",
+      "kind": "route",
+      "sourcePathPrefix": "backend/app/api/routes/login.py",
+      "note": "complete route enumeration for this file"
+    },
+    {
+      "id": "scope-routes-users",
+      "kind": "route",
+      "sourcePathPrefix": "backend/app/api/routes/users.py",
+      "note": "complete route enumeration for this file"
+    },
+    {
+      "id": "scope-routes-utils",
+      "kind": "route",
+      "sourcePathPrefix": "backend/app/api/routes/utils.py",
+      "note": "complete route enumeration for this file"
+    },
+    {
+      "id": "scope-routes-private",
+      "kind": "route",
+      "sourcePathPrefix": "backend/app/api/routes/private.py",
+      "note": "complete route enumeration for this file"
+    },
+    {
+      "id": "scope-sql-crud",
+      "kind": "sql-operation",
+      "callSitePrefix": "backend/app/crud.py",
+      "note": "crud.py fully audited: session.exec read at :36, four session.add writes, four session.commit transactions; session.refresh calls are re-read statements and any emitted operation must be dispositioned"
+    },
+    {
+      "id": "scope-sql-fe56",
+      "kind": "sql-operation",
+      "callSitePrefix": "backend/app/alembic/versions/fe56fa70289e_add_created_at_to_user_and_item.py",
+      "note": "all four op.* statements audited: upgrade add_column :22/:23, downgrade drop_column :29/:30"
+    }
+  ]
+}

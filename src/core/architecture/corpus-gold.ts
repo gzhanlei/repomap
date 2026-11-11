@@ -14,6 +14,7 @@ const routeFactSchema = z.object({
   sourcePath: z.string().min(1),
   line: z.number().int().positive().optional(),
   evidencePath: z.string().min(1).optional(),
+  note: z.string().min(1).optional(),
 }).strict();
 
 const routeHandlerFactSchema = z.object({
@@ -23,6 +24,7 @@ const routeHandlerFactSchema = z.object({
   path: z.string().min(1),
   handlerSourcePath: z.string().min(1),
   evidencePath: z.string().min(1).optional(),
+  note: z.string().min(1).optional(),
 }).strict();
 
 const sqlOperationFactSchema = z.object({
@@ -32,6 +34,7 @@ const sqlOperationFactSchema = z.object({
   callSite: z.string().min(1),
   driver: z.string().min(1).optional(),
   evidencePath: z.string().min(1).optional(),
+  note: z.string().min(1).optional(),
 }).strict();
 
 const asyncOperationFactSchema = z.object({
@@ -41,6 +44,7 @@ const asyncOperationFactSchema = z.object({
   callSite: z.string().min(1),
   topic: z.string().min(1).optional(),
   evidencePath: z.string().min(1).optional(),
+  note: z.string().min(1).optional(),
 }).strict();
 
 const declarationFactSchema = z.object({
@@ -49,6 +53,7 @@ const declarationFactSchema = z.object({
   sourcePath: z.string().min(1),
   detail: z.string().min(1),
   evidencePath: z.string().min(1).optional(),
+  note: z.string().min(1).optional(),
 }).strict();
 
 export const goldFactSchema = z.discriminatedUnion("kind", [
@@ -64,24 +69,28 @@ const routeScopeSchema = z.object({
   id: z.string().min(1),
   kind: z.literal("route"),
   sourcePathPrefix: z.string().min(1),
+  note: z.string().min(1).optional(),
 }).strict();
 
 const sqlOperationScopeSchema = z.object({
   id: z.string().min(1),
   kind: z.literal("sql-operation"),
   callSitePrefix: z.string().min(1),
+  note: z.string().min(1).optional(),
 }).strict();
 
 const asyncOperationScopeSchema = z.object({
   id: z.string().min(1),
   kind: z.literal("async-operation"),
   callSitePrefix: z.string().min(1),
+  note: z.string().min(1).optional(),
 }).strict();
 
 const declarationScopeSchema = z.object({
   id: z.string().min(1),
   kind: z.literal("declaration"),
   sourcePathPrefix: z.string().min(1),
+  note: z.string().min(1).optional(),
 }).strict();
 
 export const precisionScopeSchema = z.discriminatedUnion("kind", [
@@ -100,6 +109,7 @@ export const corpusGoldSetSchema = z.object({
   auditedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   facts: z.array(goldFactSchema),
   precisionScopes: z.array(precisionScopeSchema),
+  note: z.string().min(1).optional(),
 }).strict();
 export type CorpusGoldSet = z.infer<typeof corpusGoldSetSchema>;
 
