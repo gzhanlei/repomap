@@ -1,148 +1,275 @@
 # RepoMap 接手文档
 
-更新日期：2026-11-09
+- 更新日期：2026-11-11
+- 代码基线：`cad62c29b859e6ccf9b1271f9b99984804098da7`
+- 远程仓库：`https://github.com/gzhanlei/repomap`
+- 当前分支：`main`
 
-> 当前补充：项目已发布到 `https://github.com/gzhanlei/repomap`。已完成大仓库懒加载、Go/SQLite/PostgreSQL、Vite/React、Go 出站 HTTP、M0/M1 契约、census、独立声明、证据索引、M2 项目/模块图、M3 RouteGraph/统一 External、M4 Target/Config/SQL/异步 operation、M5 逐视图覆盖/独立 mutation/full-declared-scope 聚合门禁，以及 M6 多视图无损 Projection Manifest。当前全量检查为 35 个测试文件、232 项测试。通用完整架构的后续实施计划见 [full-architecture-plan.md](full-architecture-plan.md)。以下 2026-11-05 的接手记录保留作历史背景，后续状态以 README、通用协议文档、完整架构计划和 Git 历史为准。
+> 本文描述当前可接手状态。早期 Radar、PPTCreator 和“尚未初始化/发布”的记录已过时，不再作为工作依据；需要追溯时查看 Git 历史。本文档提交位于上述代码基线之后。
 
-## 已确认的产品边界
+## 1. 当前结论
 
-- Radar 暂时不提供系统架构图，也不外接架构生成服务。
-- RepoMap 是独立开源项目，不做多租户、数据库、Web 服务、队列或 Radar 集成，只提供本地 CLI 和 `SKILL.md`。
-- RepoMap 采用确定性静态分析，当前不调用 AI；不能通过增加 LLM 或扩大预算来掩盖缺失事实。
-- Archify 固定使用 v3.2.0 MIT，仅作为渲染器。ZIP 与 SHA-256 位于 `vendor/archify/`。
+RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快照生成带证据的 Architecture IR、RouteGraph、ModuleGraph、SQL/Async operations、覆盖门禁和多视图 Archify 交付物。
 
-## Radar 当前状态
+已完成：
 
-- 已部署 `ee7b9af1d3a894ea4a208f1eb6e16c83f3c4fcfa`，回滚点为 `refs/backup/pre-ee7b9af`。
-- Radar 分析只保存 Spec、发布和行为变化，不再读取架构源码或调用 Archify。
-- 产品卡片只等待 `queued/running` 分析；Easy Make PPT 最新运行 `#7` 为 `succeeded`，已验证 `pending: false`。
-- 旧架构页面和 API 均返回 404；历史数据库记录和文件未删除。
-- 公网登录返回 200，服务为 `active`。
+- M0–M6：scope、census、独立 declarations、Evidence Index、IR v2、TypeScript/Go 项目图、RouteGraph、统一 External、Target/Config、SQL/Async operations、逐视图门禁、独立 mutation 和多视图无损投影。
+- M8 第一个 Python 切片：项目准备、Tree-sitter/WASM、src-layout、import/module graph、CLI 入口和 module 详图。
+- M8 第二个 Python 切片：FastAPI/Flask routes、常见 DB-API/SQLAlchemy/Alembic operations、asyncio/queue/Celery/broker operations 和 Python 外部 HTTP candidates。
 
-## RepoMap 当前实现
+尚未完成：
 
-项目目录：`~/Documents/GitHub/repomap`
+- M7：targeted human-reviewed critical Gold、可复现 corpus 评估、固定 CI 性能门槛和 generator release qualification。
+- Django、RQ、完整动态依赖注入/ORM/SSA，以及更多语言和真实仓库审查。
+- 可选 Harness/LLM enrichment 尚未实现；默认分析保持 `aiRequests: 0`。
 
-已有文件与能力：
+**`fullArchitecture: true` 只表示某个固定输入在声明范围内通过语义门禁，不表示所有 Python 项目均受支持，也不等于 M7 或发布资格完成。**
 
-- `src/cli.ts`：`analyze` 命令、GitHub/本地输入、fixed revision、`--no-render`、`--visual-check`、`--no-cache`、locale 和输出目录。
-- `src/core/github/`：GitHub shorthand/URL 解析、HEAD 解析、codeload 单 archive 下载、按 SHA 的本地缓存和成本指标。
-- `src/core/source/local.ts`：按需加载的有界源码清单、64 文件 LRU 内容缓存、完整 UTF-8 读取、行号、目录/文件/单文件/总字节限制，以及本地 Git HEAD 和脏工作区校验。
-- `src/core/architecture/`：从 Radar 抽取的通用事实、信号、覆盖门禁、检测器、投影和布局；Radar adapter、数据库、专用模板及逐 blob loader 未带入。
-- `src/core/analyze.ts`：写出 facts、analysis、Archify spec、HTML（可选）和 `repomap.receipt.json`；覆盖或渲染失败也保留诊断。
-- `src/core/archify-*`：固定 Archify release 校验、准备、delivery 和 visual-check。
-- 根目录包含 `README.md`、`SKILL.md`、MIT `LICENSE` 和测试。
-- 当前没有账号、数据库、多租户、Web 服务或 AI 调用。
+## 2. 不可改变的产品与安全边界
 
-## M8 Python 首个语言切片
+- 只做本地 CLI 和 `SKILL.md`；不做 Radar 集成、Web 服务、账号、多租户、数据库或队列服务。
+- 不用 LLM 补事实，不用仓库名/vendor 专用分支伪装通用能力。
+- 使用固定 40 字符 revision 和不可变 raw snapshot；未知身份、动态路由、歧义 ownership 必须形成 omission 并阻断相关视图。
+- 独立 declaration inventory 必须在 extractor/parser 被禁用时仍保留；omission 不算 coverage。
+- resource budget 只负责资源安全，不是语义完整性门槛，不能靠扩大预算或过滤信号隐藏遗漏。
+- `GITHUB_TOKEN` 只能来自环境，不能写入命令参数、日志、receipt、HTML 或提交。
+- 不提交 `node_modules/`、`dist/`、`.repomap/`、生成 HTML/截图、缓存、`.env`、凭据或 `vendor/archify/runtime/`。
+- Archify 只渲染语义事实；自动 visual-check 通过不能替代语义审查。`visualReview: pending` 时必须实际查看截图。
 
-- 已完成 `tree-sitter-python@0.25.0` / `web-tree-sitter@0.27.2` 项目准备、src-layout、相对/动态 import、嵌套/future import、独立声明、CLI 入口和 module 详图；`initializeTreeSitter()` 统一 Go/Python 运行时初始化。
-- Click 固定版本 `8abb77a8432e03ed14a95f972b44f905279415a7`：440/440 import declarations、1 个动态 omission、2 cycles；该版本无 `__main__.py`，runtime 失败是预期，动态 omission 也阻断 module 视图。
-- Black 固定版本 `b4f1fcae48826790b6f93ca9226d20003bce0eaa`：55 modules/376 edges、0 unresolved、3 cycles；6 个 module 页面 accepted，自动 visual-check 全通过，浅色/深色截图已查看。
-- Python route/SQL/async 的第二阶段已完成：FastAPI/Flask decorator 路由、跨文件 APIRouter 前缀、DB-API/SQLAlchemy 读写与事务、Alembic migration、asyncio queue/schedule 和 Celery task operation 已接入。`tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d` 的 `backend/**` 达到 23/23 routes、0/0 supported async declarations、71 条 SQL operation（31 migration、15 read、13 write、12 transaction），`fullArchitecture: true`；9 个 full 页面自动 visual-check 全部通过并抽查了浅色/深色截图。
-- FastAPI 固定版本 `aabb90126964a164e02aff39e7c385bb0598236d` 的修正产物：`/Users/leihan/Documents/GitHub/repomap/.repomap/validation/fastapi-m8-corrected11`。旧的 `fastapi-m8-final-retry` 中 14/14 async 统计含有 router/ORM 误报，不能作为证据。
-- Python 其他框架、RQ、动态运行时行为仍未完全覆盖，不能泛化为所有 Python 项目都已支持；不支持的输入继续失败关闭。
+## 3. 关键代码入口
 
-## M6 当前交付快照
+| 路径 | 责任 |
+| --- | --- |
+| `src/cli.ts` | `analyze` CLI、fixed SHA、include/exclude、view、render/visual-check 参数 |
+| `src/core/analyze.ts` | 分析、门禁、文件输出和 receipt |
+| `src/core/architecture/extract.ts` | 项目图、RouteGraph、AsyncGraph、IR、evidence 和 omissions 汇总 |
+| `src/core/architecture/census.ts` | raw source census 与声明范围 |
+| `src/core/architecture/declarations.ts` | 独立 declaration inventory |
+| `src/core/architecture/evidence-index.ts` | 稳定 evidence ID、完整索引和引用校验 |
+| `src/core/architecture/ir.ts` | Architecture IR v2、operations、omissions |
+| `src/core/architecture/coverage-matrix.ts` | 逐视图门禁和 full-declared-scope |
+| `src/core/architecture/independence.ts` | extractor/adapter 禁用 mutation |
+| `src/core/architecture/view-manifest.ts` | 多视图分页、alias/aggregate、projection 对账 |
+| `src/core/architecture/view-delivery.ts` | 每页 JSON/HTML、Archify delivery 和 visual-check |
+| `src/core/architecture/project/python-parser.ts` | Python Tree-sitter syntax facts |
+| `src/core/architecture/project/python.ts` | Python import/module 解析 |
+| `src/core/architecture/project/python-routes.ts` | FastAPI/Flask routes、APIRouter composition、独立 route declarations |
+| `src/core/architecture/project/python-async.ts` | asyncio/Celery/broker operations 和独立 async declarations |
+| `src/core/architecture/detectors/python.ts` | Python runtime entrypoints 和最近入口 ownership |
+| `src/core/architecture/detectors/storage.ts` | store 信号、driver-aware SQL evidence 和 runtime/store 关系 |
+| `src/core/architecture/sql-operations.ts` | 可执行 SQL operation 分类、ownership 和 driver 歧义 omissions |
+| `src/core/architecture/detectors/generic-external.ts` | 通用外部协议候选及 Python HTTP call-site identity |
+| `tests/python-protocols.test.ts` | Python 第二切片正负例、失败关闭和 independence fixtures |
+| `scripts/production-smoke.mjs` | 打包后生产安装与 TypeScript/Go/Python smoke |
 
-- `src/core/architecture/view-manifest.ts`：overview/module/flow facts、分页、`aliasOf`、可逆 `aggregateOf`、operation/evidence 对账；原始 detail facts 合入 IR v2，IR `viewOwners` 与 manifest `detailOwners` 独立对账，node/edge 记录并校验 Archify `projectionId`，operation 通过 `relatedProjectionIds` 指向实际语义边。
-- `src/core/architecture/view-delivery.ts`：`architecture.views.json`、每页 JSON/HTML、legacy overview-first `architecture.json/html` 和每页 Archify/visual-check receipt；no-render 页面使用相同 facts 的确定性 grid 布局。
-- 详图按实际节点与出边打包；Go import 标签只在显示层压缩，完整 ID/path/evidence 保留。密集 fan-out 有确定性标签布局 fallback，单节点页使用 `Scope` synthetic alias 满足渲染器的最小组件数。
-- 固定 SHA 最终输出目录（不在 Git 中）：`/Users/leihan/Documents/GitHub/repomap-output/m6-final-v5-authelia`（97 页）、`m6-final-v5-writefreely`（31 页）、`m6-final-v5-commerce`（5 页）。三者均 `accepted`、`fullArchitecture: true`、round-trip 零缺失/重复/dangling，自动 visual-check 全通过；已抽查代表性 light/dark 截图。
-- M7 尚未完成：human-reviewed critical Gold、固定 CI 性能门槛、generator release qualification；M8 已完成 Python module 与 FastAPI/Flask、常见 SQL/Alembic、asyncio/Celery 切片，后续为 RQ/Django、更多语言和真实仓库审查。
+## 4. 当前 Python 能力边界
 
-## 历史验证记录（2026-11-05）
+### 4.1 项目与 ModuleGraph
 
-最近一次全量本地检查：
+- 固定 `tree-sitter-python@0.25.0`、`web-tree-sitter@0.27.2`，与 Go 共享一次进程级 Tree-sitter 初始化，但 parser 实例隔离。
+- 不执行仓库 Python，不读取宿主 Python、virtualenv 或 installed packages。
+- 支持 src layout、package、`__init__.py`、`__main__.py`、main guard、绝对/相对 import、嵌套/future import。
+- 支持字面量 `importlib.import_module`、`__import__`、aliases、re-export、wildcard export 和静态 `__all__`。
+- 动态 import、workspace 歧义、relative escape、unsupported `__all__` 和 parser-unavailable 均失败关闭。
 
+### 4.2 FastAPI/Flask routes
+
+- decorator route、多个 HTTP methods、本地 handler 和 direct calls。
+- 跨文件 `APIRouter` composition，包括静态 prefix 和 `settings.API_V1_STR` 这类模块常量。
+- route declarations 按 receiver 独立识别 FastAPI/Flask；普通 `@registry.get` 不进入 route 分母。
+- 动态 path/method、循环或歧义 prefix、unresolved include/factory 会产生 omission。
+- 普通对象的 `include_router` 不会被误判为 FastAPI，也不会无故阻断全图。
+
+### 4.3 SQL / Alembic
+
+- 常见 DB-API、SQLAlchemy/SQLModel read/write/transaction/migration operations。
+- 支持 `session.get/exec/query` 和多行 SQL 上下文分类。
+- import、schema 声明和 `create_engine` 只支撑 store/schema coverage，不生成伪造的 runtime operation。
+- Alembic `op.*` 调用归执行它的 runtime；纯 schema resource 可归 store。
+- 多数据库下，driver-neutral 或 driver 歧义调用不会扇出到多个 store，而是生成阻断 omission。
+- object-store 不参与 SQL database 数量判断。
+
+### 4.4 Async / broker
+
+- `asyncio.Queue`、put/get、`create_task/gather/sleep`、`threading.Timer`、`schedule.every`。
+- Celery task 和有 broker 证据的 publish/subscribe。
+- receiver/import 必须匹配；route、ORM、dict、requests、其他库的 `.get/.put/.task/.publish` 不算 async protocol。
+- 动态 pub/sub topic 会保留 declaration 并阻断，不生成确定性的假 topic。
+
+### 4.5 Python 外部 HTTP
+
+- 常见 `requests`、`httpx`、`urlopen`、`ClientSession` candidates。
+- 支持静态 URL、按赋值顺序的变量绑定、环境变量、默认值、override 和重绑定。
+- 同文件不同 env key 不会共享第一个配置身份；通用 `API_URL` 也保留 configured identity。
+- 无法确定 identity 时生成 unknown candidate/omission；strict static-host gate 不会被 configured 默认值绕过。
+
+### 4.6 明确未支持
+
+- Django、RQ、任意动态 route registration 和完整 ASGI/WSGI dependency injection。
+- 完整 ORM 类型系统、SSA、动态分派和运行时生成模型。
+- 所有自定义 HTTP session/wrapper、所有 broker 和所有 Python 框架。
+- 以上边界不能被“Python full 已通过”掩盖；相应输入必须失败关闭或保持明确 partial。
+
+## 5. 固定版本验证证据
+
+### 5.1 最新全量检查
+
+在代码基线 `cad62c2` 上：
+
+- `npm test`：**35 个测试文件、232 项测试通过**。
 - `npm run typecheck`：通过。
-- 7 个测试文件、18 个测试：通过（历史记录；当前为 13 个测试文件、46 项测试）。
 - `npm run build`：通过。
-- `npm run archify:prepare`：通过，固定 ZIP 的 SHA-256 已验证。
+- `npm run smoke:production`：通过；生产包中 Go/Python parser 可用，Python route 为 1 条、总 route 为 2 条、Python async operations 为 3 条。
+- `git diff --check`：通过。
 
-真实 Next.js fixture：
+### 5.2 FastAPI 固定模板
 
-- CLI 和真实 Archify delivery 成功，9/9 检查通过。
-- `/tmp/repomap-demo-output/architecture.html` 为实际生成的自包含 HTML。
-- Chromium visual-check 通过，浅色和深色截图已人工查看，布局和文字正常。
-- 该 fixture 只有 3 个源码文件，`aiRequests: 0`，不能作为大型仓库语义完整性的证明。
+- 仓库：`tiangolo/full-stack-fastapi-template`
+- Revision：`aabb90126964a164e02aff39e7c385bb0598236d`
+- Archive SHA-256：`57ab02195c0923dc3cd6ea91d671a3b1ee6b728d44219b7df8038abdc39d951c`
+- Scope：`backend/**`
 
-公开 GitHub 验证：
+最终结果：
 
-- `octocat/Hello-World` 成功解析 HEAD 并下载 archive；共 2 次 HTTP 请求。
-- 该仓库没有支持的源码，按预期返回覆盖失败，没有伪造架构。
-- NameDict 的 codeload 返回 404；当前本地没有该私有仓库的 archive 权限。未借用生产凭据。
+- 23/23 route declarations resolved，组合路径均为 `/api/v1/...`。
+- 0/0 supported async declarations；该 backend 没有本切片支持的 asyncio/Celery 协议。
+- 71 SQL operations：31 migration、15 read、13 write、12 transaction。
+- 只有一个 `python:backend/app` runtime；无 import/engine 伪 operation，无 `requests.delete`/`router.delete` SQL 误报。
+- `fullArchitecture: true`，仅表示该固定输入的语义门禁通过。
+- 9 个页面自动 visual-check 全部 `pass`，代表性 light/dark 截图已人工查看；receipt 的 `visualReview` 按交付契约仍为 `pending`。
 
-Easy Make PPT 固定版本验证：
+有效产物（Git 忽略）：
 
-- 使用临时 clone `/tmp/pptcreator-repomap`，检出 `bc307ea55f50cdb30b1c625405f6caea00296418`，未修改用户原工作区。
-- 输出目录：`/tmp/repomap-ppt-output`。
-- 当前结果：`facts-ready`，不渲染 HTML。
-- 674 个源码文件、324 个目录、6,054,544 字节，耗时约 630ms，`aiRequests: 0`。
-- 结果为 5 个节点、3 条关系，覆盖门禁为 `publishable: true`。
-- **这不是语义完整性的证明。** 当前独立信号清单尚未识别 Worker、Bull/Redis 和对象存储，因此覆盖分母不完整，不能直接交付该架构图。
+`/Users/leihan/Documents/GitHub/repomap/.repomap/validation/fastapi-m8-corrected11`
 
-## 历史未提交与未发布状态（2026-11-05）
+**不要使用旧的 `fastapi-m8-final-retry` 或 corrected1–10 统计作为当前证据。旧 `14/14 async` 含 route/ORM 误报，已经废弃。**
 
-- RepoMap 是新建目录，尚未初始化 Git、配置远程仓库、提交、推送或发布 npm 包。
-- 当前源码和 `vendor/archify/archify-v3.2.0.zip` 均保留在本地。
-- `node_modules/`、`dist/` 和 `vendor/archify/runtime/` 是本地生成物，不应提交。
-- 尚未运行 RepoMap 的 CRAP、dryer、mutation testing、Skill forward-test 或 `npm pack --dry-run`。
-- 不应把当前状态称为已发布 MVP；它是一个经过局部验证、待语义补全的接手快照。
+### 5.3 Click
 
-## 后续优先级
+- 仓库：`pallets/click`
+- Revision：`8abb77a8432e03ed14a95f972b44f905279415a7`
+- Archive SHA-256：`3220392c27a1a6590d4afe192f8c9b985add43544d5e63310b282c2e031c372b`
 
-### P0：先补独立信号与语义覆盖
+- 31 modules、440 import edges、440/440 independent declarations、2 cycles。
+- 1 个动态 `__import__` omission。
+- 固定版本没有 `__main__.py`；runtime/module 相关视图按证据失败关闭，不能为得到成功结果而隐藏 omission。
 
-先写失败测试，再实现通用能力，禁止按 PPTCreator 名称分支：
+产物：`.repomap/validation/click-m8-final`
 
-1. **TypeScript Worker**：识别 `worker/index.ts` 等真实入口、Scheduler 根和 TypeScript import 闭包。
-2. **Bull/Redis**：识别 `new Queue`、`queue.process`、Redis 读写和发布/订阅；明确 API 入队与 Worker 消费的方向。当前 `EdgeFact.kind` 没有 queue 专用类型，需要先决定语义，不能误写成 HTTP 或直接调用。
-3. **对象存储**：检查 `lib/storage/providers/{tencent,aliyun,local}.ts` 等实现，区分上传、下载和本地文件存储，不能只识别构造器。
-4. **独立信号分母**：上述 Worker、队列和存储必须先进入 signal inventory，再用 coverage 验证事实，避免“检测不到就等于不存在”。
-5. 重新运行 Easy Make PPT 固定 SHA，人工检查节点、关系、异步方向和外部服务，不能只比较节点数量或截图。
+### 5.4 Black
 
-### P1：可靠性与安全
+- 仓库：`psf/black`
+- Revision：`b4f1fcae48826790b6f93ca9226d20003bce0eaa`
+- Archive SHA-256：`686f4696ae90b11dc1d80d51038b657b293ce449016af5a1f06609c229a3a1c7`
 
-- 使用用户明确提供的新凭据验证私有 GitHub archive，不能复用生产凭据。
-- 补 archive 损坏、并发缓存写入、tar 路径穿越、符号链接、超时和 API 限流测试。
-- 用真实 Git 仓库补 HEAD 匹配、HEAD 不匹配和脏工作区测试；当前部分验证使用 mock runner。
-- 保留所有状态的 `elapsedMs`，并补渲染失败耗时断言。
-- 检查错误文案与网络超时，避免重复状态码或泄漏响应中的敏感信息。
+- 55 modules、376 import edges、0 unresolved imports、3 cycles。
+- `src/black/__main__.py` 和 `src/blackd/__main__.py` 形成 CLI runtimes。
+- 6 个 module 页面 accepted，自动 visual-check 通过，light/dark 截图已查看。
 
-### P2：开源发布准备
+产物：`.repomap/validation/black-m8-final`
 
-- 初始化 Git 并选择远程仓库；确认生成目录均被忽略。
-- 补 package repository/homepage 元数据、CI、更多固定 SHA corpus 和 `npm pack --dry-run`。
-- 运行 CRAP、dryer、mutation testing，以及 Skill `quick_validate` 和真实调用验证。
-- P0 语义问题未解决前，不发布 npm 包，不宣称所有仓库都具有完整语义覆盖。
+### 5.5 M6 既有回归
 
-## 明确不做
+- Authelia：`32b0bdac395efc707bc098757afa232177965736`，97 页。
+- WriteFreely：`8ff3647e9a094dbcf09c9c84d8e2305543ee5cfb`，31 页。
+- Commerce：`f7521d57d29f0eb3d23c1399cf9bb299d61fcd21`，5 页。
 
-- 不做 Radar 架构入口或外部架构服务调用。
-- 不做多租户、账号、数据库、Web 控制台或任务队列服务。
-- 不用仓库名模板、LLM 补事实或更大预算掩盖语义遗漏。
-- 不删除 Radar 历史架构数据；它只是暂不对用户提供。
+产物目录：
 
-## 接手命令
+- `/Users/leihan/Documents/GitHub/repomap-output/m6-final-v5-authelia`
+- `/Users/leihan/Documents/GitHub/repomap-output/m6-final-v5-writefreely`
+- `/Users/leihan/Documents/GitHub/repomap-output/m6-final-v5-commerce`
+
+三者均为 fixed-SHA、accepted、`fullArchitecture: true`、round-trip 零缺失/重复/dangling，自动 visual-check 通过并抽查截图。这些结果同样是 per-input 证据，不是 Gold/release qualification。
+
+## 6. 接手后先做什么
+
+1. 阅读：
+   - `docs/full-architecture-plan.md`
+   - `docs/python-language-slice.md`
+   - `docs/view-terminology.md`
+   - `docs/gold-manifest.v1.json`
+2. 检查 `git status`、`git log -3` 和当前 HEAD；不要假设本地 validation 目录已提交。
+3. 跑第 7 节的基础检查，确认环境一致。
+4. 新任务先写失败测试，尤其是负例、独立 declarations 和 omission；不要先降低门禁。
+5. 每个独立切片单独提交，提交前跑全量测试、typecheck、build、production smoke、diff/secret 检查。
+6. 若修改 Python 协议，重新运行固定 FastAPI backend，并人工核对 route paths、SQL actions/owners、async operations 和截图，不只看 receipt 状态。
+
+## 7. 常用命令
 
 ```bash
-cd ~/Documents/GitHub/repomap
-npm install
+cd /Users/leihan/Documents/GitHub/repomap
+npm ci
 npm run typecheck
 npm test
 npm run build
-npm run archify:prepare
-
-# 重建 Easy Make PPT 固定版本（如果临时目录已不存在）
-rm -rf /tmp/pptcreator-repomap /tmp/repomap-ppt-output
-git clone --no-hardlinks ~/Documents/GitHub/PPTCreator /tmp/pptcreator-repomap
-git -C /tmp/pptcreator-repomap checkout bc307ea55f50cdb30b1c625405f6caea00296418
-
-node dist/cli.js analyze /tmp/pptcreator-repomap \
-  --revision bc307ea55f50cdb30b1c625405f6caea00296418 \
-  --no-render \
-  --out /tmp/repomap-ppt-output
+npm run smoke:production
 ```
 
-先阅读 `architecture.analysis.json` 的独立信号和覆盖缺口，再决定是否生成 HTML。
+准备固定 Archify runtime（只生成忽略文件）：
+
+```bash
+npm run archify:prepare
+```
+
+重跑固定 FastAPI backend 的 no-render 语义检查：
+
+```bash
+REPOMAP_CACHE_DIR="$PWD/.repomap/cache" \
+node dist/cli.js analyze \
+  'tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d' \
+  --include 'backend/**' \
+  --out "$PWD/.repomap/validation/fastapi-m8-handoff" \
+  --view full \
+  --no-render
+```
+
+需要真实 HTML 和 visual-check 时：
+
+```bash
+REPOMAP_CACHE_DIR="$PWD/.repomap/cache" \
+node dist/cli.js analyze \
+  'tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d' \
+  --include 'backend/**' \
+  --out "$PWD/.repomap/validation/fastapi-m8-handoff-visual" \
+  --view full \
+  --visual-check
+```
+
+重点检查输出：
+
+- `repomap.receipt.json`：requested views、delivery、coverage、fullArchitecture、visualReview。
+- `architecture.route-graph.json`：真实 route path、handler、coverage、omissions。
+- `architecture.async-graph.json`：operation action/topic、独立 denominator、coverage。
+- `architecture.ir.json`：SQL/HTTP/async operations、owner、direction、evidence、omissions。
+- `architecture.evidence.json`：完整 evidence 和引用关系。
+- `architecture.views.json`：分页、projection、round-trip 和各页 delivery。
+
+## 8. 下一步优先级
+
+### P0：M7 评估与发布资格
+
+- 为关键 facts 做 targeted human-reviewed Gold，不要求先维护整仓库人工 Gold。
+- 分开报告 node/edge/direction/evidence 的 precision 和 recall。
+- 固定 corpus、SHA/archive hash、false-positive/false-negative 清单和 failure matrix。
+- 建立固定 CI 性能门槛、生产安装验证和 generator release qualification。
+- 保持 per-input semantic full 与 release qualification 的术语分离。
+
+### P1：Python 真实仓库与协议扩展
+
+- 增加固定 SHA 的 Flask、SQLAlchemy/asyncio/Celery 真实仓库验证。
+- 根据需求增加 Django/RQ；每个框架先写独立 declarations、负例和失败关闭测试。
+- 扩展动态 ORM/SSA、HTTP wrapper 和 broker 时，不能复用“同名方法即协议”的捷径。
+
+### P2：更多语言与可选 enrichment
+
+- 按需求选择 Java/Kotlin、Rust 或 C#，重复 adapter、独立分母、真实仓库和生产安装流程。
+- Harness/LLM 只能作为可选 enrichment，必须携带独立 evidence 并通过相同 coverage gates；确定性静态分析仍是默认路径。
+
+## 9. 当前阻塞与注意事项
+
+- 已完成的 Python 两个切片没有已知未提交实现或当前代码阻塞。
+- M7 未完成是后续资格评估工作，不影响已提交切片作为 per-input 能力使用。
+- Click 和不受支持的动态 Python 输入失败关闭是预期行为，不要为了“全绿”删除 omission。
+- GitHub anonymous API 可能限流；优先使用固定 SHA 和已有 archive cache，不在命令或日志中暴露 token。
+- `docs/gold-manifest.v1.json` 仍是 pinned-not-audited skeleton，不是人工批准的 ground truth。
