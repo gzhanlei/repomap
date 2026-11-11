@@ -88,38 +88,38 @@
     "generatorBaseRevision": "beb3c32 human-audited targeted gold set",
     "runs": [
       {
-        "elapsedMs": 26395,
-        "peakRssBytes": 673087488,
-        "jsonBytes": 92843554,
-        "evidenceBytes": 12184874,
+        "elapsedMs": 30921,
+        "peakRssBytes": 604160000,
+        "jsonBytes": 93240685,
+        "evidenceBytes": 12251095,
         "status": "facts-ready"
       },
       {
-        "elapsedMs": 28152,
-        "peakRssBytes": 724434944,
-        "jsonBytes": 92843554,
-        "evidenceBytes": 12184874,
+        "elapsedMs": 23885,
+        "peakRssBytes": 644169728,
+        "jsonBytes": 93240685,
+        "evidenceBytes": 12251095,
         "status": "facts-ready"
       },
       {
-        "elapsedMs": 25158,
-        "peakRssBytes": 694517760,
-        "jsonBytes": 92843554,
-        "evidenceBytes": 12184874,
+        "elapsedMs": 58974,
+        "peakRssBytes": 763527168,
+        "jsonBytes": 93240685,
+        "evidenceBytes": 12251095,
         "status": "facts-ready"
       }
     ],
     "summary": {
-      "medianElapsedMs": 26395,
-      "worstElapsedMs": 28152,
-      "maxPeakRssBytes": 724434944,
+      "medianElapsedMs": 30921,
+      "worstElapsedMs": 58974,
+      "maxPeakRssBytes": 763527168,
       "jsonBytesDefinition": "sum of the fixed semantic artifact set (analysis/ir/evidence/route-graph/async-graph/declarations/facts/candidates/delivery), excluding per-page view JSONs"
     },
     "verdict": {
       "semanticStatus": "pass",
-      "medianElapsed": "pass 26395 <= 60000",
+      "medianElapsed": "pass 30921 <= 60000",
       "worstElapsed": "pass",
-      "peakRss": "pass 724434968 <= 1073741824 (349MB margin)",
+      "peakRss": "pass 763527168 <= 1073741824",
       "jsonSize": "pass",
       "evidenceSize": "pass"
     },
@@ -132,6 +132,6 @@
       "change": "evidence-id-to-edges index built once per fact set; mergeEvidenceIds skips by array identity; projections push into arrays; per-operation candidate lookup map; per-source cached line arrays with a diff-prefix line index.",
       "behaviorProof": "semantic artifacts (ir/evidence/facts/declarations/candidates/route-graph/async-graph) byte-identical to the pre-fix run on authelia@32b0bdac; analysis/delivery/receipt differ only in the output directory path string."
     },
-    "note": "Median is still ~3.3x the M1 baseline because M2-M8 added real analysis (10.7k operations, module graphs, projections); thresholds unchanged and passing."
+    "note": "Measured after the migration-marker coverage fix; authelia gained 69 executable migration statements. Median remains ~4x the M1 baseline by real analysis growth; thresholds unchanged."
   }
 }

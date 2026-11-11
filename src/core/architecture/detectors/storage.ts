@@ -13,7 +13,7 @@ function pythonSqlLineFilter(path: string, line: string) {
   const code = line.replace(/^\s*\d+:\s?/, "").trim();
   if (code.startsWith("@") || /\b(?:requests|httpx)\./.test(code)) return false;
   if (/(?:^|\/)(?:alembic|migrations?|migrate)(?:\/|$)/i.test(path) && /(?:from\s+alembic\s+import|from\s+sqlalchemy\s+import|import\s+(?:sqlalchemy|sqlmodel)|engine_from_config)/i.test(code)) return true;
-  if (/(?:execute|executemany|create_engine|commit|rollback|session\.(?:add|delete|query|get|exec|execute)|cursor\.execute|op\.(?:execute|create_table|drop_table|add_column|drop_column|alter_column|create_index|drop_index|create_foreign_key|drop_constraint)|conn\.execute|db\.execute|engine\.execute)\s*\(/i.test(code)) return true;
+  if (/(?:execute|executemany|create_engine|commit|rollback|session\.(?:add|delete|query|get|exec|execute)|cursor\.execute|op\.(?:execute|create_table|drop_table|add_column|drop_column|alter_column|create_index|drop_index|create_foreign_key|drop_constraint|create_primary_key)|conn\.execute|db\.execute|engine\.execute)\s*\(/i.test(code)) return true;
   return /["'](?:SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|BEGIN|COMMIT|ROLLBACK)\b/i.test(code);
 }
 
@@ -26,7 +26,12 @@ const schemaMarkers = [
   "CREATE TABLE", "ALTER TABLE", "CREATE INDEX", "DROP TABLE", "INSERT", "UPDATE", "DELETE", "SELECT",
   "PRAGMA", "BEGIN", "COMMIT", "ENGINE=InnoDB", "AUTO_INCREMENT", "utf8mb4", "AUTOINCREMENT",
   "sqlite_master", "INSERT OR REPLACE", "INTEGER PRIMARY KEY", "datasource", "provider", "sql.Open",
-  "gorm.Open", "PrismaClient", "Migrate", "NewDatastore", "op.execute", "alembic", "create_engine", "sqlalchemy", "add_column", "drop_column", "create_table", "drop_table",
+  "gorm.Open", "PrismaClient", "Migrate", "NewDatastore", "op.execute", "alembic", "create_engine", "sqlalchemy",
+  // Alembic DDL helpers: pythonSqlLineFilter already treats these as executable
+  // migration statements, so the marker list must match or their evidence rows
+  // are silently dropped (authelia: 62 hand-audited op.* statements, 31 emitted).
+  "op.alter_column", "add_column", "drop_column", "create_table", "drop_table",
+  "create_index", "drop_index", "create_foreign_key", "drop_constraint", "create_primary_key",
 ];
 function storageEvidence(context: ArchitectureContext, markers: string[], detector: string) {
   return uniqueEvidence(context.sources.filter(isRuntimeEvidenceSource).flatMap((source) => {

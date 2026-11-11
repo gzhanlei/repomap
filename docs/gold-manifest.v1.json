@@ -156,9 +156,10 @@
     "criticalTotal": 59,
     "criticalCovered": 59,
     "falsePositives": [],
-    "falseNegatives": [
-      "candidate: alembic multi-line op.alter_column/op.add_column statements are under-reported by the current extractor (hand-audited 62 op.* statements across 5 migration files vs 31 emitted migration operations; 9c0a54914c78 emits 0 of 8, d98dd8ec85a3 emits 22 of 38, 1a31ce608336 emits 1 of 6). Quantified and dispositioned in a follow-up audit slice; not yet a ratified critical fact."
-    ],
-    "note": "Targeted human audit of tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d backend/** via docs/gold/fastapi-template.v1.json: 23/23 routes, 23/23 route-handler directions, 9 crud.py read/write/transaction operations, 4 fe56fa70289e migration statements, evidence paths valid, zero suspected false positives in 7 audited scopes. Evaluation artifacts: .repomap/validation/fastapi-m8-gold."
+    "falseNegatives": [],
+    "note": "Targeted human audit of tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d backend/** via docs/gold/fastapi-template.v1.json: 23/23 routes, 23/23 route-handler directions, 9 crud.py read/write/transaction operations, 4 fe56fa70289e migration statements, evidence paths valid, zero suspected false positives in 7 audited scopes. Evaluation artifacts: .repomap/validation/fastapi-m8-gold.",
+    "resolvedFindings": [
+      "resolved: alembic multi-line op.alter_column/op.add_column under-reporting (hand-audited 62 op.* statements vs 31 emitted). Root cause: schemaMarkers and pythonSqlLineFilter lacked the alembic DDL helpers alter_column/create_index/drop_index/create_foreign_key/drop_constraint/create_primary_key, so their evidence rows were dropped. After the fix the fixed fastapi-template run emits 62/62 migration operations matching the hand count, the fixture test emits 7/7, the gold evaluation stays 59/59 with zero suspected false positives, and the authelia corpus gained 69 previously-missed executable migration statements (verified by hand as genuine SQL such as CALL PROC_DROP_INDEX(...))."
+    ]
   }
 }
