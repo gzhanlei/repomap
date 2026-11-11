@@ -1,7 +1,7 @@
 # RepoMap 接手文档
 
 - 更新日期：2026-11-12
-- 代码基线：`e097293`（273aa93 gold 评估、beb3c32 人工 Gold、e097293 性能门槛）
+- 代码基线：`4949b6e`（273aa93 gold 评估、beb3c32 人工 Gold、e097293 性能门槛、4949b6e 热点修复）
 - 远程仓库：`https://github.com/gzhanlei/repomap`
 - 当前分支：`main`
 
@@ -270,7 +270,7 @@ node dist/cli.js analyze \
 ## 9. 当前阻塞与注意事项
 
 - 已完成的 Python 两个切片没有已知未提交实现或当前代码阻塞。
-- **性能回归（perf:gate 失败中）**：Authelia 固定 corpus median elapsed 78234ms > 60000ms 阈值（M1 基线 7981ms，M2–M8 累计 ~10x 退化），peak RSS 1020MB 距 1GiB 阈值仅 53MB 余量。测量记录见 `docs/performance-baseline.v1.json` 的 `gate` 段；阈值未被抬高掩盖，下一步应做 profiling 定位或由人工重新批准基线。
+- **性能回归已定位并修复（4949b6e）**：CPU profile 定位到 view-manifest 的二次方 operation×edge 匹配、重复 evidence 数组合并、projections 数组重建，以及 sql-operations 对整个文件内容的反复 split/正则扫描；修复后语义产物字节级不变，perf:gate 通过（median 26395ms，阈值 60000ms；peak RSS 724MB）。median 仍约为 M1 基线 8s 的 3.3x——这是 M2–M8 真实新增分析（10739 operations、module graph、projection）的代价，阈值未改动。详见 `docs/performance-baseline.v1.json` 的 `gate` 段。
 - **migration 语句欠报候选（Gold 审核发现）**：人工清点 5 个 alembic 文件共 62 条 `op.*` 语句，产物只报告 31 条 migration operation（9c0a 0/8、d98d 22/38、1a31 1/6），多行 `op.alter_column`/`op.add_column` 语句疑似未生成可执行 SQL 证据。已作为 candidate false-negative 记录在 `docs/gold-manifest.v1.json` 的 audit 块，待专门切片量化处置；不应据此降低门禁。
 - M7 未完成是后续资格评估工作，不影响已提交切片作为 per-input 能力使用。
 - Click 和不受支持的动态 Python 输入失败关闭是预期行为，不要为了“全绿”删除 omission。
