@@ -14,6 +14,10 @@ export { createSourceSnapshot, numberedText, unnumberedText, lineForRawOffset, s
 export { AdapterRegistry, adapterStatus, createUnavailableAdapter, emptyParseResult, projectPreparationSchema, buildContextSchema, type LanguageAdapter, type ProjectUnit, type ProjectPreparation, type BuildContext, type ImportRef, type SymbolRecord, type EntrypointCandidate, type AdapterCapability } from "./core/architecture/project/adapter.js";
 export { createTypeScriptAdapter } from "./core/architecture/project/typescript.js";
 export { createGoAdapter, analyzeGoSnapshot, goFileSelection, goModuleSchema, goWorkspaceSchema, goExcludedFileSchema, type GoModule, type GoWorkspace, type GoSnapshotAnalysis, type GoExcludedFile } from "./core/architecture/project/go.js";
+export { createPythonAdapter } from "./core/architecture/project/python.js";
+export { initializeTreeSitter } from "./core/architecture/project/tree-sitter-runtime.js";
+export { pythonParserStatus, parsePythonSource, PYTHON_PARSER_ID, PYTHON_GRAMMAR_VERSION, PYTHON_RUNTIME_VERSION, PYTHON_PARSER_VERSION, type PythonParsedFile } from "./core/architecture/project/python-parser.js";
+export { pythonArchitectureDetector } from "./core/architecture/detectors/python.js";
 export { goParserStatus, parseGoSource, GO_PARSER_ID, GO_GRAMMAR_VERSION, GO_RUNTIME_VERSION, GO_PARSER_VERSION, type GoParsedFile } from "./core/architecture/project/go-parser.js";
 export { prepareProjects, defaultProjectAdapters, viewsBlockedByPreparation, type PrepareProjectsInput } from "./core/architecture/project/prepare.js";
 export { readTypeScriptResolutionRules, type TypeScriptResolutionRules } from "./core/architecture/project/typescript.js";

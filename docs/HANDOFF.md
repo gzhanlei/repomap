@@ -2,7 +2,7 @@
 
 更新日期：2026-11-09
 
-> 当前补充：项目已发布到 `https://github.com/gzhanlei/repomap`。已完成大仓库懒加载、Go/SQLite/PostgreSQL、Vite/React、Go 出站 HTTP、M0/M1 契约、census、独立声明、证据索引、M2 项目/模块图、M3 RouteGraph/统一 External、M4 Target/Config/SQL/异步 operation、M5 逐视图覆盖/独立 mutation/full-declared-scope 聚合门禁，以及 M6 多视图无损 Projection Manifest。当前全量检查为 33 个测试文件、182 项测试。通用完整架构的后续实施计划见 [full-architecture-plan.md](full-architecture-plan.md)。以下 2026-11-05 的接手记录保留作历史背景，后续状态以 README、通用协议文档、完整架构计划和 Git 历史为准。
+> 当前补充：项目已发布到 `https://github.com/gzhanlei/repomap`。已完成大仓库懒加载、Go/SQLite/PostgreSQL、Vite/React、Go 出站 HTTP、M0/M1 契约、census、独立声明、证据索引、M2 项目/模块图、M3 RouteGraph/统一 External、M4 Target/Config/SQL/异步 operation、M5 逐视图覆盖/独立 mutation/full-declared-scope 聚合门禁，以及 M6 多视图无损 Projection Manifest。当前全量检查为 34 个测试文件、210 项测试。通用完整架构的后续实施计划见 [full-architecture-plan.md](full-architecture-plan.md)。以下 2026-11-05 的接手记录保留作历史背景，后续状态以 README、通用协议文档、完整架构计划和 Git 历史为准。
 
 ## 已确认的产品边界
 
@@ -34,13 +34,20 @@
 - 根目录包含 `README.md`、`SKILL.md`、MIT `LICENSE` 和测试。
 - 当前没有账号、数据库、多租户、Web 服务或 AI 调用。
 
+## M8 Python 首个语言切片
+
+- 已完成 `tree-sitter-python@0.25.0` / `web-tree-sitter@0.27.2` 项目准备、src-layout、相对/动态 import、嵌套/future import、独立声明、CLI 入口和 module 详图；`initializeTreeSitter()` 统一 Go/Python 运行时初始化。
+- Click 固定版本 `8abb77a8432e03ed14a95f972b44f905279415a7`：440/440 import declarations、1 个动态 omission、2 cycles；该版本无 `__main__.py`，runtime 失败是预期，动态 omission 也阻断 module 视图。
+- Black 固定版本 `b4f1fcae48826790b6f93ca9226d20003bce0eaa`：55 modules/376 edges、0 unresolved、3 cycles；6 个 module 页面 accepted，自动 visual-check 全通过，浅色/深色截图已查看。
+- Python route/SQL/async 尚未实现，full 请求继续失败关闭。详见 [python-language-slice.md](python-language-slice.md)。
+
 ## M6 当前交付快照
 
 - `src/core/architecture/view-manifest.ts`：overview/module/flow facts、分页、`aliasOf`、可逆 `aggregateOf`、operation/evidence 对账；原始 detail facts 合入 IR v2，IR `viewOwners` 与 manifest `detailOwners` 独立对账，node/edge 记录并校验 Archify `projectionId`，operation 通过 `relatedProjectionIds` 指向实际语义边。
 - `src/core/architecture/view-delivery.ts`：`architecture.views.json`、每页 JSON/HTML、legacy overview-first `architecture.json/html` 和每页 Archify/visual-check receipt；no-render 页面使用相同 facts 的确定性 grid 布局。
 - 详图按实际节点与出边打包；Go import 标签只在显示层压缩，完整 ID/path/evidence 保留。密集 fan-out 有确定性标签布局 fallback，单节点页使用 `Scope` synthetic alias 满足渲染器的最小组件数。
 - 固定 SHA 最终输出目录（不在 Git 中）：`/Users/leihan/Documents/GitHub/repomap-output/m6-final-v5-authelia`（97 页）、`m6-final-v5-writefreely`（31 页）、`m6-final-v5-commerce`（5 页）。三者均 `accepted`、`fullArchitecture: true`、round-trip 零缺失/重复/dangling，自动 visual-check 全通过；已抽查代表性 light/dark 截图。
-- M7 尚未完成：human-reviewed critical Gold、固定 CI 性能门槛、generator release qualification；M8 语言扩展与可选 Harness 未开始。
+- M7 尚未完成：human-reviewed critical Gold、固定 CI 性能门槛、generator release qualification；M8 已完成 Python 首个切片，后续为 Python route/SQL/async 和更多语言扩展。
 
 ## 历史验证记录（2026-11-05）
 

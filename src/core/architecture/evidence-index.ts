@@ -84,12 +84,12 @@ export function evidenceRecord(evidence: ArchitectureEvidence): EvidenceRecord {
 }
 
 /** PR #6: one AST import statement is one parser-sourced evidence record. */
-export function astImportEvidenceRecord(input: { path: string; line: number; kind: string }): EvidenceRecord {
+export function astImportEvidenceRecord(input: { path: string; line: number; kind: string; language?: "typescript" | "python" }): EvidenceRecord {
   const base: EvidenceRecordWithoutId = {
     path: input.path,
     startLine: input.line,
     endLine: input.line,
-    extractor: `ast:ts-import:${input.kind}`,
+    extractor: input.language === "python" ? `ast:python-import:${input.kind}` : `ast:ts-import:${input.kind}`,
     role: input.kind === "dynamic" || input.kind === "require" ? "runtime-call" : "declaration",
     source: "parser",
   };

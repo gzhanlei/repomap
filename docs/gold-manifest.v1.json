@@ -1,7 +1,7 @@
 {
   "version": 1,
   "status": "bootstrap-pending-human-audit",
-  "purpose": "M0/M1/M2/M3/M4/M5/M6 versioned gold-standard manifest skeleton. Fixed SHAs and archive hashes are pinned for reproducibility, but no critical fact or human review has been recorded; this is NOT ground truth yet.",
+  "purpose": "M0/M1/M2/M3/M4/M5/M6 and M8 Python first-slice versioned gold-standard manifest skeleton. Fixed SHAs and archive hashes are pinned for reproducibility, but no critical fact or human review has been recorded; this is NOT ground truth yet.",
   "capabilitySlices": [
     {
       "id": "project-preparation",
@@ -44,6 +44,12 @@
       "status": "implemented",
       "goldStatus": "fixture-and-fixed-sha-verified-not-human-audited",
       "note": "M6 adds overview/module/flow pages, bounded detail pagination, aliasOf links, reversible aggregateOf import groups, unaggregated operation evidence and independent manifest/IR viewOwners round-trip validation. Fixed-SHA delivery produced 97 Authelia, 31 WriteFreely and 5 Commerce page artifacts; all Archify validation and automated visual checks passed, with representative light/dark screenshots inspected. These are not human-reviewed Gold facts."
+    },
+    {
+      "id": "python-project-and-module-graph",
+      "status": "implemented-first-slice",
+      "goldStatus": "fixture-and-fixed-sha-verified-not-human-audited",
+      "note": "M8 Python first slice adds fixed Tree-sitter/WASM parsing, src-layout, relative/dynamic imports, nested/future imports, independent declarations, CLI entrypoints and module pages. Click fixed SHA observed 440/440 imports with one dynamic omission and two cycles; Black produced 55 modules/376 edges, zero unresolved imports and three cycles, with six accepted visual pages. Python route/SQL/async remains unimplemented; no human-reviewed Gold facts or full Python architecture is claimed."
     }
   ],
   "rules": {
@@ -78,6 +84,24 @@
       "archiveSha256": "7d5a71c51312c8c957fcdb5d737150434f06ae585ffd43711dae7123805f8345",
       "status": "pinned-not-audited",
       "intendedCoverage": ["next-app-router", "graphql-operations", "provider-identity"],
+      "criticalFacts": []
+    },
+    {
+      "id": "click",
+      "repository": "pallets/click",
+      "revision": "8abb77a8432e03ed14a95f972b44f905279415a7",
+      "archiveSha256": "3220392c27a1a6590d4afe192f8c9b985add43544d5e63310b282c2e031c372b",
+      "status": "pinned-not-audited",
+      "intendedCoverage": ["python-src-layout", "python-import-graph", "python-nested-and-future-imports"],
+      "criticalFacts": []
+    },
+    {
+      "id": "black",
+      "repository": "psf/black",
+      "revision": "b4f1fcae48826790b6f93ca9226d20003bce0eaa",
+      "archiveSha256": "686f4696ae90b11dc1d80d51038b657b293ce449016af5a1f06609c229a3a1c7",
+      "status": "pinned-not-audited",
+      "intendedCoverage": ["python-src-layout", "python-cli-entrypoints", "python-import-graph", "python-module-pages"],
       "criticalFacts": []
     }
   ],

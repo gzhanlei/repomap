@@ -889,6 +889,8 @@ Easy Make PPT 当前依赖本地 clone，只能作为非 gating 开发样本，�
 
 在 M0–M7 稳定后逐项增加语言或 Harness，不与核心重构混在一个 PR。每个扩展重复 adapter、负例、公共仓库、生产安装和黄金评估流程。
 
+**首个实现切片（Python）**：已先完成项目准备与 source-module 图，不等待完整人工 Gold 仓库。固定 `tree-sitter-python@0.25.0` / `web-tree-sitter@0.27.2`，支持 src-layout、相对/动态 import、嵌套/future import、独立声明与 evidence、CLI 入口和 module 详图；Go/Python 共享一次 Tree-sitter 初始化。Click 固定 SHA 达到 440/440 import declarations，记录 1 个动态 omission、0 个其他 unresolved 和 2 cycles；Black 达到 55 modules/376 edges、0 unresolved、3 cycles，并完成 6 页视觉通过。Python route/SQL/async 仍未实现，full 请求必须失败关闭。详见 [Python 语言切片](python-language-slice.md)。
+
 ## 14. 依赖关系与推荐 PR 顺序
 
 ```text

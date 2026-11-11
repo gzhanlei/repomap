@@ -2,6 +2,7 @@ import { z } from "zod";
 import { architectureEvidenceSchema } from "./facts.js";
 import { architectureLineNumber, architectureCallContext, findArchitectureEvidence, isArchitectureSourcePath, type ArchitectureSource } from "./source.js";
 import { isDeclarationOnlyPath, isLockfilePath } from "./file-roles.js";
+import { pythonCodeLines } from "./project/python-source.js";
 
 export const architectureSignalKindSchema = z.enum(["entrypoint", "deployable", "worker", "store", "external", "relationship"]);
 export const architectureSignalSchema = z.object({
@@ -38,6 +39,9 @@ interface SignalRule {
 
 const signalRules: SignalRule[] = [
   { kind: "entrypoint", detector: "source-entrypoint", path: /(?:^|\/)app\/.*(?:page|route)\.tsx?$|(?:^|\/)pages\/index\.tsx$|(?:^|\/)cmd\/.*\/main\.go$|(?:^|\/)main\.go$|(?:^|\/)index\.php$|(?:^|\/)app\.json$|(?:Activity)\.(?:java|kt)$/, markers: [] },
+  { kind: "entrypoint", detector: "python-entrypoint", path: /(?:^|\/)__main__\.py$/, markers: [] },
+  { kind: "entrypoint", detector: "python-main-guard", path: /\.py$/i, markers: ["if __name__"] },
+  { kind: "deployable", detector: "python-process-entrypoint", path: /(?:^|\/)__main__\.py$/, markers: [] },
   { kind: "deployable", detector: "process-entrypoint", path: /(?:^|\/)main\.go$|(?:^|\/)package\.json$/, markers: ["func main", "\"next\"", "\"start\""] },
   { kind: "worker", detector: "next-after-worker", path: /(?:^|\/)app\/api\/.*route\.ts$/, markers: ["after("] },
   { kind: "worker", detector: "async-worker", path: /worker|job|cron|scheduler|analysis/i, markers: ["func main", "cron", "NewRunner"] },
@@ -53,6 +57,14 @@ function matchingLine(source: ArchitectureSource, rule: SignalRule) {
   // created from dependency names that are refused as runtime evidence.
   if (isDeclarationOnlyPath(source.path) && rule.kind !== "entrypoint" && rule.kind !== "deployable") return undefined;
   if (rule.kind === "worker" && /(?:^|\/)(?:\.github\/workflows|\.gitlab-ci|\.circleci|\.buildkite)/.test(source.path)) return undefined;
+  if (rule.detector === "python-main-guard") {
+    const original = source.content.split("\n");
+    const cleaned = pythonCodeLines(source.content);
+    for (let index = 0; index < cleaned.length; index += 1) {
+      if (/^if\s+__name__\s*==\s*["']__main__["']\s*:/.test(cleaned[index])) return { path: source.path, line: architectureLineNumber(original[index], index), detector: rule.detector };
+    }
+    return undefined;
+  }
   if (!rule.path.test(source.path)) return undefined;
   return findArchitectureEvidence(source, rule.markers, rule.detector);
 }

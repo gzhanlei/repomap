@@ -11,6 +11,7 @@ import { architectureViewSchema } from "../scope.js";
 import { importResolutionSchema, type ImportRef, type ProjectPreparation } from "./adapter.js";
 import type { SourceSnapshot } from "./snapshot.js";
 import { readTypeScriptResolutionRules } from "./typescript.js";
+import { pythonCodeLines } from "./python-source.js";
 
 /**
  * PR #6 `ts-module-graph`. One source file is one module (ES module unit); the
@@ -124,7 +125,14 @@ export function discoverImportDeclarations(snapshot: SourceSnapshot, modulePaths
   for (const path of modulePaths) {
     const raw = snapshot.rawText(path);
     if (raw === undefined) continue;
-    raw.split("\n").forEach((line, index) => {
+    const lines = path.endsWith(".py") ? pythonCodeLines(raw) : raw.split("\n");
+    lines.forEach((line, index) => {
+      if (path.endsWith(".py")) {
+        if (/^\s*from\s+\S+\s+import\s+/.test(line) || /^\s*import\s+/.test(line) || /\b(?:import_module|__import__)\s*\(/.test(line)) {
+          declarations.push(importDeclarationSchema.parse({ id: `import-decl:${path}:${index + 1}`, path, line: index + 1 }));
+        }
+        return;
+      }
       const syntactic = /^\s*import\s/.test(line) || /^\s*export\s.*\bfrom\s/.test(line);
       const callSite = /\bimport\s*\(/.test(line) || /\brequire\s*\(/.test(line);
       if (!syntactic && !callSite) return;
@@ -249,7 +257,7 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
   const { snapshot, census, project } = input;
   const rules = resolutionRulesSchema.parse(readTypeScriptResolutionRules(snapshot));
   const packageManifests = new Set(census.packages.filter((entry) => entry.manifests.length > 0).map((entry) => entry.id));
-  const preparedUnits = project.units.filter((unit) => unit.status === "prepared" && unit.adapterId === "ast-typescript");
+  const preparedUnits = project.units.filter((unit) => unit.status === "prepared" && ["ast-typescript", "ast-python"].includes(unit.adapterId));
   const modulePaths = [...new Set([...preparedUnits.flatMap((unit) => unit.files), ...snapshot.files.filter((file) => file.role === "asset" && /\.css$/i.test(file.path)).map((file) => file.path)])].sort();
   const packageOf = new Map(snapshot.files.map((file) => [file.path, file.packageId]));
   const languageOf = new Map(snapshot.files.map((file) => [file.path, file.language]));
@@ -263,7 +271,7 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
   const nodes: ModuleNode[] = modulePaths.map((path) => {
     const packageId = packageOf.get(path) ?? "package:root";
     const isDeclaration = /\.d\.(?:ts|mts|cts)$/i.test(path);
-    const isBarrel = /(?:^|\/)index\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/i.test(path);
+    const isBarrel = /(?:^|\/)index\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/i.test(path) || path.endsWith("__init__.py");
     const kind = isDeclaration ? "declaration-file" : isBarrel ? "barrel" : entrypoints.has(path) ? "entrypoint" : "source-module";
     return moduleNodeSchema.parse({
       id: moduleId(packageId, path),
@@ -292,9 +300,9 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
   for (const item of imports) {
     const from = byPath.get(item.path);
     if (!from) continue; // imports from units with no shipped adapter are gated, not faked
-    const record = astImportEvidenceRecord({ path: item.path, line: item.line, kind: item.kind });
+    const record = astImportEvidenceRecord({ path: item.path, line: item.line, kind: item.kind, language: languageOf.get(item.path) === "python" ? "python" : "typescript" });
     evidenceRecords.push(record);
-    const edgeId = `module-edge:${shortHash(`${item.path}|${item.line}|${item.source}|${item.kind}`)}`;
+    const edgeId = `module-edge:${shortHash(`${item.path}|${item.line}|${item.source}|${item.kind}|${item.resolvedPath ?? item.unresolvedReason ?? ""}`)}`;
     let to: string;
     let toKind: ModuleEdge["toKind"];
     let crossPackage = false;
@@ -304,8 +312,8 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
       toKind = "module";
       crossPackage = from.packageId !== target.packageId;
       target.inDegree += 1;
-    } else if (item.resolution === "unresolved" && /^\.{1,2}\//.test(item.source)) {
-      to = `unresolved:${shortHash(`${item.path}:${item.line}:${item.source}`)}`;
+    } else if (item.resolution === "unresolved" && item.unresolvedReason !== "external-package-not-in-snapshot") {
+      to = `unresolved:${shortHash(`${item.path}:${item.line}:${item.source}:${item.unresolvedReason ?? ""}`)}`;
       toKind = "unresolved";
       const reason = item.unresolvedReason ?? "relative-import-not-resolved-in-snapshot";
       unresolved.push(unresolvedImportSchema.parse({
@@ -354,7 +362,7 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
       id: "omission:module-graph:parser-unavailable",
       owner: "module-graph",
       reason: "parser-unavailable",
-      detail: "No prepared TypeScript/JavaScript unit is available, so no module graph could be built",
+      detail: "No prepared TypeScript/JavaScript/Python unit is available, so no source-module graph could be built",
       declarationIds: [], evidenceIds: [],
       affectedViews: ["module-architecture", "full-declared-scope"], blocking: true,
     }));
@@ -375,7 +383,7 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
   // Independent denominator: every syntactically declared import must have an
   // AST edge. A disabled extractor therefore produces missing declarations,
   // never a silently complete-looking graph.
-  const declarationPaths = snapshot.files.filter((file) => file.role === "source" && /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/i.test(file.path)).map((file) => file.path).sort();
+  const declarationPaths = snapshot.files.filter((file) => file.role === "source" && /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|py)$/i.test(file.path)).map((file) => file.path).sort();
   const declarations = discoverImportDeclarations(snapshot, declarationPaths);
   const observedKeys = new Set(edges.map((edge) => `${edge.path}:${edge.line}`));
   const missing = declarations.filter((declaration) => !observedKeys.has(`${declaration.path}:${declaration.line}`));
@@ -399,7 +407,7 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
   }
   if (unresolved.length > 0) reasons.push(`${unresolved.length} unresolved relative import(s) block the module view`);
   if (project.parseErrors.length > 0) reasons.push(`${project.parseErrors.length} syntax diagnostic(s) block the module view`);
-  if (preparedUnits.length === 0) reasons.push("no prepared TypeScript/JavaScript unit");
+  if (preparedUnits.length === 0) reasons.push("no prepared TypeScript/JavaScript/Python unit");
   // PR #7: Go is no longer an unshipped capability, but its package graph has
   // a different granularity and lives in a separate artifact. This is a note,
   // not a blocking reason for the TypeScript source-module graph.
@@ -424,7 +432,7 @@ export function buildModuleGraph(input: BuildModuleGraphInput): ModuleGraph {
     gates: {
       blockedViews: blocked ? ["module-architecture", "full-declared-scope"] : [],
       runtimeOverviewUnaffected: true,
-      reasons: gateReasons.length > 0 ? gateReasons : ["TypeScript/JavaScript module graph built; the module-architecture view gate itself is still a later PR"],
+      reasons: gateReasons.length > 0 ? gateReasons : ["TypeScript/JavaScript/Python source-module graph built; the module-architecture view gate itself is still a later PR"],
     },
     statistics: {
       modules: nodes.length,

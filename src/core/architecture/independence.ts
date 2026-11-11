@@ -27,6 +27,7 @@ function unavailableAdapters(): LanguageAdapter[] {
   return [
     createUnavailableAdapter("ast-typescript", ["typescript", "javascript"], "M5 mutation: semantic TypeScript extraction disabled"),
     createUnavailableAdapter("ast-go", ["go"], "M5 mutation: semantic Go extraction disabled"),
+    createUnavailableAdapter("ast-python", ["python"], "M8 mutation: semantic Python extraction disabled"),
   ];
 }
 

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { Language, Parser, type Node as SyntaxNode } from "web-tree-sitter";
+import { initializeTreeSitter } from "./tree-sitter-runtime.js";
 
 /**
  * PR #7 `go-module-graph`: the Go parser runtime is a *fixed, vendored WASM
@@ -24,7 +25,7 @@ let parser: Parser | undefined;
 let unavailableReason: string | undefined;
 
 try {
-  await Parser.init({ locateFile: () => require.resolve("web-tree-sitter/web-tree-sitter.wasm") });
+  await initializeTreeSitter();
   const grammar = readFileSync(require.resolve("tree-sitter-go/tree-sitter-go.wasm"));
   const language = await Language.load(grammar);
   parser = new Parser();

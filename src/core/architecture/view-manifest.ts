@@ -165,7 +165,7 @@ function moduleLabel(path: string) {
 function moduleNode(node: Analysis["moduleGraph"]["nodes"][number], evidence: ArchitectureEvidence[]): NodeFact {
   return {
     id: node.id,
-    kind: node.entrypoint ? "frontend" : "api",
+    kind: node.language === "python" && node.entrypoint ? "cli" : node.entrypoint ? "frontend" : "api",
     label: moduleLabel(node.path),
     runtimeUnit: node.packageId,
     sourcePaths: [node.path],

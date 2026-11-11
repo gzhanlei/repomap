@@ -47,6 +47,7 @@ export const repomapCapabilities: Capability[] = [
   { id: "coverage-evaluator", version: "1", status: "available" },
   { id: "ast-typescript", version: "1", status: "partial" },
   { id: "ast-go", version: "1", status: "partial" },
+  { id: "ast-python", version: "1", status: "partial" },
   { id: "module-graph", version: "1", status: "partial" },
   { id: "module-graph-go", version: "1", status: "partial" },
   { id: "route-graph", version: "1", status: "partial" },

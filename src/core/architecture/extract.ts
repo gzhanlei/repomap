@@ -5,6 +5,7 @@ import { uniqueEvidence, isArchitectureSourcePath, type ArchitectureSource } fro
 import { isLockfilePath } from "./file-roles.js";
 import { nextArchitectureDetector } from "./detectors/next.js";
 import { goArchitectureDetector } from "./detectors/go.js";
+import { pythonArchitectureDetector } from "./detectors/python.js";
 import { phpArchitectureDetector } from "./detectors/php.js";
 import { linkStorageRelationships, storageArchitectureDetector } from "./detectors/storage.js";
 import { miniProgramApiRelationships, miniProgramArchitectureDetector } from "./detectors/mini-program.js";
@@ -31,7 +32,7 @@ import { buildAsyncGraph, type AsyncGraph } from "./project/async-graph.js";
 import { buildRouteGraph, candidateOperationFacts, routeGraphEvidenceReferences, routeOperationFacts, type RouteGraph } from "./project/route-graph.js";
 import type { LanguageAdapter } from "./project/adapter.js";
 
-const detectors = [nextArchitectureDetector, goArchitectureDetector, phpArchitectureDetector, miniProgramArchitectureDetector, storageArchitectureDetector];
+const detectors = [nextArchitectureDetector, goArchitectureDetector, pythonArchitectureDetector, phpArchitectureDetector, miniProgramArchitectureDetector, storageArchitectureDetector];
 
 function uniqueStrings(values: string[]) {
   return [...new Set(values)].sort();

@@ -119,9 +119,10 @@ repomap analyze <source> --view runtime --view full \
 ## 11. 已知边界（不要越界宣称）
 
 - M0–M6 的声明范围门禁和多视图交付已实现，但 human-reviewed critical Gold、generator release qualification 和 M7 固定 CI 性能门槛仍未完成；`fullArchitecture: true` 只表示单次输入的声明范围语义门禁通过。
+- Python 目前只有 M8 首个项目/模块图切片：固定 WASM、src-layout、相对/动态 import、CLI 入口和 module 详图；route/SQL/async 尚未实现，full 请求应失败关闭，详见 [python-language-slice.md](python-language-slice.md)。
 - submodule 目前只记录 `unresolved-submodule`，不会作为独立 fixed-SHA 输入获取。
 - evidence / census / IR / receipt 已通过带回压和原子替换的流式 JSON writer 写出；内存中的语义分析对象尚未全流式化，固定 CI 性能门槛仍需复核。
-- `docs/gold-manifest.v1.json` 已固定三个仓库的 SHA/archive hash，但仍未经过人工审核，不能当作真值。
+- `docs/gold-manifest.v1.json` 已固定五个仓库的 SHA/archive hash，但仍未经过人工审核，不能当作真值。
 - 已建立 Authelia 本地三次数值基线（见 `docs/performance-baseline.v1.json`），固定 CI 与视觉发布资格仍需独立验证。
 
 上述不妨碍对已声明范围作 per-input 的完整门禁判断，但不得把单次 `fullArchitecture: true` 称为所有仓库的 release qualification、人工 Gold 通过或普遍精度/召回证明。

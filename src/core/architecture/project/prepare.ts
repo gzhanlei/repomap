@@ -8,6 +8,7 @@ import {
 import type { SourceSnapshot } from "./snapshot.js";
 import { createTypeScriptAdapter } from "./typescript.js";
 import { createGoAdapter } from "./go.js";
+import { createPythonAdapter } from "./python.js";
 import { projectPreparationSchema, type ProjectPreparation } from "./adapter.js";
 
 /** The shipped adapter set. `createUnavailableAdapter` remains injectable for parser-unavailable tests. */
@@ -15,6 +16,7 @@ export function defaultProjectAdapters(): LanguageAdapter[] {
   return [
     createTypeScriptAdapter(),
     createGoAdapter(),
+    createPythonAdapter(),
   ];
 }
 

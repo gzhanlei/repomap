@@ -5,6 +5,7 @@ import type { ArchitectureSource } from "./source.js";
 import type { SourceCensus } from "./census.js";
 import { declarationRecordSchema, type DeclarationRecord } from "./ir.js";
 import { classifySourcePath, detectSourceLanguage } from "./file-roles.js";
+import { pythonCodeLines } from "./project/python-source.js";
 
 /**
  * M0/M1 bootstrap: an independent declaration inventory. Discovery uses raw
@@ -101,6 +102,12 @@ export function buildDeclarationInventory(input: BuildDeclarationInput): Declara
     }
     if (/(?:^|\/)app\/.*page\.tsx$|(?:^|\/)pages\/index\.tsx$|(?:^|\/)main\.go$/.test(file.path)) {
       declarations.push(declaration("entrypoint", file.path, file.packageId, "entrypoint-file", true, "file-entrypoint"));
+    }
+    if (file.path.endsWith("__main__.py")) {
+      declarations.push(declaration("entrypoint", file.path, file.packageId, "python-main-module", true, "python-main-module"));
+    }
+    if (file.path.endsWith(".py") && content && pythonCodeLines(unnumbered(content)).some((line) => /^if\s+__name__\s*==\s*["']__main__["']\s*:/.test(line))) {
+      declarations.push(declaration("entrypoint", file.path, file.packageId, "python-main-guard", true, "python-main-guard"));
     }
     if (file.role === "migration" || /\.(?:sql|prisma)$/i.test(file.path)) {
       declarations.push(declaration("store", file.path, file.packageId, "schema-or-migration-file", false, "schema-file"));
