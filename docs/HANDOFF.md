@@ -1,7 +1,7 @@
 # RepoMap 接手文档
 
 - 更新日期：2026-11-12
-- 代码基线：`a231a69`（273aa93 gold 评估、beb3c32 人工 Gold、e097293 性能门槛、4949b6e 热点修复、a231a69 migration 欠报修复）
+- 代码基线：`8bd38a2`（a231a69 之前的 M7 切片 + 728f50a CI workflow + 8bd38a2 click Gold）
 - 远程仓库：`https://github.com/gzhanlei/repomap`
 - 当前分支：`main`
 
@@ -13,7 +13,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 已完成：
 
-- M7 第一切片：targeted human-reviewed Gold 机制（`src/core/architecture/corpus-gold.ts`、`npm run gold:evaluate`）、fastapi-template 首个 59 条人工审核 Gold（`docs/gold/fastapi-template.v1.json`，7 个 precision scope，59/59 recall、0 FP）、固定性能门槛（`npm run perf:gate`，阈值来自 `docs/performance-baseline.v1.json`）。
+- M7 第一切片：targeted human-reviewed Gold 机制（`src/core/architecture/corpus-gold.ts`、`npm run gold:evaluate`）、fastapi-template 59 条人工审核 Gold（`docs/gold/fastapi-template.v1.json`）、click 21 条人工审核 Gold（`docs/gold/click.v1.json`，17 模块完整枚举 + 4 条 import 边；fact schema 已支持 module/import-edge/module scope）、固定性能门槛（`npm run perf:gate`）、CI workflow（`.github/workflows/ci.yml`：checks 阻塞含 gold 评估；performance-gate 非阻塞，等 ubuntu 基线批准后转阻塞）。
 - M0–M6：scope、census、独立 declarations、Evidence Index、IR v2、TypeScript/Go 项目图、RouteGraph、统一 External、Target/Config、SQL/Async operations、逐视图门禁、独立 mutation 和多视图无损投影。
 - M8 第一个 Python 切片：项目准备、Tree-sitter/WASM、src-layout、import/module graph、CLI 入口和 module 详图。
 - M8 第二个 Python 切片：FastAPI/Flask routes、常见 DB-API/SQLAlchemy/Alembic operations、asyncio/queue/Celery/broker operations 和 Python 外部 HTTP candidates。
@@ -117,7 +117,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 在代码基线 `cad62c2` 上：
 
-- `npm test`：**36 个测试文件、257 项测试通过**（在 e097293 上）。
+- `npm test`：**37 个测试文件、264 项测试通过**（在 8bd38a2 上）。
 - `npm run typecheck`：通过。
 - `npm run build`：通过。
 - `npm run smoke:production`：通过；生产包中 Go/Python parser 可用，Python route 为 1 条、总 route 为 2 条、Python async operations 为 3 条。
@@ -271,7 +271,7 @@ node dist/cli.js analyze \
 
 - 已完成的 Python 两个切片没有已知未提交实现或当前代码阻塞。
 - **性能回归已定位并修复（4949b6e）**：CPU profile 定位到 view-manifest 的二次方 operation×edge 匹配、重复 evidence 数组合并、projections 数组重建，以及 sql-operations 对整个文件内容的反复 split/正则扫描；修复后语义产物字节级不变，perf:gate 通过（median 26395ms，阈值 60000ms；peak RSS 724MB）。median 仍约为 M1 基线 8s 的 3.3x——这是 M2–M8 真实新增分析（10739 operations、module graph、projection）的代价，阈值未改动。详见 `docs/performance-baseline.v1.json` 的 `gate` 段。
-- **migration 语句欠报已修复（a231a69）**：根因是 `schemaMarkers` 与 `pythonSqlLineFilter` 都缺少 alembic DDL 助手（alter_column/create_index/drop_index/create_foreign_key/drop_constraint/create_primary_key）。修复后 fastapi-template 固定语料 62/62 与人工清点一致，fixture 测试 7/7，authelia 新增 69 条经人工抽查为真实 SQL 的迁移语句；gold 评估保持 59/59、0 FP，manifest 的 candidate 已移入 resolvedFindings。
+- **migration 语句欠报已修复（a231a69，见 resolvedFindings）**：根因是 `schemaMarkers` 与 `pythonSqlLineFilter` 都缺少 alembic DDL 助手（alter_column/create_index/drop_index/create_foreign_key/drop_constraint/create_primary_key）。修复后 fastapi-template 固定语料 62/62 与人工清点一致，fixture 测试 7/7，authelia 新增 69 条经人工抽查为真实 SQL 的迁移语句；gold 评估保持 59/59、0 FP，manifest 的 candidate 已移入 resolvedFindings。
 - M7 未完成是后续资格评估工作，不影响已提交切片作为 per-input 能力使用。
 - Click 和不受支持的动态 Python 输入失败关闭是预期行为，不要为了“全绿”删除 omission。
 - GitHub anonymous API 可能限流；优先使用固定 SHA 和已有 archive cache，不在命令或日志中暴露 token。
