@@ -80,7 +80,7 @@ export function isRuntimeEvidenceSource(source: ArchitectureSource) {
 }
 
 /** Path-level evidence must be semantic; completeness is enforced by the index. */
-export function findSemanticEvidence(source: ArchitectureSource, markers: string[], detector: string): ArchitectureEvidence[] {
+export function findSemanticEvidence(source: ArchitectureSource, markers: string[], detector: string, lineFilter?: (line: string, index: number, lines: string[]) => boolean): ArchitectureEvidence[] {
   if (!isRuntimeEvidenceSource(source) || markers.length === 0) return [];
-  return findAllArchitectureEvidence(source, markers, detector);
+  return findAllArchitectureEvidence(source, markers, detector, lineFilter);
 }

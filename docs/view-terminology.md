@@ -119,7 +119,7 @@ repomap analyze <source> --view runtime --view full \
 ## 11. 已知边界（不要越界宣称）
 
 - M0–M6 的声明范围门禁和多视图交付已实现，但 human-reviewed critical Gold、generator release qualification 和 M7 固定 CI 性能门槛仍未完成；`fullArchitecture: true` 只表示单次输入的声明范围语义门禁通过。
-- Python 目前只有 M8 首个项目/模块图切片：固定 WASM、src-layout、相对/动态 import、CLI 入口和 module 详图；route/SQL/async 尚未实现，full 请求应失败关闭，详见 [python-language-slice.md](python-language-slice.md)。
+- Python 的 M8 已完成两个切片：项目/模块图，以及 FastAPI/Flask 路由、DB-API/SQLAlchemy 读写与事务、Alembic migration、asyncio queue/schedule 和 Celery task operation；其他 Python 框架和动态运行时行为仍是部分能力，详见 [python-language-slice.md](python-language-slice.md)。
 - submodule 目前只记录 `unresolved-submodule`，不会作为独立 fixed-SHA 输入获取。
 - evidence / census / IR / receipt 已通过带回压和原子替换的流式 JSON writer 写出；内存中的语义分析对象尚未全流式化，固定 CI 性能门槛仍需复核。
 - `docs/gold-manifest.v1.json` 已固定五个仓库的 SHA/archive hash，但仍未经过人工审核，不能当作真值。

@@ -28,8 +28,8 @@ Options:
   -v, --version      Show the package version
 
 A runtime overview is not a complete architecture. Only a passing
-full-declared-scope gate can set fullArchitecture; that gate is not implemented
-yet, so receipts always report fullArchitecture: false.
+full-declared-scope gate can set fullArchitecture; default runtime receipts
+keep it false. Full is per-input semantic completeness, not release qualification.
 
 Environment:
   GITHUB_TOKEN       Optional token for private repositories and higher API limits

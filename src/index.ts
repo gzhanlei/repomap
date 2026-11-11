@@ -27,6 +27,8 @@ export { mergeEvidenceIndex, astImportEvidenceRecord, astGoImportEvidenceRecord,
 export { buildRouteGraph, routeGraphEvidenceReferences, routeOperationFacts, candidateOperationFacts, routeGraphSchema, type RouteGraph, type RouteExtraction } from "./core/architecture/project/route-graph.js";
 export { analyzeGoRoutes } from "./core/architecture/project/go-routes.js";
 export { analyzeTypeScriptRoutes } from "./core/architecture/project/ts-routes.js";
+export { analyzePythonRoutes } from "./core/architecture/project/python-routes.js";
+export { analyzePythonAsync } from "./core/architecture/project/python-async.js";
 export { buildViewManifest, validateViewManifest, viewManifestSchema, type ViewManifest, type ViewPage } from "./core/architecture/view-manifest.js";
 export { deliverViewArtifacts, withoutRepositoryEvidence, type ViewArtifact } from "./core/architecture/view-delivery.js";
 export { evaluateArchitectureViews, architectureViewEvaluationSchema, type ArchitectureViewEvaluation, type ViewEvaluationOptions } from "./core/architecture/coverage-matrix.js";
@@ -35,4 +37,4 @@ export { evaluateCriticalGold, criticalGoldSetSchema, criticalGoldEvaluationSche
 export { buildAsyncGraph, asyncGraphSchema, asyncDeclarationId, type AsyncGraph, type AsyncExtraction } from "./core/architecture/project/async-graph.js";
 export { analyzeGoAsync } from "./core/architecture/project/go-async.js";
 export { analyzeTypeScriptAsync } from "./core/architecture/project/ts-async.js";
-export { sqlOperationFacts, operationEvidenceReferences } from "./core/architecture/sql-operations.js";
+export { sqlOperationFacts, sqlOperationOmissions, operationEvidenceReferences } from "./core/architecture/sql-operations.js";

@@ -24,9 +24,11 @@ import { prepareProjects } from "./project/prepare.js";
 import { buildModuleGraph, moduleGraphEvidenceReferences } from "./project/module-graph.js";
 import { buildGoModuleGraph, goModuleGraphEvidenceReferences } from "./project/go-module-graph.js";
 import { analyzeGoRoutes } from "./project/go-routes.js";
+import { analyzePythonRoutes } from "./project/python-routes.js";
 import { analyzeTypeScriptRoutes } from "./project/ts-routes.js";
-import { operationEvidenceReferences, sqlOperationFacts } from "./sql-operations.js";
+import { operationEvidenceReferences, sqlOperationFacts, sqlOperationOmissions } from "./sql-operations.js";
 import { analyzeGoAsync } from "./project/go-async.js";
+import { analyzePythonAsync } from "./project/python-async.js";
 import { analyzeTypeScriptAsync } from "./project/ts-async.js";
 import { buildAsyncGraph, type AsyncGraph } from "./project/async-graph.js";
 import { buildRouteGraph, candidateOperationFacts, routeGraphEvidenceReferences, routeOperationFacts, type RouteGraph } from "./project/route-graph.js";
@@ -229,6 +231,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     extractions: [
       analyzeTypeScriptRoutes(snapshot, project.parsers.find((parser) => parser.id === "ast-typescript")?.status !== "unavailable"),
       analyzeGoRoutes({ snapshot, context: project.buildContext, enabled: project.parsers.find((parser) => parser.id === "ast-go")?.status !== "unavailable" }),
+      analyzePythonRoutes({ snapshot, project, enabled: project.parsers.find((parser) => parser.id === "ast-python")?.status !== "unavailable" }),
     ],
   });
   const asyncGraph = buildAsyncGraph({
@@ -237,6 +240,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     extractions: [
       analyzeTypeScriptAsync(snapshot, project.parsers.find((parser) => parser.id === "ast-typescript")?.status !== "unavailable"),
       analyzeGoAsync({ snapshot, context: project.buildContext, enabled: project.parsers.find((parser) => parser.id === "ast-go")?.status !== "unavailable" }),
+      analyzePythonAsync({ snapshot, enabled: project.parsers.find((parser) => parser.id === "ast-python")?.status !== "unavailable" }),
     ],
   });
 
@@ -253,6 +257,11 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   const coverage = evaluateArchitectureCoverage(enrichedInventory, facts);
   const declarationCoverage = evaluateDeclarationCoverage(rawDeclarations, facts);
   const mutation = mutationCheck(rawDeclarations, facts);
+  const sqlOmissions = sqlOperationOmissions(facts, runtimeSources);
+  const sqlOmissionEvidenceRecords = sqlOmissions.flatMap((omission) => {
+    const match = omission.owner.match(/^python-sql:(.*):(\d+)$/);
+    return match ? [evidenceRecord({ path: match[1], line: Number(match[2]), detector: "python-sql-operation" })] : [];
+  });
   const operationFacts = [...routeOperationFacts(routeGraph), ...candidateOperationFacts(candidates), ...sqlOperationFacts(facts, runtimeSources), ...asyncGraph.operations];
   const candidateEvidenceRecords = candidates.flatMap((candidate) => [
     evidenceRecord(candidate.evidence),
@@ -275,7 +284,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   // One lossless index: regex runtime evidence, AST imports, routes and direct calls.
   const evidence = mergeEvidenceIndex(
     buildEvidenceIndex(input.revision, facts),
-    [...moduleGraph.evidenceRecords, ...goModuleGraph.evidenceRecords, ...routeGraph.evidenceRecords, ...candidateEvidenceRecords, ...asyncGraph.evidenceRecords],
+    [...moduleGraph.evidenceRecords, ...goModuleGraph.evidenceRecords, ...routeGraph.evidenceRecords, ...candidateEvidenceRecords, ...asyncGraph.evidenceRecords, ...sqlOmissionEvidenceRecords],
     [...moduleGraphEvidenceReferences(moduleGraph), ...goModuleGraphEvidenceReferences(goModuleGraph), ...routeGraphEvidenceReferences(routeGraph), ...candidateEvidenceReferences, ...operationEvidenceReferences(operationFacts.filter((operation) => operation.kind === "sql" || operation.kind === "queue" || operation.kind === "schedule"))],
   );
   const declarations = {
@@ -298,7 +307,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     buildContext: options.buildContext,
     parsers: project.parsers,
   });
-  const omissions = [...omissionsFrom(baseCensus, rawDeclarations, facts), ...project.omissions, ...moduleGraph.omissions, ...goModuleGraph.omissions, ...routeGraph.omissions, ...asyncGraph.omissions];
+  const omissions = [...omissionsFrom(baseCensus, rawDeclarations, facts), ...project.omissions, ...moduleGraph.omissions, ...goModuleGraph.omissions, ...routeGraph.omissions, ...asyncGraph.omissions, ...sqlOmissions];
   const ir = buildArchitectureIr({
     revision: input.revision,
     view: defaultArchitectureView,

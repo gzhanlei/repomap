@@ -52,6 +52,7 @@ try {
   await mkdir(join(fixture, "src/smoke"), { recursive: true });
   await writeFile(join(fixture, "src/smoke/__main__.py"), "from . import tool\nif __name__ == \"__main__\": print(tool.VALUE)\n");
   await writeFile(join(fixture, "src/smoke/tool.py"), "VALUE = 1\n");
+  await writeFile(join(fixture, "src/smoke/app.py"), "from fastapi import FastAPI\nimport asyncio\nimport sqlite3\napp = FastAPI()\nqueue = asyncio.Queue()\n@app.get('/health')\ndef health():\n    conn = sqlite3.connect('app.db')\n    cursor = conn.cursor()\n    cursor.execute('SELECT 1')\n    conn.commit()\n    asyncio.create_task(queue.put(1))\n    return {'ok': True}\n");
   run("git", ["-C", fixture, "init", "-q"]);
   run("git", ["-C", fixture, "config", "user.email", "smoke@example.test"]);
   run("git", ["-C", fixture, "config", "user.name", "smoke"]);
@@ -64,6 +65,9 @@ try {
   const project = JSON.parse(await readFile(join(out, "architecture.project.json"), "utf8"));
   const goGraph = JSON.parse(await readFile(join(out, "architecture.go-module-graph.json"), "utf8"));
   const moduleGraph = JSON.parse(await readFile(join(out, "architecture.module-graph.json"), "utf8"));
+  const routeGraph = JSON.parse(await readFile(join(out, "architecture.route-graph.json"), "utf8"));
+  const asyncGraph = JSON.parse(await readFile(join(out, "architecture.async-graph.json"), "utf8"));
+  const ir = JSON.parse(await readFile(join(out, "architecture.ir.json"), "utf8"));
   if (receipt.status === "failed") throw new Error(`packed CLI analysis failed: ${receipt.error ?? "unknown"}`);
   if (!project.snapshotId) throw new Error("architecture.project.json has no snapshotId");
   const tsParser = project.parsers.find((parser) => parser.id === "ast-typescript");
@@ -74,6 +78,10 @@ try {
   const pythonParser = project.parsers.find((parser) => parser.id === "ast-python");
   if (!pythonParser || pythonParser.status === "unavailable") throw new Error("packed CLI did not load the Python WASM grammar");
   if (!moduleGraph.nodes.some((node) => node.path === "src/smoke/__main__.py")) throw new Error("packed CLI did not build the Python module graph");
+  if (!routeGraph.routes.some((route) => route.path === "/health")) throw new Error("packed CLI did not build the FastAPI route graph");
+  if (routeGraph.routes.filter((route) => route.sourcePath.endsWith(".py")).length !== 1) throw new Error("packed CLI duplicated the Python FastAPI route");
+  if (!asyncGraph.operations.some((operation) => operation.action === "enqueue")) throw new Error("packed CLI did not build the Python async operation graph");
+  if (!ir.operations.some((operation) => operation.kind === "sql")) throw new Error("packed CLI did not build the Python SQL operation graph");
   if (!receipt.project || receipt.project.snapshotId !== project.snapshotId) throw new Error("receipt and project snapshot IDs disagree");
 
   ok = true;
@@ -89,6 +97,9 @@ try {
     goParser: goGraph.parser,
     pythonParser,
     pythonModules: moduleGraph.nodes.filter((node) => node.language === "python").length,
+    pythonRoutes: routeGraph.routes.filter((route) => route.sourcePath.endsWith(".py")).length,
+    totalRoutes: routeGraph.statistics.routes,
+    pythonAsyncOperations: asyncGraph.statistics.operations,
     snapshotId: project.snapshotId,
   }, null, 2));
 } finally {

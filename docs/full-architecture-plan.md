@@ -889,7 +889,7 @@ Easy Make PPT 当前依赖本地 clone，只能作为非 gating 开发样本，�
 
 在 M0–M7 稳定后逐项增加语言或 Harness，不与核心重构混在一个 PR。每个扩展重复 adapter、负例、公共仓库、生产安装和黄金评估流程。
 
-**首个实现切片（Python）**：已先完成项目准备与 source-module 图，不等待完整人工 Gold 仓库。固定 `tree-sitter-python@0.25.0` / `web-tree-sitter@0.27.2`，支持 src-layout、相对/动态 import、嵌套/future import、独立声明与 evidence、CLI 入口和 module 详图；Go/Python 共享一次 Tree-sitter 初始化。Click 固定 SHA 达到 440/440 import declarations，记录 1 个动态 omission、0 个其他 unresolved 和 2 cycles；Black 达到 55 modules/376 edges、0 unresolved、3 cycles，并完成 6 页视觉通过。Python route/SQL/async 仍未实现，full 请求必须失败关闭。详见 [Python 语言切片](python-language-slice.md)。
+**首个实现切片（Python）**：已先完成项目准备与 source-module 图，不等待完整人工 Gold 仓库。固定 `tree-sitter-python@0.25.0` / `web-tree-sitter@0.27.2`，支持 src-layout、相对/动态 import、嵌套/future import、独立声明与 evidence、CLI 入口和 module 详图；Go/Python 共享一次 Tree-sitter 初始化。Click 固定 SHA 达到 440/440 import declarations，记录 1 个动态 omission、0 个其他 unresolved 和 2 cycles；Black 达到 55 modules/376 edges、0 unresolved、3 cycles，并完成 6 页视觉通过。Python route/SQL/async 的第二阶段支持已经补齐：FastAPI/Flask decorator 路由、跨文件 APIRouter 前缀、DB-API/SQLAlchemy 读写与事务、Alembic migration、asyncio queue/schedule 和 Celery task operation 已接入。`tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d` 的 `backend/**` 达到 23/23 routes、0/0 supported async declarations、71 条 SQL operation（31 migration、15 read、13 write、12 transaction），`fullArchitecture: true`，9 个 full 页面自动视觉检查通过并抽查截图；旧的 14/14 async 统计已证实含有 router/ORM 误报，不作为证据。其他 Python 框架、RQ 和动态运行时行为仍保持能力边界。详见 [Python 语言切片](python-language-slice.md)。
 
 ## 14. 依赖关系与推荐 PR 顺序
 

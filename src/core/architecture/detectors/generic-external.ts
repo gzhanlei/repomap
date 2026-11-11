@@ -1,5 +1,6 @@
 import type { NodeFact } from "../facts.js";
 import { architectureLineNumber, architectureRuntimeSources, signalIdsForEvidence } from "../source.js";
+import { pythonCodeLines } from "../project/python-source.js";
 import type { ArchitectureSignal } from "../signals.js";
 import { emptyArchitectureFragment, factEdge, type ArchitectureContext, type ArchitectureFragment } from "./types.js";
 import type { ExternalCandidate, ExternalTarget } from "../candidates.js";
@@ -394,6 +395,66 @@ function toCandidate(draft: CandidateDraft, identity: string, dynamic: boolean, 
   };
 }
 
+function pythonConfigIdentity(key: string) {
+  return slug(key.replace(/_(?:(?:API|BASE)_)?(?:URL|HOST|ENDPOINT)$/, "") || key);
+}
+
+function pythonEnvironmentDetails(code: string, path: string, line: number): ResolvedIdentity | undefined {
+  const match = code.match(/os\.(?:getenv\s*\(\s*["']([A-Z][A-Z0-9_]+)["']|environ(?:\s*\[\s*["']([A-Z][A-Z0-9_]+)["']\s*\]|\.get\s*\(\s*["']([A-Z][A-Z0-9_]+)["']))/);
+  const key = match?.[1] ?? match?.[2] ?? match?.[3];
+  if (!key) return undefined;
+  const defaultValue = code.match(/os\.(?:getenv|environ\.get)\s*\(\s*["'][A-Z][A-Z0-9_]+["']\s*,\s*["'](https?:\/\/[^"']+)["']/)?.[1];
+  return {
+    identity: pythonConfigIdentity(key),
+    dynamic: true,
+    configKey: key,
+    ...(defaultValue ? { defaultValue } : {}),
+    override: `env:${key}`,
+    evidence: { path, line, detector: "python-environment-endpoint" },
+  };
+}
+
+function pythonOutboundDrafts(source: { path: string; content: string }): CandidateDraft[] {
+  if (!source.path.endsWith(".py")) return [];
+  const drafts: CandidateDraft[] = [];
+  const lines = pythonCodeLines(source.content);
+  const bindings = new Map<string, ResolvedIdentity>();
+  lines.forEach((line, index) => {
+    const assignment = line.match(/^\s*([A-Za-z_]\w*)\s*=\s*(.+)/);
+    if (assignment) {
+      const literal = assignment[2].trim().match(/^["'](https?:\/\/[^"']+)["']$/)?.[1];
+      const configured = pythonEnvironmentDetails(assignment[2], source.path, architectureLineNumber(lines[index], index));
+      if (literal) bindings.set(assignment[1], { identity: absoluteIdentity(literal) ?? literal.toLowerCase(), dynamic: false });
+      else if (configured) bindings.set(assignment[1], configured);
+      else bindings.delete(assignment[1]);
+    }
+    const code = line.replace(/^\s*\d+:\s?/, "").trim();
+    if (!/(?:requests|httpx|urlopen|ClientSession)/.test(code)) return;
+    const absolute = absoluteIdentity(code);
+    const environment = pythonEnvironmentDetails(code, source.path, architectureLineNumber(lines[index], index));
+    const pathIdentity = identityFromPath(source.path);
+    const dynamicCall = /(?:endpoint|url|uri|host|domain|base_url|baseUrl|api_url|apiUrl)\b/i.test(code) || /os\.(?:getenv|environ)/.test(code) || /\b(?:requests|httpx)\.(?:get|post|put|delete|patch|head|options|request)\s*\(/.test(code) || /\burlopen\s*\(/.test(code) || /\bClientSession\s*\(/.test(code);
+    if (!absolute && !dynamicCall) return;
+    const argument = code.match(/(?:get|post|put|delete|patch|head|options|urlopen)\s*\(\s*["']?([A-Za-z_][\w.]*)/)?.[1];
+    const bound = argument ? bindings.get(argument) : undefined;
+    const resolved: ResolvedIdentity | undefined = environment ? { ...environment, dynamic: true } : absolute ? { identity: absolute, dynamic: false } : bound ? { ...bound } : pathIdentity ? { identity: pathIdentity, dynamic: true } : undefined;
+    const method = code.match(/(?:requests|httpx)\.(get|post|put|delete|patch|head|options)\s*\(/)?.[1] ?? "request";
+    drafts.push({
+      identity: resolved?.identity,
+      dynamic: resolved?.dynamic ?? true,
+      protocol: "http",
+      operation: { name: method, kind: "http" },
+      evidence: { path: source.path, line: architectureLineNumber(lines[index], index), detector: "python-http-call" },
+      configKey: resolved?.configKey,
+      defaultValue: resolved?.defaultValue,
+      override: resolved?.override,
+      configEvidence: resolved?.evidence,
+      omissionReason: resolved ? undefined : "Python HTTP call has no statically identifiable service identity",
+    });
+  });
+  return drafts;
+}
+
 function fetchDrafts(source: { path: string; content: string }): CandidateDraft[] {
   const identity = serviceIdentity(source);
   const drafts: CandidateDraft[] = [];
@@ -451,6 +512,7 @@ export function detectGenericExternal(context: ArchitectureContext, runtimeNodes
   const candidates: ExternalCandidate[] = [];
   const dataflow = buildGoDataflow(context.sources);
   const drafts = [
+    ...context.sources.flatMap(pythonOutboundDrafts),
     ...context.sources.flatMap(fetchDrafts),
     ...context.sources.flatMap((source) => goOutboundDrafts(source, dataflow)),
     ...context.sources.flatMap(graphQLDrafts),

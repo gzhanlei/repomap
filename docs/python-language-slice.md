@@ -2,7 +2,7 @@
 
 ## 当前边界
 
-本阶段提供 **Python 项目准备、源码模块图、CLI 入口和 module 详图**，不宣称完整支持 Python 应用架构。
+本阶段提供 **Python 项目准备、源码模块图、CLI 入口和 module 详图**，并有独立的 FastAPI/Flask route、常见 DB-API/SQLAlchemy/Alembic、asyncio/queue/Celery 协议切片；不宣称完整支持所有 Python 应用架构。
 
 已支持：
 
@@ -16,12 +16,33 @@
 
 明确未支持：
 
-- FastAPI、Flask、Django 等框架 route/handler 图；
-- SQLAlchemy/ORM、数据库事务和迁移归属；
-- Celery、RQ、asyncio task、channel 和定时任务 operation；
-- 动态装饰器、运行时依赖注入、完整类型/SSA/动态分派。
+- Django、Starlette 之外的动态路由注册和完整依赖注入；
+- 完整 ORM 类型/SSA、动态分派和运行时生成模型；
+- 除常见 DB-API/SQLAlchemy/Alembic 之外的存储驱动；
+- 除 asyncio/queue/Celery 之外的异步框架。
 
-因此 Python 的 `full` 请求仍应失败关闭。`fullArchitecture: false` 是预期结果，不用模块图完整性冒充协议完整性。
+## 第二阶段：route、SQL 与 async
+
+已接入：
+
+- FastAPI/Flask decorator 路由、方法列表、APIRouter 前缀和本地 handler；
+- DB-API、SQLAlchemy 的 read/write/transaction/migration operation；
+- Alembic migration 文件与 store evidence 归属；
+- asyncio Queue、生产/消费、create_task/gather、sleep、threading.Timer、schedule.every 和 Celery task operation；
+- 统一 Python HTTP/GraphQL candidate、静态 host、环境配置和 unknown omission。
+
+`tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d` 的 `backend/**` 已验证：
+
+- 23/23 route declarations resolved，跨文件组合后的路径均为 `/api/v1/...`；
+- 0/0 supported async declarations（该固定 backend 没有支持的 asyncio/Celery 协议，不能把路由 `.get()` 或 ORM `.get()` 计入 async）；
+- 71 条 SQL operation（31 migration、15 read、13 write、12 transaction），无 `requests.delete`/`router.delete` 误报；
+- 仅保留一个 `python:backend/app` runtime，`APIRouter` 不再被当作 deployable；
+- `fullArchitecture: true`（仅表示该输入在声明范围内的语义门禁通过）；
+- 9 个页面自动 Archify/visual-check 全部 `pass`，代表性浅色/深色截图已人工查看；receipt 的 `visualReview` 仍按契约为 `pending`，直到独立人工确认流程完成。
+
+产物（Git 忽略）：`/Users/leihan/Documents/GitHub/repomap/.repomap/validation/fastapi-m8-corrected11`。
+
+支持的 Python 切片可以通过 `full`；Django、RQ、动态依赖注入/动态 ORM、无法解析的 router 或 URL 仍失败关闭。`fullArchitecture: true` 不是普遍 Python 支持或 generator release qualification。
 
 ## 固定版本验证
 
@@ -59,7 +80,6 @@ Go 和 Python grammar 共享一个进程级 `initializeTreeSitter()` Promise。�
 
 ## 后续切片
 
-1. Python route/decorator 与 ASGI/WSGI handler 图；
-2. SQL/ORM 与外部 HTTP operation；
-3. asyncio/Celery/RQ 等异步 operation；
-4. 更多固定 SHA 的真实仓库与语言/框架负例。
+1. Django/RQ 与更多 ASGI/WSGI 组合方式；
+2. 更完整的 ORM/SSA、动态分派和外部 HTTP call-site 归属；
+3. 更多固定 SHA 的真实仓库、人工 critical-fact review 与语言/框架负例。

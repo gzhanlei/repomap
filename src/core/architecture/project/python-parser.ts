@@ -46,6 +46,22 @@ export interface PythonParsedSymbol {
   kind: "function" | "class" | "var";
   exported: boolean;
   line: number;
+  endLine?: number;
+}
+
+export interface PythonParsedCall {
+  name: string;
+  arguments: { text: string; type: string }[];
+  receiver?: string;
+  line: number;
+}
+
+export interface PythonParsedDecorator {
+  name: string;
+  arguments: { text: string; type: string }[];
+  handler?: string;
+  handlerLine?: number;
+  line: number;
 }
 
 export interface PythonParseDiagnostic {
@@ -56,6 +72,8 @@ export interface PythonParseDiagnostic {
 export interface PythonParsedFile {
   imports: PythonParsedImport[];
   symbols: PythonParsedSymbol[];
+  calls: PythonParsedCall[];
+  decorators: PythonParsedDecorator[];
   allExports?: Set<string>;
   allExportsDynamic?: boolean;
   mainGuardLine?: number;
@@ -113,9 +131,11 @@ function dynamicImport(node: SyntaxNode, moduleScope: boolean): PythonParsedImpo
 export function parsePythonSource(raw: string): PythonParsedFile | undefined {
   if (!pythonParser) return undefined;
   const root = pythonParser.parse(raw)?.rootNode;
-  if (!root) return { imports: [], symbols: [], diagnostics: [{ line: 1, message: "Python grammar produced no syntax tree" }] };
+  if (!root) return { imports: [], symbols: [], calls: [], decorators: [], diagnostics: [{ line: 1, message: "Python grammar produced no syntax tree" }] };
   const imports: PythonParsedImport[] = [];
   const symbols: PythonParsedSymbol[] = [];
+  const calls: PythonParsedCall[] = [];
+  const decorators: PythonParsedDecorator[] = [];
   let allExports: Set<string> | undefined;
   let allExportsDynamic = false;
   let mainGuardLine: number | undefined;
@@ -162,11 +182,24 @@ export function parsePythonSource(raw: string): PythonParsedFile | undefined {
 
   const visit = (node: SyntaxNode, moduleScope: boolean) => {
     collectImport(node, moduleScope);
+    if (node.type === "decorator") {
+      const call = firstNamed(node, "call");
+      const fn = call?.childForFieldName("function")?.text ?? firstNamed(node, "attribute", "identifier")?.text ?? node.text.replace(/^@/, "");
+      if (fn) {
+        const owner = node.parent?.type === "decorated_definition" ? firstNamed(node.parent, "function_definition") : undefined;
+        const handler = owner?.childForFieldName("name")?.text;
+        decorators.push({ name: fn, arguments: (call?.childForFieldName("arguments")?.namedChildren ?? []).map((argument) => ({ text: argument.text, type: argument.type })), ...(handler ? { handler, handlerLine: owner?.startPosition.row + 1 } : {}), line: node.startPosition.row + 1 });
+      }
+    }
+    if (node.type === "call") {
+      const fn = node.childForFieldName("function")?.text;
+      if (fn) calls.push({ name: fn, arguments: (node.childForFieldName("arguments")?.namedChildren ?? []).map((argument) => ({ text: argument.text, type: argument.type })), ...(node.parent?.type === "assignment" ? { receiver: node.parent.childForFieldName("left")?.text } : {}), line: node.startPosition.row + 1 });
+    }
     const dynamic = dynamicImport(node, moduleScope);
     if (dynamic) imports.push(dynamic);
     if ((node.type === "function_definition" || node.type === "class_definition") && moduleScope) {
       const name = node.childForFieldName("name")?.text;
-      if (name) symbols.push({ name, kind: node.type === "function_definition" ? "function" : "class", exported: !name.startsWith("_"), line: node.startPosition.row + 1 });
+      if (name) symbols.push({ name, kind: node.type === "function_definition" ? "function" : "class", exported: !name.startsWith("_"), line: node.startPosition.row + 1, endLine: node.endPosition.row + 1 });
     } else if (node.type === "assignment" && moduleScope) {
       const left = node.childForFieldName("left");
       if (left?.type === "identifier" && left.text === "__all__") {
@@ -197,6 +230,8 @@ export function parsePythonSource(raw: string): PythonParsedFile | undefined {
   return {
     imports: imports.sort((a, b) => a.line - b.line || a.source.localeCompare(b.source)),
     symbols: symbols.sort((a, b) => a.line - b.line || a.name.localeCompare(b.name)),
+    calls: calls.sort((a, b) => a.line - b.line || a.name.localeCompare(b.name)),
+    decorators: decorators.sort((a, b) => a.line - b.line || a.name.localeCompare(b.name)),
     ...(allExportsDynamic ? { allExportsDynamic } : {}),
     ...(allExports === undefined ? {} : { allExports }),
     ...(mainGuardLine === undefined ? {} : { mainGuardLine }),

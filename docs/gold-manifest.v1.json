@@ -1,7 +1,7 @@
 {
   "version": 1,
   "status": "bootstrap-pending-human-audit",
-  "purpose": "M0/M1/M2/M3/M4/M5/M6 and M8 Python first-slice versioned gold-standard manifest skeleton. Fixed SHAs and archive hashes are pinned for reproducibility, but no critical fact or human review has been recorded; this is NOT ground truth yet.",
+  "purpose": "M0/M1/M2/M3/M4/M5/M6 and M8 Python first/second-slice versioned gold-standard manifest skeleton. Fixed SHAs and archive hashes are pinned for reproducibility, but no critical fact or human review has been recorded; this is NOT ground truth yet.",
   "capabilitySlices": [
     {
       "id": "project-preparation",
@@ -50,6 +50,12 @@
       "status": "implemented-first-slice",
       "goldStatus": "fixture-and-fixed-sha-verified-not-human-audited",
       "note": "M8 Python first slice adds fixed Tree-sitter/WASM parsing, src-layout, relative/dynamic imports, nested/future imports, independent declarations, CLI entrypoints and module pages. Click fixed SHA observed 440/440 imports with one dynamic omission and two cycles; Black produced 55 modules/376 edges, zero unresolved imports and three cycles, with six accepted visual pages. Python route/SQL/async remains unimplemented; no human-reviewed Gold facts or full Python architecture is claimed."
+    },
+    {
+      "id": "python-protocols",
+      "status": "implemented-second-slice",
+      "goldStatus": "fixture-and-fixed-sha-verified-not-human-audited",
+      "note": "M8 Python protocols add FastAPI/Flask routes, cross-file APIRouter prefixes, DB-API/SQLAlchemy operations, Alembic migration, asyncio queue/schedule and Celery tasks. The fixed full-stack-fastapi-template backend passes 23/23 routes, 0/0 supported async declarations and 71 SQL operations (31 migration, 15 read, 13 write, 12 transaction) with fullArchitecture: true; 9 pages pass automated visual checks and representative screenshots were inspected. The earlier 14/14 async figure was a false-positive result and is not evidence. Other frameworks and dynamic runtime behavior remain partial; no human-reviewed Gold facts are claimed."
     }
   ],
   "rules": {
@@ -102,6 +108,15 @@
       "archiveSha256": "686f4696ae90b11dc1d80d51038b657b293ce449016af5a1f06609c229a3a1c7",
       "status": "pinned-not-audited",
       "intendedCoverage": ["python-src-layout", "python-cli-entrypoints", "python-import-graph", "python-module-pages"],
+      "criticalFacts": []
+    },
+    {
+      "id": "fastapi-template",
+      "repository": "tiangolo/full-stack-fastapi-template",
+      "revision": "aabb90126964a164e02aff39e7c385bb0598236d",
+      "archiveSha256": "57ab02195c0923dc3cd6ea91d671a3b1ee6b728d44219b7df8038abdc39d951c",
+      "status": "pinned-not-audited",
+      "intendedCoverage": ["fastapi-routes", "sqlalchemy-postgres", "alembic-migrations", "runtime-owner-canonicalization"],
       "criticalFacts": []
     }
   ],
