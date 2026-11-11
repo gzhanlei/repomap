@@ -24,6 +24,7 @@ if (!outDir || !goldPath) usage();
 const readJson = (file: string) => JSON.parse(readFileSync(resolve(outDir, file), "utf8"));
 
 const ir = readJson("architecture.ir.json");
+const moduleGraph = readJson("architecture.module-graph.json");
 const routeGraph = readJson("architecture.route-graph.json");
 const asyncGraph = readJson("architecture.async-graph.json");
 const evidence = readJson("architecture.evidence.json");
@@ -34,6 +35,22 @@ const evidencePathsById = new Map<string, string>(
 
 const artifacts: CorpusGoldArtifacts = {
   revision: ir.revision,
+  modules: (moduleGraph.nodes as Array<Record<string, unknown>>).map((node) => ({
+    id: node.id as string,
+    path: node.path as string,
+    language: node.language as string | undefined,
+    evidenceIds: (node.evidenceIds as string[] | undefined) ?? [],
+  })),
+  moduleEdges: (moduleGraph.edges as Array<Record<string, unknown>>).map((edge) => ({
+    id: edge.id as string,
+    from: edge.from as string,
+    to: edge.to as string,
+    toKind: edge.toKind as string,
+    kind: edge.kind as string,
+    path: edge.path as string,
+    line: edge.line as number | undefined,
+    evidenceIds: edge.evidenceIds as string[],
+  })),
   routes: routeGraph.routes.map((route: Record<string, unknown>) => ({
     id: route.id as string,
     method: route.method as string,

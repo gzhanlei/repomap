@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "corpusId": "click",
+  "revision": "8abb77a8432e03ed14a95f972b44f905279415a7",
+  "auditedBy": "Lei Han",
+  "auditedAt": "2026-11-12",
+  "note": "Human-audited targeted critical facts from the pinned archive: 17 modules enumerated from the src/click directory listing (py.typed is not a module) and 4 unambiguous import statements read from the source. The analyzer records 2 cycles and 1 dynamic-import omission for this revision; cycles are not asserted as facts here. Full-view coverage gates fail closed for this corpus (documented in HANDOFF), which is expected behavior and not a gold failure: this gold set evaluates the module graph artifact only.",
+  "facts": [
+    {
+      "id": "module-init",
+      "kind": "module",
+      "path": "src/click/__init__.py",
+      "note": "directory listing of pinned archive src/click/__init__.py"
+    },
+    {
+      "id": "module-compat",
+      "kind": "module",
+      "path": "src/click/_compat.py",
+      "note": "directory listing of pinned archive src/click/_compat.py"
+    },
+    {
+      "id": "module-termuiimpl",
+      "kind": "module",
+      "path": "src/click/_termui_impl.py",
+      "note": "directory listing of pinned archive src/click/_termui_impl.py"
+    },
+    {
+      "id": "module-textwrap",
+      "kind": "module",
+      "path": "src/click/_textwrap.py",
+      "note": "directory listing of pinned archive src/click/_textwrap.py"
+    },
+    {
+      "id": "module-utils",
+      "kind": "module",
+      "path": "src/click/_utils.py",
+      "note": "directory listing of pinned archive src/click/_utils.py"
+    },
+    {
+      "id": "module-winconsole",
+      "kind": "module",
+      "path": "src/click/_winconsole.py",
+      "note": "directory listing of pinned archive src/click/_winconsole.py"
+    },
+    {
+      "id": "module-core",
+      "kind": "module",
+      "path": "src/click/core.py",
+      "note": "directory listing of pinned archive src/click/core.py"
+    },
+    {
+      "id": "module-decorators",
+      "kind": "module",
+      "path": "src/click/decorators.py",
+      "note": "directory listing of pinned archive src/click/decorators.py"
+    },
+    {
+      "id": "module-exceptions",
+      "kind": "module",
+      "path": "src/click/exceptions.py",
+      "note": "directory listing of pinned archive src/click/exceptions.py"
+    },
+    {
+      "id": "module-formatting",
+      "kind": "module",
+      "path": "src/click/formatting.py",
+      "note": "directory listing of pinned archive src/click/formatting.py"
+    },
+    {
+      "id": "module-globals",
+      "kind": "module",
+      "path": "src/click/globals.py",
+      "note": "directory listing of pinned archive src/click/globals.py"
+    },
+    {
+      "id": "module-parser",
+      "kind": "module",
+      "path": "src/click/parser.py",
+      "note": "directory listing of pinned archive src/click/parser.py"
+    },
+    {
+      "id": "module-shellcompletion",
+      "kind": "module",
+      "path": "src/click/shell_completion.py",
+      "note": "directory listing of pinned archive src/click/shell_completion.py"
+    },
+    {
+      "id": "module-termui",
+      "kind": "module",
+      "path": "src/click/termui.py",
+      "note": "directory listing of pinned archive src/click/termui.py"
+    },
+    {
+      "id": "module-testing",
+      "kind": "module",
+      "path": "src/click/testing.py",
+      "note": "directory listing of pinned archive src/click/testing.py"
+    },
+    {
+      "id": "module-types",
+      "kind": "module",
+      "path": "src/click/types.py",
+      "note": "directory listing of pinned archive src/click/types.py"
+    },
+    {
+      "id": "module-utils",
+      "kind": "module",
+      "path": "src/click/utils.py",
+      "note": "directory listing of pinned archive src/click/utils.py"
+    },
+    {
+      "id": "edge-init-imports-core",
+      "kind": "import-edge",
+      "fromPath": "src/click/__init__.py",
+      "toPath": "src/click/core.py",
+      "evidencePath": "src/click/__init__.py",
+      "note": "__init__.py:10 'from .core import Argument'"
+    },
+    {
+      "id": "edge-compat-imports-os",
+      "kind": "import-edge",
+      "fromPath": "src/click/_compat.py",
+      "externalName": "os",
+      "evidencePath": "src/click/_compat.py",
+      "note": "_compat.py:6 'import os'"
+    },
+    {
+      "id": "edge-compat-imports-sys",
+      "kind": "import-edge",
+      "fromPath": "src/click/_compat.py",
+      "externalName": "sys",
+      "evidencePath": "src/click/_compat.py",
+      "note": "_compat.py:8 'import sys'"
+    },
+    {
+      "id": "edge-aliases-imports-configparser",
+      "kind": "import-edge",
+      "fromPath": "examples/aliases/aliases.py",
+      "externalName": "configparser",
+      "evidencePath": "examples/aliases/aliases.py",
+      "note": "aliases.py:1 'import configparser'"
+    }
+  ],
+  "precisionScopes": [
+    {
+      "id": "scope-modules-src-click",
+      "kind": "module",
+      "pathPrefix": "src/click/",
+      "note": "complete module enumeration of the shipped package (17 .py files)"
+    }
+  ]
+}

@@ -6,6 +6,26 @@ import { z } from "zod";
 
 const revisionSchema = z.string().regex(/^[0-9a-f]{40}$/);
 
+const moduleFactSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("module"),
+  path: z.string().min(1),
+  language: z.enum(["python", "typescript", "go"]).optional(),
+  evidencePath: z.string().min(1).optional(),
+  note: z.string().min(1).optional(),
+}).strict();
+
+const importEdgeFactSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("import-edge"),
+  fromPath: z.string().min(1),
+  toPath: z.string().min(1).optional(),
+  externalName: z.string().min(1).optional(),
+  dynamic: z.boolean().optional(),
+  evidencePath: z.string().min(1).optional(),
+  note: z.string().min(1).optional(),
+}).strict();
+
 const routeFactSchema = z.object({
   id: z.string().min(1),
   kind: z.literal("route"),
@@ -57,13 +77,26 @@ const declarationFactSchema = z.object({
 }).strict();
 
 export const goldFactSchema = z.discriminatedUnion("kind", [
+  moduleFactSchema,
+  importEdgeFactSchema,
   routeFactSchema,
   routeHandlerFactSchema,
   sqlOperationFactSchema,
   asyncOperationFactSchema,
   declarationFactSchema,
-]);
+]).superRefine((value, ctx) => {
+  if (value.kind === "import-edge" && !value.toPath && !value.externalName) {
+    ctx.addIssue({ code: "custom", message: "import-edge fact requires toPath or externalName", path: ["toPath"] });
+  }
+});
 export type GoldFact = z.infer<typeof goldFactSchema>;
+
+const moduleScopeSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("module"),
+  pathPrefix: z.string().min(1),
+  note: z.string().min(1).optional(),
+}).strict();
 
 const routeScopeSchema = z.object({
   id: z.string().min(1),
@@ -94,6 +127,7 @@ const declarationScopeSchema = z.object({
 }).strict();
 
 export const precisionScopeSchema = z.discriminatedUnion("kind", [
+  moduleScopeSchema,
   routeScopeSchema,
   sqlOperationScopeSchema,
   asyncOperationScopeSchema,
@@ -115,6 +149,8 @@ export type CorpusGoldSet = z.infer<typeof corpusGoldSetSchema>;
 
 export interface CorpusGoldArtifacts {
   revision: string;
+  modules: Array<{ id: string; path: string; language?: string; evidenceIds: string[] }>;
+  moduleEdges: Array<{ id: string; from: string; to: string; toKind: string; kind: string; path: string; line?: number; evidenceIds: string[] }>;
   routes: Array<{ id: string; method: string; path: string; sourcePath: string; line?: number; evidenceIds: string[] }>;
   routeHandlers: Array<{ id: string; sourcePath: string; line?: number; evidenceIds: string[] }>;
   routeEdges: Array<{ id: string; from: string; to: string; kind: string; evidenceIds: string[] }>;
@@ -163,6 +199,23 @@ function routeMatches(record: CorpusGoldArtifacts["routes"][number], fact: z.inf
 function evaluateFact(fact: GoldFact, artifacts: CorpusGoldArtifacts): { covered: boolean; evidenceInvalid?: string } {
   let record: { evidenceIds: string[] } | undefined;
   switch (fact.kind) {
+    case "module": {
+      const match = artifacts.modules.find((item) => item.path === fact.path && (fact.language === undefined || item.language === fact.language));
+      record = match;
+      break;
+    }
+    case "import-edge": {
+      const fromModule = artifacts.modules.find((item) => item.path === fact.fromPath);
+      if (!fromModule) break;
+      const match = artifacts.moduleEdges.find((edge) => {
+        if (edge.from !== fromModule.id) return false;
+        if (fact.dynamic !== undefined && edge.kind === "dynamic" !== fact.dynamic) return false;
+        if (fact.toPath !== undefined) return edge.toKind === "module" && artifacts.modules.some((item) => item.id === edge.to && item.path === fact.toPath);
+        return edge.toKind === "external" && edge.to === `external:${fact.externalName}`;
+      });
+      record = match;
+      break;
+    }
     case "route": {
       const match = artifacts.routes.find((item) => routeMatches(item, fact));
       record = match;
@@ -195,7 +248,7 @@ function evaluateFact(fact: GoldFact, artifacts: CorpusGoldArtifacts): { covered
   }
   if (!record) return { covered: false };
   if (fact.evidencePath) {
-    const hasEvidence = record.evidenceIds.some((id) => artifacts.evidencePathsById.get(id) === fact.evidencePath);
+    const hasEvidence = (record.evidenceIds ?? []).some((id) => artifacts.evidencePathsById.get(id) === fact.evidencePath);
     if (!hasEvidence) return { covered: true, evidenceInvalid: `evidence path ${fact.evidencePath} is not present on the matched record` };
   }
   return { covered: true };
@@ -203,6 +256,8 @@ function evaluateFact(fact: GoldFact, artifacts: CorpusGoldArtifacts): { covered
 
 function scopeRecords(scope: PrecisionScope, artifacts: CorpusGoldArtifacts): Array<{ id: string; evidenceIds: string[]; matches: (fact: GoldFact) => boolean }> {
   switch (scope.kind) {
+    case "module":
+      return artifacts.modules.filter((item) => item.path.startsWith(scope.pathPrefix)).map((item) => ({ id: item.id, evidenceIds: item.evidenceIds ?? [], matches: (fact: GoldFact) => fact.kind === "module" && item.path === fact.path && (fact.language === undefined || item.language === fact.language) }));
     case "route":
       return artifacts.routes.filter((item) => item.sourcePath.startsWith(scope.sourcePathPrefix)).map((item) => ({ ...item, matches: (fact: GoldFact) => fact.kind === "route" && routeMatches(item, fact) }));
     case "sql-operation":
@@ -273,21 +328,22 @@ export function evaluateCorpusGold(artifacts: CorpusGoldArtifacts, gold: CorpusG
     scopes.push({ id: scope.id, outputRecords: records.length, matched });
   }
 
+  const edgeFact = (kind: string) => kind === "route-handler" || kind === "import-edge";
   const dimensions = {
     node: {
-      total: gold.facts.filter((f) => f.kind !== "route-handler").length,
-      covered: gold.facts.filter((f) => f.kind !== "route-handler" && !missing.some((m) => m.id === f.id)).length,
-      missing: missing.filter((m) => m.kind !== "route-handler").length,
+      total: gold.facts.filter((f) => !edgeFact(f.kind)).length,
+      covered: gold.facts.filter((f) => !edgeFact(f.kind) && !missing.some((m) => m.id === f.id)).length,
+      missing: missing.filter((m) => !edgeFact(m.kind)).length,
     },
     edge: {
-      total: gold.facts.filter((f) => f.kind === "route-handler").length,
-      covered: gold.facts.filter((f) => f.kind === "route-handler" && !missing.some((m) => m.id === f.id)).length,
-      missing: missing.filter((m) => m.kind === "route-handler").length,
+      total: gold.facts.filter((f) => edgeFact(f.kind)).length,
+      covered: gold.facts.filter((f) => edgeFact(f.kind) && !missing.some((m) => m.id === f.id)).length,
+      missing: missing.filter((m) => edgeFact(m.kind)).length,
     },
     direction: {
-      total: gold.facts.filter((f) => f.kind === "route-handler").length,
-      covered: gold.facts.filter((f) => f.kind === "route-handler" && !missing.some((m) => m.id === f.id)).length,
-      missing: missing.filter((m) => m.kind === "route-handler").length,
+      total: gold.facts.filter((f) => edgeFact(f.kind)).length,
+      covered: gold.facts.filter((f) => edgeFact(f.kind) && !missing.some((m) => m.id === f.id)).length,
+      missing: missing.filter((m) => edgeFact(m.kind)).length,
     },
   };
 

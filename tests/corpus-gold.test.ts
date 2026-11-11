@@ -19,6 +19,8 @@ function sqlOperation(id: string, overrides: Record<string, unknown> = {}) {
 function artifacts(overrides: Partial<CorpusGoldArtifacts> = {}): CorpusGoldArtifacts {
   return {
     revision,
+    modules: [],
+    moduleEdges: [],
     routes: [route("route:get-items")],
     routeHandlers: [{ id: "handler:1", sourcePath: "backend/app/api/routes/items.py", line: 20, evidenceIds: ["ev:handler-1"] }],
     routeEdges: [{ id: "route-edge:1", from: "route:get-items", to: "handler:1", kind: "routes-to", evidenceIds: ["ev:edge-1"] }],
@@ -186,5 +188,65 @@ describe("corpus gold evidence and false-positive/negative independence", () => 
     }));
     expect(result.passed).toBe(false);
     expect(result.recall.missing.map((m) => m.id)).toEqual(["items-get"]);
+  });
+});
+
+describe("corpus gold module and import-edge facts", () => {
+  function moduleArtifacts(): CorpusGoldArtifacts {
+    return artifacts({
+      modules: [
+        { id: "module:package:click:src/click/core.py", path: "src/click/core.py", language: "python", evidenceIds: ["ev:mod-core"] },
+        { id: "module:package:click:src/click/decorators.py", path: "src/click/decorators.py", language: "python", evidenceIds: ["ev:mod-decorators"] },
+        { id: "module:package:click:src/click/_compat.py", path: "src/click/_compat.py", language: "python", evidenceIds: ["ev:mod-compat"] },
+      ],
+      moduleEdges: [
+        { id: "module-edge:1", from: "module:package:click:src/click/core.py", to: "module:package:click:src/click/decorators.py", toKind: "module", kind: "static", path: "src/click/core.py", line: 10, evidenceIds: ["ev:edge-1"] },
+        { id: "module-edge:2", from: "module:package:click:src/click/_compat.py", to: "external:os", toKind: "external", kind: "static", path: "src/click/_compat.py", line: 1, evidenceIds: ["ev:edge-2"] },
+      ],
+      evidencePathsById: new Map([["ev:mod-core", "src/click/core.py"], ["ev:edge-1", "src/click/core.py"], ["ev:edge-2", "src/click/_compat.py"]]),
+    });
+  }
+
+  it("rejects an import-edge fact without a resolvable target", () => {
+    expect(() => corpusGoldSetSchema.parse({ ...goldDefaults, facts: [{ id: "bad", kind: "import-edge", fromPath: "src/click/core.py" }] })).toThrow();
+  });
+
+  it("covers a module fact by path", () => {
+    const result = evaluateCorpusGold(moduleArtifacts(), gold({
+      facts: [{ id: "core-module", kind: "module", path: "src/click/core.py" }],
+    }));
+    expect(result.recall.missing).toEqual([]);
+  });
+
+  it("covers an import-edge fact to a known module", () => {
+    const result = evaluateCorpusGold(moduleArtifacts(), gold({
+      facts: [{ id: "core-imports-decorators", kind: "import-edge", fromPath: "src/click/core.py", toPath: "src/click/decorators.py" }],
+    }));
+    expect(result.recall.missing).toEqual([]);
+    expect(result.recall.dimensions.edge.covered).toBe(1);
+  });
+
+  it("covers an import-edge fact to an external module", () => {
+    const result = evaluateCorpusGold(moduleArtifacts(), gold({
+      facts: [{ id: "compat-imports-os", kind: "import-edge", fromPath: "src/click/_compat.py", externalName: "os" }],
+    }));
+    expect(result.recall.missing).toEqual([]);
+  });
+
+  it("reports a dynamic import-edge fact as missing when only a static edge exists", () => {
+    const result = evaluateCorpusGold(moduleArtifacts(), gold({
+      facts: [{ id: "core-imports-decorators-dynamic", kind: "import-edge", fromPath: "src/click/core.py", toPath: "src/click/decorators.py", dynamic: true }],
+    }));
+    expect(result.recall.missing.map((m) => m.id)).toEqual(["core-imports-decorators-dynamic"]);
+  });
+
+  it("flags uncovered module nodes inside a module precision scope", () => {
+    const result = evaluateCorpusGold(moduleArtifacts(), gold({
+      facts: [{ id: "core-module", kind: "module", path: "src/click/core.py" }],
+      precisionScopes: [{ id: "scope-click-src", kind: "module", pathPrefix: "src/click/" }],
+    }));
+    expect(result.precision.scopes[0].outputRecords).toBe(3);
+    expect(result.precision.suspectedFalsePositives.sort()).toEqual(["module:package:click:src/click/_compat.py", "module:package:click:src/click/decorators.py"]);
+    expect(result.passed).toBe(false);
   });
 });
