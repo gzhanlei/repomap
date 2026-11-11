@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run smoke:production
+      # Targeted gold evaluation against the fixed fastapi-template corpus.
+      # The archive is fetched by the CLI at the pinned SHA; GITHUB_TOKEN is
+      # read from the environment only (never passed as an argument or logged).
+      - run: >-
+          node dist/cli.js analyze
+          'tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d'
+          --include 'backend/**'
+          --out "$PWD/.repomap/validation/ci-fastapi-gold"
+          --view full --no-render
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOMAP_CACHE_DIR: ${{ github.workspace }}/.repomap/cache
+      - run: npm run gold:evaluate --silent -- --out .repomap/validation/ci-fastapi-gold --gold docs/gold/fastapi-template.v1.json
+
+  performance-gate:
+    runs-on: ubuntu-latest
+    # Provisional: the recorded thresholds came from a darwin measurement; the
+    # fixed ubuntu runner must establish its own baseline before this job
+    # becomes blocking (docs/performance-baseline.v1.json, limitations).
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx tsx scripts/performance-gate.ts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOMAP_CACHE_DIR: ${{ github.workspace }}/.repomap/cache
