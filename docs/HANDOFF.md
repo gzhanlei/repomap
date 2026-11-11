@@ -1,7 +1,7 @@
 # RepoMap 接手文档
 
 - 更新日期：2026-11-12
-- 代码基线：`4949b6e`（273aa93 gold 评估、beb3c32 人工 Gold、e097293 性能门槛、4949b6e 热点修复）
+- 代码基线：`a231a69`（273aa93 gold 评估、beb3c32 人工 Gold、e097293 性能门槛、4949b6e 热点修复、a231a69 migration 欠报修复）
 - 远程仓库：`https://github.com/gzhanlei/repomap`
 - 当前分支：`main`
 
@@ -271,7 +271,7 @@ node dist/cli.js analyze \
 
 - 已完成的 Python 两个切片没有已知未提交实现或当前代码阻塞。
 - **性能回归已定位并修复（4949b6e）**：CPU profile 定位到 view-manifest 的二次方 operation×edge 匹配、重复 evidence 数组合并、projections 数组重建，以及 sql-operations 对整个文件内容的反复 split/正则扫描；修复后语义产物字节级不变，perf:gate 通过（median 26395ms，阈值 60000ms；peak RSS 724MB）。median 仍约为 M1 基线 8s 的 3.3x——这是 M2–M8 真实新增分析（10739 operations、module graph、projection）的代价，阈值未改动。详见 `docs/performance-baseline.v1.json` 的 `gate` 段。
-- **migration 语句欠报候选（Gold 审核发现）**：人工清点 5 个 alembic 文件共 62 条 `op.*` 语句，产物只报告 31 条 migration operation（9c0a 0/8、d98d 22/38、1a31 1/6），多行 `op.alter_column`/`op.add_column` 语句疑似未生成可执行 SQL 证据。已作为 candidate false-negative 记录在 `docs/gold-manifest.v1.json` 的 audit 块，待专门切片量化处置；不应据此降低门禁。
+- **migration 语句欠报已修复（a231a69）**：根因是 `schemaMarkers` 与 `pythonSqlLineFilter` 都缺少 alembic DDL 助手（alter_column/create_index/drop_index/create_foreign_key/drop_constraint/create_primary_key）。修复后 fastapi-template 固定语料 62/62 与人工清点一致，fixture 测试 7/7，authelia 新增 69 条经人工抽查为真实 SQL 的迁移语句；gold 评估保持 59/59、0 FP，manifest 的 candidate 已移入 resolvedFindings。
 - M7 未完成是后续资格评估工作，不影响已提交切片作为 per-input 能力使用。
 - Click 和不受支持的动态 Python 输入失败关闭是预期行为，不要为了“全绿”删除 omission。
 - GitHub anonymous API 可能限流；优先使用固定 SHA 和已有 archive cache，不在命令或日志中暴露 token。
