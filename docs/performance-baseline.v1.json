@@ -82,50 +82,56 @@
     "Browser and human visual qualification are separate from this no-render semantic/performance baseline."
   ],
   "gate": {
-    "status": "failing-elapsed-not-ratified",
+    "status": "passing-after-hot-path-fix-not-ratified",
     "measuredAt": "2026-11-12",
     "command": "npm run perf:gate (tsx scripts/performance-gate.ts, 3 counted runs after 1 warm-up, darwin arm64, node v25.5.0)",
     "generatorBaseRevision": "beb3c32 human-audited targeted gold set",
     "runs": [
       {
-        "elapsedMs": 78234,
-        "peakRssBytes": 634798080,
+        "elapsedMs": 26395,
+        "peakRssBytes": 673087488,
         "jsonBytes": 92843554,
         "evidenceBytes": 12184874,
         "status": "facts-ready"
       },
       {
-        "elapsedMs": 81532,
-        "peakRssBytes": 1020641280,
+        "elapsedMs": 28152,
+        "peakRssBytes": 724434944,
         "jsonBytes": 92843554,
         "evidenceBytes": 12184874,
         "status": "facts-ready"
       },
       {
-        "elapsedMs": 72681,
-        "peakRssBytes": 834797568,
+        "elapsedMs": 25158,
+        "peakRssBytes": 694517760,
         "jsonBytes": 92843554,
         "evidenceBytes": 12184874,
         "status": "facts-ready"
       }
     ],
     "summary": {
-      "medianElapsedMs": 78234,
-      "worstElapsedMs": 81532,
-      "maxPeakRssBytes": 1020641280,
+      "medianElapsedMs": 26395,
+      "worstElapsedMs": 28152,
+      "maxPeakRssBytes": 724434944,
       "jsonBytesDefinition": "sum of the fixed semantic artifact set (analysis/ir/evidence/route-graph/async-graph/declarations/facts/candidates/delivery), excluding per-page view JSONs"
     },
     "verdict": {
       "semanticStatus": "pass",
-      "medianElapsed": "FAIL 78234 > 60000",
+      "medianElapsed": "pass 26395 <= 60000",
       "worstElapsed": "pass",
-      "peakRss": "pass (1020641280 <= 1073741824, margin 53MB only)",
+      "peakRss": "pass 724434968 <= 1073741824 (349MB margin)",
       "jsonSize": "pass",
       "evidenceSize": "pass"
     },
     "finding": "Median elapsed regressed ~10x vs the M1 baseline (7981ms -> 78234ms) across M2-M8 increments. Peak RSS regressed 565MB -> 1020MB with high run-to-run variance. The gate is failing as designed; thresholds are NOT raised to hide it. Next step is a profiling slice to locate the regression, or an explicit human re-ratification of thresholds with a new baseline on the same generator version.",
     "limitations": [
       "Still a local darwin measurement, not a fixed-CI runner; fixed-CI qualification remains separate."
-    ]
+    ],
+    "fix": {
+      "finding": "CPU profile of the failing run attributed ~47% of wall time to view-manifest building: operationEvidenceMatches scanned every base edge per operation via Array.includes (10739 operations x edges), mergeEvidenceIds re-scanned stable evidence arrays on every repeat merge, buildOperationProjections rebuilt evidence arrays per id, and sql-operations lineText/lineContext re-split whole file contents (lineText also re-scanned every line with two regexes) per evidence row.",
+      "change": "evidence-id-to-edges index built once per fact set; mergeEvidenceIds skips by array identity; projections push into arrays; per-operation candidate lookup map; per-source cached line arrays with a diff-prefix line index.",
+      "behaviorProof": "semantic artifacts (ir/evidence/facts/declarations/candidates/route-graph/async-graph) byte-identical to the pre-fix run on authelia@32b0bdac; analysis/delivery/receipt differ only in the output directory path string."
+    },
+    "note": "Median is still ~3.3x the M1 baseline because M2-M8 added real analysis (10.7k operations, module graphs, projections); thresholds unchanged and passing."
   }
 }

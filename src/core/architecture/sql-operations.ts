@@ -6,10 +6,37 @@ import { architectureLineNumber, type ArchitectureSource } from "./source.js";
 import { irOmissionSchema, type IrOmission } from "./ir.js";
 import { pythonCodeLines } from "./project/python-source.js";
 
+// Line arrays and diff-prefix indexes are memoized per source object: the
+// previous implementations re-split the whole file content (and lineText
+// re-scanned every line with two regexes) for every evidence row.
+const sourceLinesCache = new WeakMap<ArchitectureSource, string[]>();
+const sourcePrefixIndexCache = new WeakMap<ArchitectureSource, Map<number, string>>();
+
+function sourceLines(source: ArchitectureSource): string[] {
+  let lines = sourceLinesCache.get(source);
+  if (!lines) {
+    lines = source.content.split("\n");
+    sourceLinesCache.set(source, lines);
+  }
+  return lines;
+}
+
+function sourcePrefixIndex(source: ArchitectureSource): Map<number, string> {
+  let index = sourcePrefixIndexCache.get(source);
+  if (!index) {
+    index = new Map();
+    for (const item of sourceLines(source)) {
+      const match = /^\s*(\d+):/.exec(item);
+      if (match && !index.has(Number(match[1]))) index.set(Number(match[1]), item);
+    }
+    sourcePrefixIndexCache.set(source, index);
+  }
+  return index;
+}
+
 function lineText(source: ArchitectureSource | undefined, line: number) {
   if (!source) return "";
-  const lines = source.content.split("\n");
-  return lines.find((item) => item.match(/^\s*\d+:\s?/)?.[0] && Number(item.match(/^\s*(\d+):/)?.[1]) === line) ?? lines[line - 1] ?? "";
+  return sourcePrefixIndex(source).get(line) ?? sourceLines(source)[line - 1] ?? "";
 }
 
 function executableSqlEvidence(evidence: ArchitectureEvidence, source: ArchitectureSource | undefined) {
@@ -22,8 +49,7 @@ function executableSqlEvidence(evidence: ArchitectureEvidence, source: Architect
 
 function lineContext(source: ArchitectureSource | undefined, line: number) {
   if (!source) return "";
-  const lines = source.content.split("\n");
-  return lines.slice(Math.max(0, line - 1), line + 8).join("\n");
+  return sourceLines(source).slice(Math.max(0, line - 1), line + 8).join("\n");
 }
 
 function actionFor(evidence: ArchitectureEvidence, source: ArchitectureSource | undefined, edgeKind: string) {

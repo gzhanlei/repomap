@@ -93,6 +93,7 @@ export interface ViewManifestBuild {
 type EvidenceIdMap = Map<string, string[]>;
 
 const evidenceIdSets = new WeakMap<EvidenceIdMap, Map<string, Set<string>>>();
+const evidenceIdMergedArrays = new WeakMap<EvidenceIdMap, WeakMap<string[], Set<string>>>();
 
 function mergeEvidenceIds(map: EvidenceIdMap, ownerId: string, ids: string[]) {
   let owners = evidenceIdSets.get(map);
@@ -100,6 +101,16 @@ function mergeEvidenceIds(map: EvidenceIdMap, ownerId: string, ids: string[]) {
     owners = new Map<string, Set<string>>();
     evidenceIdSets.set(map, owners);
   }
+  // Stable evidence-id arrays (from baseEvidenceIdMap and the module evidence
+  // maps) are merged into the same owners many times; skipping by array
+  // identity keeps repeat merges O(1) instead of re-scanning every id.
+  let mergedArrays = evidenceIdMergedArrays.get(map);
+  if (!mergedArrays) {
+    mergedArrays = new WeakMap<string[], Set<string>>();
+    evidenceIdMergedArrays.set(map, mergedArrays);
+  }
+  const done = mergedArrays.get(ids);
+  if (done?.has(ownerId)) return;
   let seen = owners.get(ownerId);
   let target = map.get(ownerId);
   if (!target) {
@@ -115,6 +126,11 @@ function mergeEvidenceIds(map: EvidenceIdMap, ownerId: string, ids: string[]) {
       seen.add(id);
       target.push(id);
     }
+  }
+  if (done) {
+    done.add(ownerId);
+  } else {
+    mergedArrays.set(ids, new Set([ownerId]));
   }
 }
 
@@ -377,14 +393,53 @@ function edgeEvidenceIds(edge: EdgeFact, records: EvidenceRecord[]) {
   return ids;
 }
 
-function operationEvidenceMatches(operation: OperationFact, edge: EdgeFact, records: EvidenceRecord[]) {
-  const ids = edgeEvidenceIds(edge, records);
-  return operation.evidenceIds.some((id) => ids.includes(id));
+// Indexing base edges by evidence id turns the per-operation edge scan
+// (operations x edges x evidence ids) into one lookup per operation evidence id.
+const baseEdgeEvidenceIndexCache = new WeakMap<ArchitectureFactSet, Map<string, EdgeFact[]>>();
+
+function baseEdgeEvidenceIndex(facts: ArchitectureFactSet, records: EvidenceRecord[]): Map<string, EdgeFact[]> {
+  let index = baseEdgeEvidenceIndexCache.get(facts);
+  if (!index) {
+    index = new Map();
+    for (const edge of facts.edges) {
+      for (const id of edgeEvidenceIds(edge, records)) {
+        const edges = index.get(id);
+        if (edges) edges.push(edge);
+        else index.set(id, [edge]);
+      }
+    }
+    baseEdgeEvidenceIndexCache.set(facts, index);
+  }
+  return index;
 }
+
+function matchedBaseEdges(operation: OperationFact, index: Map<string, EdgeFact[]>): EdgeFact[] {
+  const matches: EdgeFact[] = [];
+  const seen = new Set<string>();
+  for (const id of operation.evidenceIds) {
+    for (const edge of index.get(id) ?? []) {
+      if (!seen.has(edge.id)) {
+        seen.add(edge.id);
+        matches.push(edge);
+      }
+    }
+  }
+  return matches;
+}
+
+const candidateByOperationIdCache = new WeakMap<Analysis["candidates"], Map<string, Analysis["candidates"][number]>>();
 
 function candidateForOperation(analysis: Analysis, operation: OperationFact) {
   const primaryId = operation.kind === "config-binding" ? operation.id.slice(0, -":config".length) : operation.id;
-  return analysis.candidates.find((item) => item.status === "resolved" && `operation:${item.id}` === primaryId);
+  let byOperationId = candidateByOperationIdCache.get(analysis.candidates);
+  if (!byOperationId) {
+    byOperationId = new Map();
+    for (const item of analysis.candidates) {
+      if (item.status === "resolved" && !byOperationId.has(`operation:${item.id}`)) byOperationId.set(`operation:${item.id}`, item);
+    }
+    candidateByOperationIdCache.set(analysis.candidates, byOperationId);
+  }
+  return byOperationId.get(primaryId);
 }
 
 function candidateEdgeKind(candidate: Analysis["candidates"][number]): EdgeFact["kind"] {
@@ -395,10 +450,19 @@ function buildOperationProjections(analysis: Analysis, facts: ArchitectureFactSe
   const byEvidence = new Map<string, EdgeFact[]>();
   const byCandidate = new Map<string, EdgeFact[]>();
   for (const edge of facts.edges) {
-    for (const id of sourceEvidenceIds.get(edge.id) ?? edgeEvidenceIds(edge, analysis.evidence.records)) byEvidence.set(id, [...(byEvidence.get(id) ?? []), edge]);
+    for (const id of sourceEvidenceIds.get(edge.id) ?? edgeEvidenceIds(edge, analysis.evidence.records)) {
+      const edges = byEvidence.get(id);
+      if (edges) edges.push(edge);
+      else byEvidence.set(id, [edge]);
+    }
     for (const candidate of analysis.candidates) {
       const target = `external:${candidate.identity}`;
-      if ((edge.from === target || edge.to === target) && edge.kind === candidateEdgeKind(candidate)) byCandidate.set(`${target}|${edge.kind}`, [...(byCandidate.get(`${target}|${edge.kind}`) ?? []), edge]);
+      if ((edge.from === target || edge.to === target) && edge.kind === candidateEdgeKind(candidate)) {
+        const key = `${target}|${edge.kind}`;
+        const edges = byCandidate.get(key);
+        if (edges) edges.push(edge);
+        else byCandidate.set(key, [edge]);
+      }
     }
   }
   return new Map(operations.map((operation) => {
@@ -505,8 +569,9 @@ function flowViewFacts(analysis: Analysis, runtime: NodeFact): FlowViewFacts {
     return belongsToRuntime(operation);
   });
   if (operations.length > 0) addNode({ ...runtime, label: compactViewLabel(runtime.label) }, baseEvidenceIds.get(runtime.id) ?? []);
+  const operationEdgeIndex = baseEdgeEvidenceIndex(analysis.facts, analysis.evidence.records);
   for (const operation of operations) {
-    const matches = analysis.facts.edges.filter((edge) => operationEvidenceMatches(operation, edge, analysis.evidence.records));
+    const matches = matchedBaseEdges(operation, operationEdgeIndex);
     for (const edge of matches) {
       for (const endpoint of [edge.from, edge.to]) addNode(baseViewNode(endpoint), baseEvidenceIds.get(endpoint) ?? []);
       addEdge(edge, baseEvidenceIds.get(edge.id) ?? []);
