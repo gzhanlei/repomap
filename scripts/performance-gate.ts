@@ -39,7 +39,12 @@ const runs: PerformanceGateRun[] = [];
 function runAnalysis(outDir: string): { stderr: string; receiptPath: string } {
   const timePath = "/usr/bin/time";
   const timeFlag = process.platform === "darwin" ? "-l" : "-v";
-  const result = spawnSync(timePath, [timeFlag, "node", cliPath, "analyze", `${repository}@${revision}`, "--no-render", "--out", outDir], {
+  // The gate measures under a fixed 1GiB V8 old-space cap: node's default
+  // old-space limit scales with host RAM, so an uncapped run is not
+  // reproducible across machines or node versions. The cap is GC policy
+  // only - semantic artifacts are byte-identical with and without it
+  // (verified on node 25 and node 22, darwin and linux).
+  const result = spawnSync(timePath, [timeFlag, "node", "--max-old-space-size=1024", cliPath, "analyze", `${repository}@${revision}`, "--no-render", "--out", outDir], {
     cwd: root,
     encoding: "utf8",
     timeout: 600000,

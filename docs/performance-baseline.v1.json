@@ -86,40 +86,18 @@
     "measuredAt": "2026-11-12",
     "command": "npm run perf:gate (tsx scripts/performance-gate.ts, 3 counted runs after 1 warm-up, darwin arm64, node v25.5.0)",
     "generatorBaseRevision": "beb3c32 human-audited targeted gold set",
-    "runs": [
-      {
-        "elapsedMs": 30921,
-        "peakRssBytes": 604160000,
-        "jsonBytes": 93240685,
-        "evidenceBytes": 12251095,
-        "status": "facts-ready"
-      },
-      {
-        "elapsedMs": 23885,
-        "peakRssBytes": 644169728,
-        "jsonBytes": 93240685,
-        "evidenceBytes": 12251095,
-        "status": "facts-ready"
-      },
-      {
-        "elapsedMs": 58974,
-        "peakRssBytes": 763527168,
-        "jsonBytes": 93240685,
-        "evidenceBytes": 12251095,
-        "status": "facts-ready"
-      }
-    ],
     "summary": {
-      "medianElapsedMs": 30921,
-      "worstElapsedMs": 58974,
-      "maxPeakRssBytes": 763527168,
+      "medianElapsedMs": 24448,
+      "worstElapsedMs": 26021,
+      "maxPeakRssBytes": 916619264,
+      "heapConfiguration": "node --max-old-space-size=1024",
       "jsonBytesDefinition": "sum of the fixed semantic artifact set (analysis/ir/evidence/route-graph/async-graph/declarations/facts/candidates/delivery), excluding per-page view JSONs"
     },
     "verdict": {
       "semanticStatus": "pass",
-      "medianElapsed": "pass 30921 <= 60000",
+      "medianElapsed": "pass 24448 <= 60000",
       "worstElapsed": "pass",
-      "peakRss": "pass 763527168 <= 1073741824",
+      "peakRss": "pass 916619264 <= 1073741824 (~157MB margin)",
       "jsonSize": "pass",
       "evidenceSize": "pass"
     },
@@ -134,7 +112,7 @@
     },
     "note": "Measured after the migration-marker coverage fix; authelia gained 69 executable migration statements. Median remains ~4x the M1 baseline by real analysis growth; thresholds unchanged.",
     "ciMeasurements": {
-      "status": "measured-peak-rss-exceeds-darwin-threshold-not-ratified",
+      "status": "superseded-by-investigation-uncapped-measurement",
       "measuredAt": "2026-11-11",
       "runner": "ubuntu-latest (GitHub Actions), node 22, workflow run 43064704274",
       "runs": [
@@ -166,6 +144,85 @@
         "peakRss": "FAIL ~1.22-1.25GB > 1073741824"
       },
       "finding": "First fixed-CI measurement. Elapsed comfortably within darwin thresholds; peak RSS is ~0.7GB above them (node 22 on linux). The gate stays non-blocking until a CI threshold is explicitly re-ratified (memory optimization or a documented CI-specific limit); thresholds are not silently raised."
-    }
+    },
+    "investigation": {
+      "trigger": "First fixed-CI measurement showed peak RSS ~1.22-1.25GB vs the 1GiB threshold while elapsed passed comfortably.",
+      "method": "Isolated the two variables (node version, OS) with a standalone node v22.23.5 on darwin and a node:22 docker container reproducing the CI measurement, plus heap-cap probes. Semantic artifacts were byte-compared for every configuration.",
+      "measurements": [
+        {
+          "config": "darwin, node 25.5.0, default heap (repo gate, post-hotpath-fix)",
+          "peakRssMB": "673-724",
+          "elapsed": "median 26395ms"
+        },
+        {
+          "config": "darwin, node 22.23.5, default heap",
+          "peakRssMB": "820-877",
+          "note": "node version costs +100-150MB"
+        },
+        {
+          "config": "darwin, node 22.23.5, --max-old-space-size=1024",
+          "peakRssMB": "634-785",
+          "note": "below node 25 default; artifacts byte-identical"
+        },
+        {
+          "config": "linux docker (node:22 image), default heap",
+          "peakRssMB": "~973",
+          "note": "platform costs ~+100-150MB over darwin; CI's own runner measured ~1227-1252MB (kernel/accounting differences on GitHub runners add more)"
+        },
+        {
+          "config": "linux docker (node:22), MALLOC_ARENA_MAX=1",
+          "peakRssMB": "~1135",
+          "note": "worse and slower; rejected"
+        },
+        {
+          "config": "linux docker (node:22), --max-old-space-size=1024",
+          "peakRssMB": "~841",
+          "note": "-135MB vs baseline, same wall time"
+        }
+      ],
+      "rootCauses": [
+        "node version: node 22's V8 heap growth policy keeps more heap resident than node 25 for the same workload",
+        "platform: linux memory accounting and allocator behavior add ~100-150MB on top; GitHub-hosted runners measured higher still than a local linux container"
+      ],
+      "decision": "The gate now measures under a fixed 1GiB V8 old-space cap (--max-old-space-size=1024). Rationale: node's default old-space limit scales with host RAM, so an uncapped measurement is not reproducible across machines or node versions; the cap is GC policy only and semantic artifacts were byte-identical in every tested configuration (node 25/node 22, darwin/linux). MALLOC_ARENA_MAX=1 was tested and rejected (worse memory and wall time).",
+      "localCappedRuns": [
+        {
+          "elapsedMs": 23800,
+          "peakRssBytes": 759480320
+        },
+        {
+          "elapsedMs": 24448,
+          "peakRssBytes": 746242048
+        },
+        {
+          "elapsedMs": 26021,
+          "peakRssBytes": 916619264
+        }
+      ],
+      "ciCappedRuns": "to be recorded from the next performance-gate CI run; the job stays continue-on-error until CI numbers are recorded and thresholds explicitly ratified"
+    },
+    "runs": [
+      {
+        "elapsedMs": 23800,
+        "peakRssBytes": 759480320,
+        "jsonBytes": 93240685,
+        "evidenceBytes": 12251095,
+        "status": "facts-ready"
+      },
+      {
+        "elapsedMs": 24448,
+        "peakRssBytes": 746242048,
+        "jsonBytes": 93240685,
+        "evidenceBytes": 12251095,
+        "status": "facts-ready"
+      },
+      {
+        "elapsedMs": 26021,
+        "peakRssBytes": 916619264,
+        "jsonBytes": 93240685,
+        "evidenceBytes": 12251095,
+        "status": "facts-ready"
+      }
+    ]
   }
 }
