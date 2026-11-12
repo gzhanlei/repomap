@@ -1,0 +1,254 @@
+{
+  "version": 1,
+  "corpusId": "authelia",
+  "revision": "32b0bdac395efc707bc098757afa232177965736",
+  "auditedBy": "Lei Han",
+  "auditedAt": "2026-11-12",
+  "note": "Human-audited targeted subset: 14 of 101 route registrations in internal/server/handlers.go hand-read from the pinned archive (health/state/configuration/checks/firstfactor/logout/reset-password section, lines 216-280), 2 route-handler directions verified to their definition files, and 11 channel async operations verified line by line (8 in internal/utils/exec.go covering the full make/send/receive set, plus check.go timer select, action_visit.go channel send, webdriver.go ctx.Done consume). Deliberately not asserted: the remaining 87 route registrations (same file, hand-read but not transcribed into facts), the authz endpoints built from config at :259-260 (dynamic uri), and the other 62 async declarations. No precision scopes: this is a targeted subset, not a complete enumeration, so full-file scopes would misreport unaudited records as false positives.",
+  "facts": [
+    {
+      "id": "route-head-api-health-216",
+      "kind": "route",
+      "method": "HEAD",
+      "path": "/api/health",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:216 r.HEAD('/api/health') registration hand-read"
+    },
+    {
+      "id": "route-get-api-health-217",
+      "kind": "route",
+      "method": "GET",
+      "path": "/api/health",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:217 r.GET('/api/health') registration hand-read"
+    },
+    {
+      "id": "route-head-api-health-verbose-224",
+      "kind": "route",
+      "method": "HEAD",
+      "path": "/api/health/verbose",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:224 r.HEAD('/api/health/verbose') registration hand-read"
+    },
+    {
+      "id": "route-get-api-health-verbose-225",
+      "kind": "route",
+      "method": "GET",
+      "path": "/api/health/verbose",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:225 r.GET('/api/health/verbose') registration hand-read"
+    },
+    {
+      "id": "route-get-api-state-228",
+      "kind": "route",
+      "method": "GET",
+      "path": "/api/state",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:228 r.GET('/api/state') registration hand-read"
+    },
+    {
+      "id": "route-get-api-configuration-230",
+      "kind": "route",
+      "method": "GET",
+      "path": "/api/configuration",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:230 r.GET('/api/configuration') registration hand-read"
+    },
+    {
+      "id": "route-get-api-configuration-password-policy-232",
+      "kind": "route",
+      "method": "GET",
+      "path": "/api/configuration/password-policy",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:232 r.GET('/api/configuration/password-policy') registration hand-read"
+    },
+    {
+      "id": "route-post-api-checks-safe-redirection-265",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/checks/safe-redirection",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:265 r.POST('/api/checks/safe-redirection') registration hand-read"
+    },
+    {
+      "id": "route-post-api-firstfactor-269",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/firstfactor",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:269 r.POST('/api/firstfactor') registration hand-read"
+    },
+    {
+      "id": "route-post-api-firstfactor-reauthenticate-270",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/firstfactor/reauthenticate",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:270 r.POST('/api/firstfactor/reauthenticate') registration hand-read"
+    },
+    {
+      "id": "route-post-api-logout-271",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/logout",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:271 r.POST('/api/logout') registration hand-read"
+    },
+    {
+      "id": "route-post-api-reset-password-identity-start-277",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/reset-password/identity/start",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:277 r.POST('/api/reset-password/identity/start') registration hand-read"
+    },
+    {
+      "id": "route-post-api-reset-password-identity-finish-278",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/reset-password/identity/finish",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:278 r.POST('/api/reset-password/identity/finish') registration hand-read"
+    },
+    {
+      "id": "route-post-api-reset-password-280",
+      "kind": "route",
+      "method": "POST",
+      "path": "/api/reset-password",
+      "sourcePath": "internal/server/handlers.go",
+      "evidencePath": "internal/server/handlers.go",
+      "note": "handlers.go:280 r.POST('/api/reset-password') registration hand-read"
+    },
+    {
+      "id": "handler-health",
+      "kind": "route-handler",
+      "method": "GET",
+      "path": "/api/health",
+      "handlerSourcePath": "internal/handlers/handler_health.go",
+      "evidencePath": "internal/handlers/handler_health.go",
+      "note": "handlers.go:217 middlewareAPI(handlers.HealthGET); func HealthGET at handler_health.go:12; evidence asserted on the definition file (analyzer attaches handler evidence to the definition)"
+    },
+    {
+      "id": "handler-state",
+      "kind": "route-handler",
+      "method": "GET",
+      "path": "/api/state",
+      "handlerSourcePath": "internal/handlers/handler_state.go",
+      "evidencePath": "internal/handlers/handler_state.go",
+      "note": "handlers.go:228 middlewareAPI(handlers.StateGET); func StateGET at handler_state.go:13; evidence asserted on the definition file (analyzer attaches handler evidence to the definition)"
+    },
+    {
+      "id": "async-exec-99",
+      "kind": "async-operation",
+      "action": "declare",
+      "callSite": "internal/utils/exec.go:99",
+      "topic": "signalChannel",
+      "evidencePath": "internal/utils/exec.go",
+      "note": "signalChannel := make(chan os.Signal, 1)"
+    },
+    {
+      "id": "async-exec-121",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "internal/utils/exec.go:121",
+      "topic": "signalChannel",
+      "evidencePath": "internal/utils/exec.go",
+      "note": "<-signalChannel in signal handler goroutine"
+    },
+    {
+      "id": "async-exec-140",
+      "kind": "async-operation",
+      "action": "declare",
+      "callSite": "internal/utils/exec.go:140",
+      "topic": "signals",
+      "evidencePath": "internal/utils/exec.go",
+      "note": "signals := make(chan os.Signal, 1)"
+    },
+    {
+      "id": "async-exec-146",
+      "kind": "async-operation",
+      "action": "declare",
+      "callSite": "internal/utils/exec.go:146",
+      "topic": "done",
+      "evidencePath": "internal/utils/exec.go",
+      "note": "done := make(chan error, 1)"
+    },
+    {
+      "id": "async-exec-149",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "internal/utils/exec.go:149",
+      "topic": "done",
+      "evidencePath": "internal/utils/exec.go",
+      "note": "done <- cmd.Wait()"
+    },
+    {
+      "id": "async-exec-156",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "internal/utils/exec.go:156",
+      "topic": "signals",
+      "evidencePath": "internal/utils/exec.go",
+      "note": "case sig := <-signals"
+    },
+    {
+      "id": "async-exec-158",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "internal/utils/exec.go:158",
+      "topic": "expired",
+      "evidencePath": "internal/utils/exec.go",
+      "note": "case <-expired"
+    },
+    {
+      "id": "async-exec-166",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "internal/utils/exec.go:166",
+      "topic": "done",
+      "evidencePath": "internal/utils/exec.go",
+      "note": "case err := <-done"
+    },
+    {
+      "id": "async-check-18",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "internal/utils/check.go:18",
+      "topic": "time.After(interval)",
+      "evidencePath": "internal/utils/check.go",
+      "note": "case <-time.After(interval) inside select loop"
+    },
+    {
+      "id": "async-visit-93",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "internal/suites/action_visit.go:93",
+      "topic": "created",
+      "evidencePath": "internal/suites/action_visit.go",
+      "note": "created <- tab{page, err} send into goroutine channel"
+    },
+    {
+      "id": "async-webdriver-472",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "internal/suites/webdriver.go:472",
+      "topic": "ctx.Done()",
+      "evidencePath": "internal/suites/webdriver.go",
+      "note": "case <-ctx.Done() in select"
+    }
+  ],
+  "precisionScopes": []
+}
