@@ -1,7 +1,7 @@
 # RepoMap 接手文档
 
 - 更新日期：2026-11-12
-- 代码基线：`8bd38a2`（a231a69 之前的 M7 切片 + 728f50a CI workflow + 8bd38a2 click Gold）
+- 代码基线：`d766850`（CI workflow 728f50a、click Gold 8bd38a2、性能调查与受控堆 d766850）
 - 远程仓库：`https://github.com/gzhanlei/repomap`
 - 当前分支：`main`
 
@@ -270,7 +270,8 @@ node dist/cli.js analyze \
 ## 9. 当前阻塞与注意事项
 
 - 已完成的 Python 两个切片没有已知未提交实现或当前代码阻塞。
-- **性能回归已定位并修复（4949b6e）**：CPU profile 定位到 view-manifest 的二次方 operation×edge 匹配、重复 evidence 数组合并、projections 数组重建，以及 sql-operations 对整个文件内容的反复 split/正则扫描；修复后语义产物字节级不变，perf:gate 通过（median 26395ms，阈值 60000ms；peak RSS 724MB）。median 仍约为 M1 基线 8s 的 3.3x——这是 M2–M8 真实新增分析（10739 operations、module graph、projection）的代价，阈值未改动。详见 `docs/performance-baseline.v1.json` 的 `gate` 段。
+- **性能回归已定位并修复（4949b6e）**：CPU profile 定位到 view-manifest 的二次方 operation×edge 匹配、重复 evidence 数组合并、projections 数组重建，以及 sql-operations 对整个文件内容的反复 split/正则扫描；修复后语义产物字节级不变。median 仍约为 M1 基线 8s 的 3x——这是 M2–M8 真实新增分析（10739 operations、module graph、projection）的代价，阈值未改动。
+- **CI peak RSS 超阈值已解决（d766850）**：调查定位两个根因（node 22 比 node 25 多占 100–150MB 堆；Linux/GitHub runner 内存口径再加 300MB+），gate 改为在固定 1GiB V8 老生代上限（`--max-old-space-size=1024`）下测量——node 默认老生代随宿主内存浮动，固定堆才是可复现口径；产物字节级一致（node 25/22 × darwin/linux 全验证），`MALLOC_ARENA_MAX=1` 实测更差已否决。受控堆后 CI 全绿：median 29.2s、peak RSS 916–960MB（阈值内）。CI 的 performance-gate job 仍为非阻塞，转阻塞是待人工批准的一行改动。详见 `docs/performance-baseline.v1.json` 的 `gate.investigation` / `gate.ciMeasurements`。
 - **migration 语句欠报已修复（a231a69，见 resolvedFindings）**：根因是 `schemaMarkers` 与 `pythonSqlLineFilter` 都缺少 alembic DDL 助手（alter_column/create_index/drop_index/create_foreign_key/drop_constraint/create_primary_key）。修复后 fastapi-template 固定语料 62/62 与人工清点一致，fixture 测试 7/7，authelia 新增 69 条经人工抽查为真实 SQL 的迁移语句；gold 评估保持 59/59、0 FP，manifest 的 candidate 已移入 resolvedFindings。
 - M7 未完成是后续资格评估工作，不影响已提交切片作为 per-input 能力使用。
 - Click 和不受支持的动态 Python 输入失败关闭是预期行为，不要为了“全绿”删除 omission。

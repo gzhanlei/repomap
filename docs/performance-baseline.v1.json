@@ -112,38 +112,44 @@
     },
     "note": "Measured after the migration-marker coverage fix; authelia gained 69 executable migration statements. Median remains ~4x the M1 baseline by real analysis growth; thresholds unchanged.",
     "ciMeasurements": {
-      "status": "superseded-by-investigation-uncapped-measurement",
-      "measuredAt": "2026-11-11",
-      "runner": "ubuntu-latest (GitHub Actions), node 22, workflow run 43064704274",
+      "status": "passing-under-controlled-heap-blocking-ratification-pending",
+      "measuredAt": "2026-11-12",
+      "runner": "ubuntu-latest (GitHub Actions), node 22, workflow run 43168737492 (both checks and performance-gate jobs succeeded)",
+      "configuration": "node --max-old-space-size=1024 (same controlled heap as the local gate)",
       "runs": [
         {
-          "elapsedMs": 27230,
-          "peakRssBytes": 1252622336,
+          "elapsedMs": 29125,
+          "peakRssBytes": 936333312,
           "jsonBytes": 93240641,
           "evidenceBytes": 12251095,
           "status": "facts-ready"
         },
         {
-          "elapsedMs": 28308,
-          "peakRssBytes": 1227427840,
+          "elapsedMs": 29196,
+          "peakRssBytes": 959729664,
           "jsonBytes": 93240641,
           "evidenceBytes": 12251095,
           "status": "facts-ready"
         },
         {
-          "elapsedMs": 27001,
-          "peakRssBytes": 1243029504,
+          "elapsedMs": 29355,
+          "peakRssBytes": 915804160,
           "jsonBytes": 93240641,
           "evidenceBytes": 12251095,
           "status": "facts-ready"
         }
       ],
-      "verdict": {
-        "medianElapsed": "pass 27230 <= 60000",
-        "worstElapsed": "pass 28308 <= 90000",
-        "peakRss": "FAIL ~1.22-1.25GB > 1073741824"
+      "summary": {
+        "medianElapsedMs": 29196,
+        "worstElapsedMs": 29355,
+        "maxPeakRssBytes": 959729664
       },
-      "finding": "First fixed-CI measurement. Elapsed comfortably within darwin thresholds; peak RSS is ~0.7GB above them (node 22 on linux). The gate stays non-blocking until a CI threshold is explicitly re-ratified (memory optimization or a documented CI-specific limit); thresholds are not silently raised."
+      "verdict": {
+        "medianElapsed": "pass",
+        "worstElapsed": "pass",
+        "peakRss": "pass 959729664 <= 1073741824 (~114MB margin)"
+      },
+      "history": "The uncapped CI measurement (run 43064704274) failed peak RSS at ~1.22-1.25GB; see gate.investigation for the root-cause breakdown (node version + platform memory accounting) and the rejected MALLOC_ARENA_MAX alternative."
     },
     "investigation": {
       "trigger": "First fixed-CI measurement showed peak RSS ~1.22-1.25GB vs the 1GiB threshold while elapsed passed comfortably.",
