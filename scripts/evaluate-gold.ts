@@ -51,6 +51,13 @@ const artifacts: CorpusGoldArtifacts = {
     line: edge.line as number | undefined,
     evidenceIds: edge.evidenceIds as string[],
   })),
+  cycles: (moduleGraph.cycles as Array<{ nodes: string[] }>).map((cycle) => ({
+    memberPaths: cycle.nodes.map((nodeId) => {
+      const node = (moduleGraph.nodes as Array<{ id: string; path: string }>).find((item) => item.id === nodeId);
+      if (!node) throw new Error(`Cycle references unknown module node: ${nodeId}`);
+      return node.path;
+    }),
+  })),
   routes: routeGraph.routes.map((route: Record<string, unknown>) => ({
     id: route.id as string,
     method: route.method as string,

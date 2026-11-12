@@ -26,6 +26,14 @@ const importEdgeFactSchema = z.object({
   note: z.string().min(1).optional(),
 }).strict();
 
+const cycleFactSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("cycle"),
+  memberPaths: z.array(z.string().min(1)).min(2),
+  evidencePath: z.string().min(1).optional(),
+  note: z.string().min(1).optional(),
+}).strict();
+
 const routeFactSchema = z.object({
   id: z.string().min(1),
   kind: z.literal("route"),
@@ -79,6 +87,7 @@ const declarationFactSchema = z.object({
 export const goldFactSchema = z.discriminatedUnion("kind", [
   moduleFactSchema,
   importEdgeFactSchema,
+  cycleFactSchema,
   routeFactSchema,
   routeHandlerFactSchema,
   sqlOperationFactSchema,
@@ -151,6 +160,7 @@ export interface CorpusGoldArtifacts {
   revision: string;
   modules: Array<{ id: string; path: string; language?: string; evidenceIds: string[] }>;
   moduleEdges: Array<{ id: string; from: string; to: string; toKind: string; kind: string; path: string; line?: number; evidenceIds: string[] }>;
+  cycles: Array<{ memberPaths: string[] }>;
   routes: Array<{ id: string; method: string; path: string; sourcePath: string; line?: number; evidenceIds: string[] }>;
   routeHandlers: Array<{ id: string; sourcePath: string; line?: number; evidenceIds: string[] }>;
   routeEdges: Array<{ id: string; from: string; to: string; kind: string; evidenceIds: string[] }>;
@@ -214,6 +224,11 @@ function evaluateFact(fact: GoldFact, artifacts: CorpusGoldArtifacts): { covered
         return edge.toKind === "external" && edge.to === `external:${fact.externalName}`;
       });
       record = match;
+      break;
+    }
+    case "cycle": {
+      const match = artifacts.cycles.find((cycle) => cycle.memberPaths.length === fact.memberPaths.length && [...cycle.memberPaths].sort().join("|") === [...fact.memberPaths].sort().join("|"));
+      record = match ? { evidenceIds: [] } : undefined;
       break;
     }
     case "route": {

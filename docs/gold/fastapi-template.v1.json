@@ -4,7 +4,7 @@
   "revision": "aabb90126964a164e02aff39e7c385bb0598236d",
   "auditedBy": "Lei Han",
   "auditedAt": "2026-11-11",
-  "note": "Human-audited targeted critical facts, derived by reading the pinned archive source under backend/app (routes, crud.py, alembic/versions) with the production output closed. Route paths are composed from each router prefix plus the /api/v1 mount prefix (backend/app/main.py:35 with settings.API_V1_STR from backend/app/core/config.py:22). SQL actions use the documented read/write/transaction/migration vocabulary. Migration scope covers both upgrade and downgrade op.* statements of the smallest alembic file fe56fa70289e (4 statements: upgrade add_column at :22/:23, downgrade drop_column at :29/:30), all verified as executable runtime SQL. Follow-up resolution: the under-reporting was traced to schemaMarkers and pythonSqlLineFilter missing the alembic DDL helpers alter_column/create_index/drop_index/create_foreign_key/drop_constraint/create_primary_key; after the fix a fresh run emits exactly 62 migration operations for the 5 files (1a31ce608336:6, 9c0a54914c78:8, d98dd8ec85a3:38, e2412789c190:6, fe56fa70289e:4), matching this hand count. The private router is mounted only when FASTAPI_ENV is development, the repository default, so its route is a critical fact.",
+  "note": "Human-audited targeted critical facts, derived by reading the pinned archive source under backend/app (routes, crud.py, alembic/versions) with the production output closed. Route paths are composed from each router prefix plus the /api/v1 mount prefix (backend/app/main.py:35 with settings.API_V1_STR from backend/app/core/config.py:22). SQL actions use the documented read/write/transaction/migration vocabulary. Migration facts cover all 62 op.* statements across the 5 alembic files (1a31:6, 9c0a:8, d98d:38, e241:6, fe56:4), hand-read line by line from the pinned source, both upgrade and downgrade paths, all verified as executable runtime SQL. Follow-up resolution: the under-reporting was traced to schemaMarkers and pythonSqlLineFilter missing the alembic DDL helpers alter_column/create_index/drop_index/create_foreign_key/drop_constraint/create_primary_key; after the fix a fresh run emits exactly 62 migration operations for the 5 files (1a31ce608336:6, 9c0a54914c78:8, d98dd8ec85a3:38, e2412789c190:6, fe56fa70289e:4), matching this hand count. The private router is mounted only when FASTAPI_ENV is development, the repository default, so its route is a critical fact.",
   "facts": [
     {
       "id": "route-items-read-all",
@@ -481,6 +481,528 @@
       "driver": "postgres",
       "evidencePath": "backend/app/alembic/versions/fe56fa70289e_add_created_at_to_user_and_item.py",
       "note": "downgrade path op.drop_column('item', created_at), verified as executable runtime SQL"
+    },
+    {
+      "id": "sql-1a31-22",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py:22",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py",
+      "note": "upgrade: alter item.owner_id for cascade delete"
+    },
+    {
+      "id": "sql-1a31-25",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py:25",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py",
+      "note": "upgrade: drop old owner_id FK"
+    },
+    {
+      "id": "sql-1a31-26",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py:26",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py",
+      "note": "upgrade: recreate owner_id FK with ondelete CASCADE"
+    },
+    {
+      "id": "sql-1a31-32",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py:32",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py",
+      "note": "downgrade: drop cascade FK"
+    },
+    {
+      "id": "sql-1a31-33",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py:33",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py",
+      "note": "downgrade: recreate plain owner_id FK"
+    },
+    {
+      "id": "sql-1a31-34",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py:34",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py",
+      "note": "downgrade: alter item.owner_id back"
+    },
+    {
+      "id": "sql-9c0a-22",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py:22",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py",
+      "note": "upgrade: user.email varchar length"
+    },
+    {
+      "id": "sql-9c0a-28",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py:28",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py",
+      "note": "upgrade: user.full_name varchar length"
+    },
+    {
+      "id": "sql-9c0a-34",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py:34",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py",
+      "note": "upgrade: item.title varchar length"
+    },
+    {
+      "id": "sql-9c0a-40",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py:40",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py",
+      "note": "upgrade: item.description varchar length"
+    },
+    {
+      "id": "sql-9c0a-48",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py:48",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py",
+      "note": "downgrade: user.email length back"
+    },
+    {
+      "id": "sql-9c0a-54",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py:54",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py",
+      "note": "downgrade: user.full_name length back"
+    },
+    {
+      "id": "sql-9c0a-60",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py:60",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py",
+      "note": "downgrade: item.title length back"
+    },
+    {
+      "id": "sql-9c0a-66",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py:66",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py",
+      "note": "downgrade: item.description length back"
+    },
+    {
+      "id": "sql-d98d-23",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:23",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: create uuid-ossp extension"
+    },
+    {
+      "id": "sql-d98d-26",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:26",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: add user.new_id uuid"
+    },
+    {
+      "id": "sql-d98d-27",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:27",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: add item.new_id uuid"
+    },
+    {
+      "id": "sql-d98d-28",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:28",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: add item.new_owner_id uuid"
+    },
+    {
+      "id": "sql-d98d-31",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:31",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: populate user.new_id"
+    },
+    {
+      "id": "sql-d98d-32",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:32",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: populate item.new_id"
+    },
+    {
+      "id": "sql-d98d-33",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:33",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: copy owner mapping"
+    },
+    {
+      "id": "sql-d98d-36",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:36",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: user.new_id not null"
+    },
+    {
+      "id": "sql-d98d-37",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:37",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: item.new_id not null"
+    },
+    {
+      "id": "sql-d98d-40",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:40",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: drop old FK"
+    },
+    {
+      "id": "sql-d98d-41",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:41",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: drop item.owner_id"
+    },
+    {
+      "id": "sql-d98d-42",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:42",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: rename new_owner_id to owner_id"
+    },
+    {
+      "id": "sql-d98d-44",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:44",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: drop user.id"
+    },
+    {
+      "id": "sql-d98d-45",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:45",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: rename new_id to id"
+    },
+    {
+      "id": "sql-d98d-47",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:47",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: drop item.id"
+    },
+    {
+      "id": "sql-d98d-48",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:48",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: rename item new_id to id"
+    },
+    {
+      "id": "sql-d98d-51",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:51",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: user primary key"
+    },
+    {
+      "id": "sql-d98d-52",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:52",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: item primary key"
+    },
+    {
+      "id": "sql-d98d-55",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:55",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "upgrade: recreate owner FK"
+    },
+    {
+      "id": "sql-d98d-59",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:59",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: add user.old_id"
+    },
+    {
+      "id": "sql-d98d-60",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:60",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: add item.old_id"
+    },
+    {
+      "id": "sql-d98d-61",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:61",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: add item.old_owner_id"
+    },
+    {
+      "id": "sql-d98d-65",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:65",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: create user_id_seq"
+    },
+    {
+      "id": "sql-d98d-66",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:66",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: create item_id_seq"
+    },
+    {
+      "id": "sql-d98d-68",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:68",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: setval user_id_seq"
+    },
+    {
+      "id": "sql-d98d-69",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:69",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: setval item_id_seq"
+    },
+    {
+      "id": "sql-d98d-71",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:71",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: assign user.old_id"
+    },
+    {
+      "id": "sql-d98d-72",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:72",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: assign item.old_id/old_owner_id"
+    },
+    {
+      "id": "sql-d98d-75",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:75",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: drop FK"
+    },
+    {
+      "id": "sql-d98d-76",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:76",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: drop item.owner_id"
+    },
+    {
+      "id": "sql-d98d-77",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:77",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: rename old_owner_id to owner_id"
+    },
+    {
+      "id": "sql-d98d-79",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:79",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: drop user.id"
+    },
+    {
+      "id": "sql-d98d-80",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:80",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: rename old_id to id"
+    },
+    {
+      "id": "sql-d98d-82",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:82",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: drop item.id"
+    },
+    {
+      "id": "sql-d98d-83",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:83",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: rename item old_id to id"
+    },
+    {
+      "id": "sql-d98d-86",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:86",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: user primary key"
+    },
+    {
+      "id": "sql-d98d-87",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:87",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: item primary key"
+    },
+    {
+      "id": "sql-d98d-90",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py:90",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "downgrade: recreate owner FK"
+    },
+    {
+      "id": "sql-e241-21",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/e2412789c190_initialize_models.py:21",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/e2412789c190_initialize_models.py",
+      "note": "upgrade: create user table"
+    },
+    {
+      "id": "sql-e241-33",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/e2412789c190_initialize_models.py:33",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/e2412789c190_initialize_models.py",
+      "note": "upgrade: ix_user_email unique index"
+    },
+    {
+      "id": "sql-e241-34",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/e2412789c190_initialize_models.py:34",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/e2412789c190_initialize_models.py",
+      "note": "upgrade: create item table"
+    },
+    {
+      "id": "sql-e241-51",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/e2412789c190_initialize_models.py:51",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/e2412789c190_initialize_models.py",
+      "note": "downgrade: drop item table"
+    },
+    {
+      "id": "sql-e241-52",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/e2412789c190_initialize_models.py:52",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/e2412789c190_initialize_models.py",
+      "note": "downgrade: drop ix_user_email"
+    },
+    {
+      "id": "sql-e241-53",
+      "kind": "sql-operation",
+      "action": "migration",
+      "callSite": "backend/app/alembic/versions/e2412789c190_initialize_models.py:53",
+      "driver": "postgres",
+      "evidencePath": "backend/app/alembic/versions/e2412789c190_initialize_models.py",
+      "note": "downgrade: drop user table"
     }
   ],
   "precisionScopes": [
@@ -525,6 +1047,30 @@
       "kind": "sql-operation",
       "callSitePrefix": "backend/app/alembic/versions/fe56fa70289e_add_created_at_to_user_and_item.py",
       "note": "all four op.* statements audited: upgrade add_column :22/:23, downgrade drop_column :29/:30"
+    },
+    {
+      "id": "scope-sql-1a31",
+      "kind": "sql-operation",
+      "callSitePrefix": "backend/app/alembic/versions/1a31ce608336_add_cascade_delete_relationships.py",
+      "note": "all op.* statements audited line by line (upgrade and downgrade)"
+    },
+    {
+      "id": "scope-sql-9c0a",
+      "kind": "sql-operation",
+      "callSitePrefix": "backend/app/alembic/versions/9c0a54914c78_add_max_length_for_string_varchar_.py",
+      "note": "all op.* statements audited line by line (upgrade and downgrade)"
+    },
+    {
+      "id": "scope-sql-d98d",
+      "kind": "sql-operation",
+      "callSitePrefix": "backend/app/alembic/versions/d98dd8ec85a3_edit_replace_id_integers_in_all_models_.py",
+      "note": "all op.* statements audited line by line (upgrade and downgrade)"
+    },
+    {
+      "id": "scope-sql-e241",
+      "kind": "sql-operation",
+      "callSitePrefix": "backend/app/alembic/versions/e2412789c190_initialize_models.py",
+      "note": "all op.* statements audited line by line (upgrade and downgrade)"
     }
   ]
 }

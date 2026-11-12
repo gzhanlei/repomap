@@ -4,7 +4,7 @@
   "revision": "8abb77a8432e03ed14a95f972b44f905279415a7",
   "auditedBy": "Lei Han",
   "auditedAt": "2026-11-12",
-  "note": "Human-audited targeted critical facts from the pinned archive: 17 modules enumerated from the src/click directory listing (py.typed is not a module) and 4 unambiguous import statements read from the source. The analyzer records 2 cycles and 1 dynamic-import omission for this revision; cycles are not asserted as facts here. Full-view coverage gates fail closed for this corpus (documented in HANDOFF), which is expected behavior and not a gold failure: this gold set evaluates the module graph artifact only.",
+  "note": "Human-audited targeted critical facts from the pinned archive: 17 modules enumerated from the src/click directory listing (py.typed is not a module) and 4 unambiguous import statements read from the source. The analyzer records 2 cycles and 1 dynamic-import omission for this revision; cycles are not asserted as facts here. Full-view coverage gates fail closed for this corpus (documented in HANDOFF), which is expected behavior and not a gold failure: this gold set evaluates the module graph artifact only. Extension pass: 12 more hand-read import edges (decorators/core/types/termui cross-module imports, aliases os, the _compat<->_winconsole mutual pair) and the human-verified two-module cycle are asserted; the second analyzer-reported cycle stays unasserted until its chain is hand-read.",
   "facts": [
     {
       "id": "module-init",
@@ -139,6 +139,111 @@
       "externalName": "configparser",
       "evidencePath": "examples/aliases/aliases.py",
       "note": "aliases.py:1 'import configparser'"
+    },
+    {
+      "id": "edge-decorators-imports-core",
+      "kind": "import-edge",
+      "fromPath": "src/click/decorators.py",
+      "toPath": "src/click/core.py",
+      "evidencePath": "src/click/decorators.py",
+      "note": "decorators.py:8-13 'from .core import Argument/Command/Context/Group/Option/Parameter'"
+    },
+    {
+      "id": "edge-core-imports-types",
+      "kind": "import-edge",
+      "fromPath": "src/click/core.py",
+      "toPath": "src/click/types.py",
+      "evidencePath": "src/click/core.py",
+      "note": "core.py:24 'from . import types'"
+    },
+    {
+      "id": "edge-core-imports-exceptions",
+      "kind": "import-edge",
+      "fromPath": "src/click/core.py",
+      "toPath": "src/click/exceptions.py",
+      "evidencePath": "src/click/core.py",
+      "note": "core.py:27 'from .exceptions import Abort'"
+    },
+    {
+      "id": "edge-core-imports-utils",
+      "kind": "import-edge",
+      "fromPath": "src/click/core.py",
+      "toPath": "src/click/utils.py",
+      "evidencePath": "src/click/core.py",
+      "note": "core.py:25-26 'from ._utils import FLAG_NEEDS_VALUE/UNSET'"
+    },
+    {
+      "id": "edge-types-imports-compat",
+      "kind": "import-edge",
+      "fromPath": "src/click/types.py",
+      "toPath": "src/click/_compat.py",
+      "evidencePath": "src/click/types.py",
+      "note": "types.py:15 'from ._compat import _get_argv_encoding'"
+    },
+    {
+      "id": "edge-types-imports-exceptions",
+      "kind": "import-edge",
+      "fromPath": "src/click/types.py",
+      "toPath": "src/click/exceptions.py",
+      "evidencePath": "src/click/types.py",
+      "note": "types.py:17 'from .exceptions import BadParameter'"
+    },
+    {
+      "id": "edge-types-imports-utils",
+      "kind": "import-edge",
+      "fromPath": "src/click/types.py",
+      "toPath": "src/click/utils.py",
+      "evidencePath": "src/click/types.py",
+      "note": "types.py:18 'from .utils import _LazyFile'"
+    },
+    {
+      "id": "edge-termui-imports-compat",
+      "kind": "import-edge",
+      "fromPath": "src/click/termui.py",
+      "toPath": "src/click/_compat.py",
+      "evidencePath": "src/click/termui.py",
+      "note": "termui.py:15-17 'from . import _compat' / 'from ._compat import isatty/strip_ansi'"
+    },
+    {
+      "id": "edge-termui-imports-exceptions",
+      "kind": "import-edge",
+      "fromPath": "src/click/termui.py",
+      "toPath": "src/click/exceptions.py",
+      "evidencePath": "src/click/termui.py",
+      "note": "termui.py:18-19 'from .exceptions import Abort/UsageError'"
+    },
+    {
+      "id": "edge-aliases-imports-os",
+      "kind": "import-edge",
+      "fromPath": "examples/aliases/aliases.py",
+      "externalName": "os",
+      "evidencePath": "examples/aliases/aliases.py",
+      "note": "aliases.py:2 'import os'"
+    },
+    {
+      "id": "edge-winconsole-imports-compat",
+      "kind": "import-edge",
+      "fromPath": "src/click/_winconsole.py",
+      "toPath": "src/click/_compat.py",
+      "evidencePath": "src/click/_winconsole.py",
+      "note": "_winconsole.py:33 'from ._compat import _NonClosingTextIOWrapper'"
+    },
+    {
+      "id": "edge-compat-imports-winconsole",
+      "kind": "import-edge",
+      "fromPath": "src/click/_compat.py",
+      "toPath": "src/click/_winconsole.py",
+      "evidencePath": "src/click/_compat.py",
+      "note": "_compat.py:518 function-level 'from ._winconsole import _get_windows_console_stream'"
+    },
+    {
+      "id": "cycle-compat-winconsole",
+      "kind": "cycle",
+      "memberPaths": [
+        "src/click/_compat.py",
+        "src/click/_winconsole.py"
+      ],
+      "note": "human-verified mutual imports: _winconsole.py:33 -> _compat, _compat.py:518 -> _winconsole; the analyzer also reports a second 11-module cycle whose full import chain has not been hand-read, so it is deliberately not asserted here"
     }
   ],
   "precisionScopes": [

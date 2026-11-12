@@ -21,6 +21,7 @@ function artifacts(overrides: Partial<CorpusGoldArtifacts> = {}): CorpusGoldArti
     revision,
     modules: [],
     moduleEdges: [],
+    cycles: [],
     routes: [route("route:get-items")],
     routeHandlers: [{ id: "handler:1", sourcePath: "backend/app/api/routes/items.py", line: 20, evidenceIds: ["ev:handler-1"] }],
     routeEdges: [{ id: "route-edge:1", from: "route:get-items", to: "handler:1", kind: "routes-to", evidenceIds: ["ev:edge-1"] }],
@@ -248,5 +249,36 @@ describe("corpus gold module and import-edge facts", () => {
     expect(result.precision.scopes[0].outputRecords).toBe(3);
     expect(result.precision.suspectedFalsePositives.sort()).toEqual(["module:package:click:src/click/_compat.py", "module:package:click:src/click/decorators.py"]);
     expect(result.passed).toBe(false);
+  });
+});
+
+describe("corpus gold cycle facts", () => {
+  function cycleArtifacts(): CorpusGoldArtifacts {
+    return artifacts({
+      modules: [
+        { id: "module:package:root:src/a.py", path: "src/a.py", evidenceIds: [] },
+        { id: "module:package:root:src/b.py", path: "src/b.py", evidenceIds: [] },
+        { id: "module:package:root:src/c.py", path: "src/c.py", evidenceIds: [] },
+      ],
+      cycles: [{ memberPaths: ["src/a.py", "src/b.py"] }],
+    });
+  }
+
+  it("rejects a cycle fact with fewer than two members", () => {
+    expect(() => corpusGoldSetSchema.parse({ ...goldDefaults, facts: [{ id: "bad", kind: "cycle", memberPaths: ["src/a.py"] }] })).toThrow();
+  });
+
+  it("covers a cycle fact whose members match an emitted cycle", () => {
+    const result = evaluateCorpusGold(cycleArtifacts(), gold({
+      facts: [{ id: "ab-cycle", kind: "cycle", memberPaths: ["src/b.py", "src/a.py"] }],
+    }));
+    expect(result.recall.missing).toEqual([]);
+  });
+
+  it("reports a cycle fact as missing when no emitted cycle has those members", () => {
+    const result = evaluateCorpusGold(cycleArtifacts(), gold({
+      facts: [{ id: "abc-cycle", kind: "cycle", memberPaths: ["src/a.py", "src/b.py", "src/c.py"] }],
+    }));
+    expect(result.recall.missing.map((m) => m.id)).toEqual(["abc-cycle"]);
   });
 });
