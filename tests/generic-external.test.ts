@@ -70,6 +70,18 @@ describe("generic external protocol detection", () => {
     expect(analysis.coverage.blockingOmissions.length).toBeGreaterThan(0);
   });
 
+  it("does not fabricate external identities for injected fetcher wrappers without a visible target", () => {
+    const analysis = analyzeArchitectureFacts(scope, [
+      { path: "package.json", content: '{"scripts":{"start":"next start"},"dependencies":{"next":"16.0.0"}}' },
+      { path: "app/page.tsx", content: 'import { postFeedback } from "../lib/feedback-client";\nexport default async function Page() { await postFeedback("/api/feedback"); }' },
+      { path: "lib/feedback-client.ts", content: 'async function postJson(url: string, fetcher: typeof fetch = fetch) {\n return fetcher(url, { method: "POST" }) as Promise<unknown>;\n}\nexport async function postFeedback(url: string) { return postJson(url); }' },
+    ]);
+    // The wrapper's callee is an injected fetcher and its URL a bare parameter: the target may be
+    // the app's own API, so claiming an external identity (or a blocking omission) would be fabrication.
+    expect(analysis.candidates.some((candidate) => candidate.status === "omitted" && candidate.evidence.path === "lib/feedback-client.ts")).toBe(false);
+    expect(analysis.facts.omissions.some((omission) => omission.detail.includes("lib/feedback-client.ts"))).toBe(false);
+  });
+
   it("writes the candidate inventory alongside facts for Harness follow-up", async () => {
     const root = await nextFixture();
     await mkdir(join(root, "lib/shopify/queries"), { recursive: true });

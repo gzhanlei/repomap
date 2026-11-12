@@ -134,7 +134,12 @@ export function discoverImportDeclarations(snapshot: SourceSnapshot, modulePaths
         return;
       }
       const syntactic = /^\s*import\s/.test(line) || /^\s*export\s.*\bfrom\s/.test(line);
-      const callSite = /\bimport\s*\(/.test(line) || /\brequire\s*\(/.test(line);
+      // Type positions (`as import("./t").X`, `Promise<import("./t").X>`) are type references,
+      // not runtime imports; the AST module graph correctly builds no edge for them.
+      const runtimeLine = line
+        .replace(/\bas\s+import\s*\(/g, "")
+        .replace(/\bimport\s*\(\s*(["'])[^"']*\1\s*\)\s*\.\s*[A-Z_$]/g, "");
+      const callSite = /\bimport\s*\(/.test(runtimeLine) || /\brequire\s*\(/.test(line);
       if (!syntactic && !callSite) return;
       declarations.push(importDeclarationSchema.parse({ id: `import-decl:${path}:${index + 1}`, path, line: index + 1 }));
     });

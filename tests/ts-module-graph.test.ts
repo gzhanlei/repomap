@@ -167,6 +167,19 @@ describe("M2 ts-module-graph: resolution inside the immutable snapshot", () => {
     expect(mutated.omissions.some((omission) => omission.reason === "unsupported-syntax")).toBe(true);
   });
 
+  it("does not count type-position import() references as import declarations", () => {
+    const { moduleGraph } = graph({
+      "src/orders.ts": "import { a } from './a';\nexport function pick(rows: unknown[]) {\n const order = rows[0] as import('./billing/types').PaidOrderRow;\n return undefined as Promise<import('./billing/types').Other> | undefined;\n}\nexport async function lazy() { return (await import('./lazy')).handler; }\n",
+      "src/a.ts": "export const a = 1;\n",
+      "src/billing/types.ts": "export type PaidOrderRow = { id: number };\nexport type Other = string;\n",
+      "src/lazy.ts": "export const handler = () => 1;\n",
+    });
+    // two runtime imports (static './a', dynamic './lazy'); the two type references are not imports
+    expect(moduleGraph.importDeclarations.expected).toBe(2);
+    expect(moduleGraph.importDeclarations.missing).toHaveLength(0);
+    expect(moduleGraph.omissions.some((omission) => omission.id === "omission:module-graph:independent-import-coverage")).toBe(false);
+  });
+
   it("declares an empty graph with explicit parser-unavailable gating when no adapter can parse", () => {
     const adapters = [
       createUnavailableAdapter("ast-typescript", ["typescript", "javascript"], "simulated missing compiler"),

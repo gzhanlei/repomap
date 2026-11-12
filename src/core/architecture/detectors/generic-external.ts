@@ -462,12 +462,16 @@ function fetchDrafts(source: { path: string; content: string }): CandidateDraft[
   lines.forEach((line, index) => {
     const code = line.replace(/^\s*\d+:\s?/, "").trim();
     if (["//", "#", "*", "/*", "<!--"].some((prefix) => code.startsWith(prefix)) || !/(?:fetch|fetcher|fetchImpl)\s*\(/.test(code)) return;
+    const callee = code.match(/\b(?:fetchImpl|fetcher|fetch)\s*\(/)?.[0]?.trim().replace(/\s*\($/, "");
     const absolute = absoluteIdentity(code);
     const environment = environmentDetails(source);
     const pathIdentity = identityFromPath(source.path);
     const dynamicCall = /(?:fetch|fetcher|fetchImpl)\s*\(\s*(?:endpoint|url|uri|host|domain|baseUrl|baseURL|baseUri|apiUrl)\b/i.test(code);
     if (!absolute && !dynamicCall) return;
     const resolved: ResolvedIdentity | undefined = absolute ? { identity: absolute, dynamic: false } : environment ? { ...environment, dynamic: true } : pathIdentity ? { identity: pathIdentity, dynamic: true } : identity;
+    // An injected fetcher/fetchImpl wrapper whose target is a bare parameter may call the app's own
+    // API; claiming an external identity for it would fabricate evidence, so skip instead of omitting.
+    if (!resolved && callee && callee !== "fetch") return;
     drafts.push({
       identity: resolved?.identity,
       dynamic: resolved?.dynamic ?? true,
