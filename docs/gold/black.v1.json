@@ -1,0 +1,386 @@
+{
+  "version": 1,
+  "corpusId": "black",
+  "revision": "b4f1fcae48826790b6f93ca9226d20003bce0eaa",
+  "auditedBy": "Lei Han",
+  "auditedAt": "2026-11-12",
+  "note": "Human-audited targeted critical facts from the pinned archive: 55 modules enumerated from the archive file listing with a stated filter (docs/ and tests/ excluded as non-runtime evidence paths; every asserted path was verified present in the archive; the analyzer tracked exactly this set with zero unresolved imports), 2 CLI runtime declarations hand-read from the __main__ sources, and their 2 import edges. The analyzer reports 3 cycles that are not asserted pending hand-reading. Black full-view gates: module graph complete; entrypoint coverage gates follow the declared scope.",
+  "facts": [
+    {
+      "id": "module-action-main",
+      "kind": "module",
+      "path": "action/main.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-profiling-dictbig",
+      "kind": "module",
+      "path": "profiling/dict_big.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-profiling-dicthuge",
+      "kind": "module",
+      "path": "profiling/dict_huge.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-profiling-listbig",
+      "kind": "module",
+      "path": "profiling/list_big.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-profiling-listhuge",
+      "kind": "module",
+      "path": "profiling/list_huge.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-profiling-mixbig",
+      "kind": "module",
+      "path": "profiling/mix_big.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-profiling-mixhuge",
+      "kind": "module",
+      "path": "profiling/mix_huge.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-profiling-mixsmall",
+      "kind": "module",
+      "path": "profiling/mix_small.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-scripts-init",
+      "kind": "module",
+      "path": "scripts/__init__.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-scripts-diffshadesghahelper",
+      "kind": "module",
+      "path": "scripts/diff_shades_gha_helper.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-scripts-fuzz",
+      "kind": "module",
+      "path": "scripts/fuzz.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-scripts-generateschema",
+      "kind": "module",
+      "path": "scripts/generate_schema.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-scripts-makewidthtable",
+      "kind": "module",
+      "path": "scripts/make_width_table.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-scripts-release",
+      "kind": "module",
+      "path": "scripts/release.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-scripts-releasetests",
+      "kind": "module",
+      "path": "scripts/release_tests.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-init",
+      "kind": "module",
+      "path": "src/black/__init__.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-main",
+      "kind": "module",
+      "path": "src/black/__main__.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-widthtable",
+      "kind": "module",
+      "path": "src/black/_width_table.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-brackets",
+      "kind": "module",
+      "path": "src/black/brackets.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-cache",
+      "kind": "module",
+      "path": "src/black/cache.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-comments",
+      "kind": "module",
+      "path": "src/black/comments.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-concurrency",
+      "kind": "module",
+      "path": "src/black/concurrency.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-const",
+      "kind": "module",
+      "path": "src/black/const.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-debug",
+      "kind": "module",
+      "path": "src/black/debug.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-files",
+      "kind": "module",
+      "path": "src/black/files.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-handleipynbmagics",
+      "kind": "module",
+      "path": "src/black/handle_ipynb_magics.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-linegen",
+      "kind": "module",
+      "path": "src/black/linegen.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-lines",
+      "kind": "module",
+      "path": "src/black/lines.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-mode",
+      "kind": "module",
+      "path": "src/black/mode.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-nodes",
+      "kind": "module",
+      "path": "src/black/nodes.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-numerics",
+      "kind": "module",
+      "path": "src/black/numerics.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-output",
+      "kind": "module",
+      "path": "src/black/output.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-parsing",
+      "kind": "module",
+      "path": "src/black/parsing.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-ranges",
+      "kind": "module",
+      "path": "src/black/ranges.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-report",
+      "kind": "module",
+      "path": "src/black/report.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-resources-init",
+      "kind": "module",
+      "path": "src/black/resources/__init__.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-rusty",
+      "kind": "module",
+      "path": "src/black/rusty.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-schema",
+      "kind": "module",
+      "path": "src/black/schema.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-strings",
+      "kind": "module",
+      "path": "src/black/strings.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-black-trans",
+      "kind": "module",
+      "path": "src/black/trans.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blackd-init",
+      "kind": "module",
+      "path": "src/blackd/__init__.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blackd-main",
+      "kind": "module",
+      "path": "src/blackd/__main__.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blackd-client",
+      "kind": "module",
+      "path": "src/blackd/client.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blackd-middlewares",
+      "kind": "module",
+      "path": "src/blackd/middlewares.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blib2to3-init",
+      "kind": "module",
+      "path": "src/blib2to3/__init__.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blib2to3-pgen2-init",
+      "kind": "module",
+      "path": "src/blib2to3/pgen2/__init__.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blib2to3-pgen2-driver",
+      "kind": "module",
+      "path": "src/blib2to3/pgen2/driver.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blib2to3-pgen2-grammar",
+      "kind": "module",
+      "path": "src/blib2to3/pgen2/grammar.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blib2to3-pgen2-literals",
+      "kind": "module",
+      "path": "src/blib2to3/pgen2/literals.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blib2to3-pgen2-parse",
+      "kind": "module",
+      "path": "src/blib2to3/pgen2/parse.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blib2to3-pgen2-pgen",
+      "kind": "module",
+      "path": "src/blib2to3/pgen2/pgen.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blib2to3-pgen2-token",
+      "kind": "module",
+      "path": "src/blib2to3/pgen2/token.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blib2to3-pgen2-tokenize",
+      "kind": "module",
+      "path": "src/blib2to3/pgen2/tokenize.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blib2to3-pygram",
+      "kind": "module",
+      "path": "src/blib2to3/pygram.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "module-src-blib2to3-pytree",
+      "kind": "module",
+      "path": "src/blib2to3/pytree.py",
+      "note": "pinned archive file listing (docs/ and tests/ excluded as non-runtime evidence paths)"
+    },
+    {
+      "id": "entry-black-main",
+      "kind": "declaration",
+      "sourcePath": "src/black/__main__.py",
+      "detail": "python-main-module",
+      "evidencePath": "src/black/__main__.py",
+      "note": "hand-read: 'from black import patched_main; patched_main()' - real CLI entrypoint"
+    },
+    {
+      "id": "entry-blackd-main",
+      "kind": "declaration",
+      "sourcePath": "src/blackd/__main__.py",
+      "detail": "python-main-module",
+      "evidencePath": "src/blackd/__main__.py",
+      "note": "hand-read: 'import blackd; blackd.patched_main()' - real CLI entrypoint"
+    },
+    {
+      "id": "edge-black-main-imports-black",
+      "kind": "import-edge",
+      "fromPath": "src/black/__main__.py",
+      "toPath": "src/black/__init__.py",
+      "evidencePath": "src/black/__main__.py",
+      "note": "__main__.py:1 'from black import patched_main'"
+    },
+    {
+      "id": "edge-blackd-main-imports-blackd",
+      "kind": "import-edge",
+      "fromPath": "src/blackd/__main__.py",
+      "toPath": "src/blackd/__init__.py",
+      "evidencePath": "src/blackd/__main__.py",
+      "note": "__main__.py:1 'import blackd'"
+    }
+  ],
+  "precisionScopes": [
+    {
+      "id": "scope-modules-src",
+      "kind": "module",
+      "pathPrefix": "src/",
+      "note": "complete module enumeration under src/ (25 black + 4 blackd + 11 blib2to3 = 40 records)"
+    },
+    {
+      "id": "scope-modules-scripts",
+      "kind": "module",
+      "pathPrefix": "scripts/",
+      "note": "complete enumeration of the scripts/ helper modules"
+    }
+  ]
+}

@@ -126,14 +126,15 @@
       "repository": "psf/black",
       "revision": "b4f1fcae48826790b6f93ca9226d20003bce0eaa",
       "archiveSha256": "686f4696ae90b11dc1d80d51038b657b293ce449016af5a1f06609c229a3a1c7",
-      "status": "pinned-not-audited",
+      "status": "human-audited-targeted",
       "intendedCoverage": [
         "python-src-layout",
         "python-cli-entrypoints",
         "python-import-graph",
         "python-module-pages"
       ],
-      "criticalFacts": []
+      "criticalFacts": [],
+      "goldSetPath": "docs/gold/black.v1.json"
     },
     {
       "id": "fastapi-template",
@@ -154,11 +155,11 @@
   "audit": {
     "reviewedBy": "Lei Han",
     "reviewedAt": "2026-11-11",
-    "criticalTotal": 80,
-    "criticalCovered": 80,
+    "criticalTotal": 210,
+    "criticalCovered": 210,
     "falsePositives": [],
     "falseNegatives": [],
-    "note": "Targeted human audits: tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d backend/** (59 facts: 23 routes, 23 route-handler directions, 9 crud.py read/write/transaction operations, 4 fe56fa70289e migration statements) via docs/gold/fastapi-template.v1.json, and pallets/click@8abb77a8432e03ed14a95f972b44f905279415a7 (21 facts: 17 enumerated src/click modules, 4 hand-read import edges) via docs/gold/click.v1.json. Evidence paths valid, zero suspected false positives in all audited scopes. Evaluation artifacts: .repomap/validation/fastapi-m8-gold and .repomap/validation/click-gold. Click full-view gates fail closed by design (dynamic omission); the click gold evaluates the module graph artifact only.",
+    "note": "Targeted human audits: tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d backend/** (117 facts: 23 routes, 23 route-handler directions, 9 crud.py operations, all 62 alembic op.* migration statements hand-read line by line) via docs/gold/fastapi-template.v1.json; pallets/click@8abb77a8432e03ed14a95f972b44f905279415a7 (34 facts: 17 enumerated modules, 16 hand-read import edges, the human-verified _compat<->_winconsole cycle) via docs/gold/click.v1.json; psf/black@b4f1fcae48826790b6f93ca9226d20003bce0eaa (59 facts: 55 enumerated modules, 2 hand-read __main__ CLI declarations, 2 import edges) via docs/gold/black.v1.json. Evidence paths valid, zero suspected false positives in all audited scopes. Evaluation artifacts: .repomap/validation/fastapi-gold-full, .repomap/validation/click-gold and .repomap/validation/black-gold. Click full-view gates fail closed by design (dynamic omission); the click gold evaluates the module graph artifact only.",
     "resolvedFindings": [
       "resolved: alembic multi-line op.alter_column/op.add_column under-reporting (hand-audited 62 op.* statements vs 31 emitted). Root cause: schemaMarkers and pythonSqlLineFilter lacked the alembic DDL helpers alter_column/create_index/drop_index/create_foreign_key/drop_constraint/create_primary_key, so their evidence rows were dropped. After the fix the fixed fastapi-template run emits 62/62 migration operations matching the hand count, the fixture test emits 7/7, the gold evaluation stays 59/59 with zero suspected false positives, and the authelia corpus gained 69 previously-missed executable migration statements (verified by hand as genuine SQL such as CALL PROC_DROP_INDEX(...))."
     ]
