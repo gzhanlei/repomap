@@ -1,0 +1,341 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-12",
+  "generator": "scripts/gold-report.ts (npm run gold:report); regenerate, never hand-edit",
+  "allPassed": true,
+  "totals": {
+    "corpora": 4,
+    "criticalFacts": 237,
+    "covered": 237,
+    "suspectedFalsePositives": 0,
+    "evidenceInvalid": 0
+  },
+  "corpora": [
+    {
+      "corpusId": "fastapi-template",
+      "repository": "tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d",
+      "revision": "aabb90126964a164e02aff39e7c385bb0598236d",
+      "analyzeExitCode": 0,
+      "evaluation": {
+        "corpusId": "fastapi-template",
+        "revision": "aabb90126964a164e02aff39e7c385bb0598236d",
+        "passed": true,
+        "recall": {
+          "total": 117,
+          "covered": 117,
+          "missing": [],
+          "byKind": {
+            "route": {
+              "total": 23,
+              "covered": 23,
+              "missing": 0
+            },
+            "route-handler": {
+              "total": 23,
+              "covered": 23,
+              "missing": 0
+            },
+            "sql-operation": {
+              "total": 71,
+              "covered": 71,
+              "missing": 0
+            }
+          },
+          "dimensions": {
+            "node": {
+              "total": 94,
+              "covered": 94,
+              "missing": 0
+            },
+            "edge": {
+              "total": 23,
+              "covered": 23,
+              "missing": 0
+            },
+            "direction": {
+              "total": 23,
+              "covered": 23,
+              "missing": 0
+            }
+          }
+        },
+        "precision": {
+          "scopes": [
+            {
+              "id": "scope-routes-items",
+              "outputRecords": 5,
+              "matched": 5
+            },
+            {
+              "id": "scope-routes-login",
+              "outputRecords": 5,
+              "matched": 5
+            },
+            {
+              "id": "scope-routes-users",
+              "outputRecords": 10,
+              "matched": 10
+            },
+            {
+              "id": "scope-routes-utils",
+              "outputRecords": 2,
+              "matched": 2
+            },
+            {
+              "id": "scope-routes-private",
+              "outputRecords": 1,
+              "matched": 1
+            },
+            {
+              "id": "scope-sql-crud",
+              "outputRecords": 9,
+              "matched": 9
+            },
+            {
+              "id": "scope-sql-fe56",
+              "outputRecords": 4,
+              "matched": 4
+            },
+            {
+              "id": "scope-sql-1a31",
+              "outputRecords": 6,
+              "matched": 6
+            },
+            {
+              "id": "scope-sql-9c0a",
+              "outputRecords": 8,
+              "matched": 8
+            },
+            {
+              "id": "scope-sql-d98d",
+              "outputRecords": 38,
+              "matched": 38
+            },
+            {
+              "id": "scope-sql-e241",
+              "outputRecords": 6,
+              "matched": 6
+            }
+          ],
+          "suspectedFalsePositives": []
+        },
+        "evidence": {
+          "checked": 117,
+          "invalid": []
+        },
+        "omissions": {
+          "routeGraph": 0,
+          "asyncGraph": 0,
+          "ir": 10
+        }
+      }
+    },
+    {
+      "corpusId": "click",
+      "repository": "pallets/click@8abb77a8432e03ed14a95f972b44f905279415a7",
+      "revision": "8abb77a8432e03ed14a95f972b44f905279415a7",
+      "analyzeExitCode": 1,
+      "gateFailure": "dynamic-import omission blocks full-view gates by design; the module graph artifact is complete",
+      "evaluation": {
+        "corpusId": "click",
+        "revision": "8abb77a8432e03ed14a95f972b44f905279415a7",
+        "passed": true,
+        "recall": {
+          "total": 34,
+          "covered": 34,
+          "missing": [],
+          "byKind": {
+            "module": {
+              "total": 17,
+              "covered": 17,
+              "missing": 0
+            },
+            "import-edge": {
+              "total": 16,
+              "covered": 16,
+              "missing": 0
+            },
+            "cycle": {
+              "total": 1,
+              "covered": 1,
+              "missing": 0
+            }
+          },
+          "dimensions": {
+            "node": {
+              "total": 18,
+              "covered": 18,
+              "missing": 0
+            },
+            "edge": {
+              "total": 16,
+              "covered": 16,
+              "missing": 0
+            },
+            "direction": {
+              "total": 16,
+              "covered": 16,
+              "missing": 0
+            }
+          }
+        },
+        "precision": {
+          "scopes": [
+            {
+              "id": "scope-modules-src-click",
+              "outputRecords": 17,
+              "matched": 17
+            }
+          ],
+          "suspectedFalsePositives": []
+        },
+        "evidence": {
+          "checked": 16,
+          "invalid": []
+        },
+        "omissions": {
+          "routeGraph": 0,
+          "asyncGraph": 0,
+          "ir": 24
+        }
+      }
+    },
+    {
+      "corpusId": "black",
+      "repository": "psf/black@b4f1fcae48826790b6f93ca9226d20003bce0eaa",
+      "revision": "b4f1fcae48826790b6f93ca9226d20003bce0eaa",
+      "analyzeExitCode": 0,
+      "evaluation": {
+        "corpusId": "black",
+        "revision": "b4f1fcae48826790b6f93ca9226d20003bce0eaa",
+        "passed": true,
+        "recall": {
+          "total": 59,
+          "covered": 59,
+          "missing": [],
+          "byKind": {
+            "module": {
+              "total": 55,
+              "covered": 55,
+              "missing": 0
+            },
+            "declaration": {
+              "total": 2,
+              "covered": 2,
+              "missing": 0
+            },
+            "import-edge": {
+              "total": 2,
+              "covered": 2,
+              "missing": 0
+            }
+          },
+          "dimensions": {
+            "node": {
+              "total": 57,
+              "covered": 57,
+              "missing": 0
+            },
+            "edge": {
+              "total": 2,
+              "covered": 2,
+              "missing": 0
+            },
+            "direction": {
+              "total": 2,
+              "covered": 2,
+              "missing": 0
+            }
+          }
+        },
+        "precision": {
+          "scopes": [
+            {
+              "id": "scope-modules-src",
+              "outputRecords": 40,
+              "matched": 40
+            },
+            {
+              "id": "scope-modules-scripts",
+              "outputRecords": 7,
+              "matched": 7
+            }
+          ],
+          "suspectedFalsePositives": []
+        },
+        "evidence": {
+          "checked": 4,
+          "invalid": []
+        },
+        "omissions": {
+          "routeGraph": 0,
+          "asyncGraph": 0,
+          "ir": 60
+        }
+      }
+    },
+    {
+      "corpusId": "authelia",
+      "repository": "authelia/authelia@32b0bdac395efc707bc098757afa232177965736",
+      "revision": "32b0bdac395efc707bc098757afa232177965736",
+      "analyzeExitCode": 0,
+      "evaluation": {
+        "corpusId": "authelia",
+        "revision": "32b0bdac395efc707bc098757afa232177965736",
+        "passed": true,
+        "recall": {
+          "total": 27,
+          "covered": 27,
+          "missing": [],
+          "byKind": {
+            "route": {
+              "total": 14,
+              "covered": 14,
+              "missing": 0
+            },
+            "route-handler": {
+              "total": 2,
+              "covered": 2,
+              "missing": 0
+            },
+            "async-operation": {
+              "total": 11,
+              "covered": 11,
+              "missing": 0
+            }
+          },
+          "dimensions": {
+            "node": {
+              "total": 25,
+              "covered": 25,
+              "missing": 0
+            },
+            "edge": {
+              "total": 2,
+              "covered": 2,
+              "missing": 0
+            },
+            "direction": {
+              "total": 2,
+              "covered": 2,
+              "missing": 0
+            }
+          }
+        },
+        "precision": {
+          "scopes": [],
+          "suspectedFalsePositives": []
+        },
+        "evidence": {
+          "checked": 27,
+          "invalid": []
+        },
+        "omissions": {
+          "routeGraph": 0,
+          "asyncGraph": 0,
+          "ir": 1062
+        }
+      }
+    }
+  ]
+}
