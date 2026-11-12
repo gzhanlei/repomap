@@ -26,6 +26,16 @@ function isMarkerTableLine(line: string) {
   return /\w*[Mm]arkers?\b\s*[:=]/.test(line.replace(/^\s*\d+:\s?/, ""));
 }
 
+/** File-cache usage is a PHP function call: the marker must appear outside string literals,
+ *  so marker tables that only mention it in quotes are not usage. */
+function fileCacheLineFilter(markers: string[]) {
+  return (line: string) => {
+    if (isMarkerTableLine(line)) return false;
+    const bare = line.replace(/(["'`])(?:\\.|(?!\1)[^\\])*\1/g, "''");
+    return markers.some((marker) => bare.includes(marker));
+  };
+}
+
 /** A migration or schema file can be huge; only lines with storage semantics are evidence. */
 const schemaMarkers = [
   "CREATE TABLE", "ALTER TABLE", "CREATE INDEX", "DROP TABLE", "INSERT", "UPDATE", "DELETE", "SELECT",
@@ -38,15 +48,15 @@ const schemaMarkers = [
   "op.alter_column", "add_column", "drop_column", "create_table", "drop_table",
   "create_index", "drop_index", "create_foreign_key", "drop_constraint", "create_primary_key",
 ];
-function storageEvidence(context: ArchitectureContext, markers: string[], detector: string) {
+function storageEvidence(context: ArchitectureContext, markers: string[], detector: string, extraLineFilter?: (line: string) => boolean) {
   return uniqueEvidence(context.sources.filter(isRuntimeEvidenceSource).flatMap((source) => {
-    const match = findArchitectureEvidence({ ...source, content: storageSourceContent(source) }, markers, detector, (line) => !isMarkerTableLine(line));
+    const match = findArchitectureEvidence({ ...source, content: storageSourceContent(source) }, markers, detector, (line) => !isMarkerTableLine(line) && (!extraLineFilter || extraLineFilter(line)));
     return match ? [match] : [];
   }));
 }
 
-function storageNode(context: ArchitectureContext, id: string, kind: NodeFact["kind"], label: string, markers: string[], detector: string, supportingMarkers: string[] = markers, supportingPaths?: (path: string) => boolean): NodeFact | undefined {
-  const detected = storageEvidence(context, markers, detector);
+function storageNode(context: ArchitectureContext, id: string, kind: NodeFact["kind"], label: string, markers: string[], detector: string, supportingMarkers: string[] = markers, supportingPaths?: (path: string) => boolean, extraLineFilter?: (line: string) => boolean): NodeFact | undefined {
+  const detected = storageEvidence(context, markers, detector, extraLineFilter);
   const pathEvidence = supportingPaths === undefined
     ? []
     : context.sources.filter((source) => isRuntimeEvidenceSource(source) && supportingPaths(source.path))
@@ -95,7 +105,7 @@ function detectStorage(context: ArchitectureContext) {
   const mysql = storageNode(context, "store:mysql", "database", "MySQL", mysqlMarkers, "mysql-usage", [...mysqlMarkers, "database/sql"]);
   const sqlite = storageNode(context, "store:sqlite", "database", "SQLite", sqliteMarkers, "sqlite-usage", sqliteMarkers, (path) => path.toLowerCase().includes("sqlite"));
   const postgres = storageNode(context, "store:postgres", "database", "PostgreSQL", postgresMarkers, "postgres-usage", postgresMarkers, (path) => path.toLowerCase().includes("postgres"));
-  const files = storageNode(context, "store:file-cache", "object-store", "文件缓存", fileCacheMarkers, "file-cache-usage");
+  const files = storageNode(context, "store:file-cache", "object-store", "文件缓存", fileCacheMarkers, "file-cache-usage", fileCacheMarkers, undefined, fileCacheLineFilter(fileCacheMarkers));
   for (const store of [mysql, sqlite, postgres].filter((value) => value !== undefined)) {
     const schemaEvidence = storageSchemaEvidence(context, store.id);
     store.evidence = uniqueEvidence([...store.evidence, ...schemaEvidence]);
@@ -119,11 +129,11 @@ function pythonDriverMatches(source: { path: string; content: string }, storeId:
   return drivers.size === 0 ? storeCount <= 1 : (drivers.size === 1 && drivers.has(identity));
 }
 
-function storageCalls(node: NodeFact, context: ArchitectureContext, markers: string[], detector: string, storeId?: string, schemaOnly = false, storeCount = 1) {
+function storageCalls(node: NodeFact, context: ArchitectureContext, markers: string[], detector: string, storeId?: string, schemaOnly = false, storeCount = 1, extraLineFilter?: (line: string) => boolean) {
   const runtimeEvidence = architectureRuntimeSources(node, context.sources)
     .filter(isRuntimeEvidenceSource)
     .filter((source) => pythonDriverMatches(source, storeId, storeCount))
-    .flatMap((source) => findSemanticEvidence({ ...source, content: storageSourceContent(source) }, [...markers, "session.get", "session.exec", "session.query"], detector, (line) => !isMarkerTableLine(line) && pythonSqlLineFilter(source.path, line)));
+    .flatMap((source) => findSemanticEvidence({ ...source, content: storageSourceContent(source) }, [...markers, "session.get", "session.exec", "session.query"], detector, (line) => (!extraLineFilter || extraLineFilter(line)) && pythonSqlLineFilter(source.path, line)));
   if (runtimeEvidence.length === 0 && !schemaOnly) return [];
   const schemaEvidence = storeId === undefined ? [] : storageSchemaEvidence(context, storeId);
   return uniqueEvidence([...runtimeEvidence, ...schemaEvidence]);
@@ -159,7 +169,8 @@ export function linkStorageRelationships(context: ArchitectureContext, nodes: No
       if (evidence.length > 0) edges.push(factEdge(`sql:${node.id}->store:postgres`, node.id, "store:postgres", "sql", "PostgreSQL 读写", uniqueEvidence(evidence), signalIdsForEvidence(context.signals, evidence)));
     }
     if (storeIds.has("store:file-cache")) {
-      const evidence = storageCalls(node, context, ["CacheManager", "file_get_contents", "file_put_contents"], "file-cache-caller");
+      const fileCacheMarkers = ["CacheManager", "file_get_contents", "file_put_contents"];
+      const evidence = storageCalls(node, context, fileCacheMarkers, "file-cache-caller", undefined, false, 1, fileCacheLineFilter(fileCacheMarkers));
       if (evidence.length > 0) edges.push(factEdge(`file:${node.id}->store:file-cache`, node.id, "store:file-cache", "file", "文件缓存读写", evidence, signalIdsForEvidence(context.signals, evidence)));
     }
     return edges;

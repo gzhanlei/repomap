@@ -145,7 +145,7 @@ describe("M8 Python protocols", () => {
         "    return {'items': []}",
       ].join("\n"),
       // A meta-tool declaring detection rules: the strings appear only inside marker tables.
-      "lib/architecture/detectors/storage.ts": 'const fileCacheMarkers = ["file_get_contents", "file_put_contents"];\nexport function detect() { return fileCacheMarkers.length; }',
+      "lib/architecture/detectors/storage.ts": 'const fileCacheMarkers = ["file_get_contents", "file_put_contents"];\nexport function detect() { return fileCacheMarkers.length; }\nconst evidence = storageCalls(node, context, ["CacheManager", "file_get_contents", "file_put_contents"], "file-cache-caller");',
       "lib/architecture/signals.ts": 'export const signals = [{ kind: "store", markers: ["mysql2", "file_get_contents"] }];',
     });
     expect(analysis.facts.nodes.some((node) => node.id === "store:file-cache")).toBe(false);
