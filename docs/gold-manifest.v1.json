@@ -151,16 +151,31 @@
       ],
       "criticalFacts": [],
       "goldSetPath": "docs/gold/fastapi-template.v1.json"
+    },
+    {
+      "id": "flask",
+      "repository": "pallets/flask",
+      "revision": "49943b5a94413a530761350f04e896f76e8d620e",
+      "archiveSha256": "560bce8a7dfea66706fc03a15bb308f0e881a52a9e9c32655f6220e41006f65e",
+      "status": "human-audited-targeted",
+      "goldSetPath": "docs/gold/flask.v1.json",
+      "intendedCoverage": [
+        "flask-blueprint-routes",
+        "flask-url-prefix-override",
+        "flask-add-url-rule-fail-closed",
+        "celery-example-routes"
+      ],
+      "criticalFacts": []
     }
   ],
   "audit": {
     "reviewedBy": "Lei Han",
     "reviewedAt": "2026-11-11",
-    "criticalTotal": 237,
-    "criticalCovered": 237,
+    "criticalTotal": 254,
+    "criticalCovered": 254,
     "falsePositives": [],
     "falseNegatives": [],
-    "note": "Targeted human audits: tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d backend/** (117 facts: 23 routes, 23 route-handler directions, 9 crud.py operations, all 62 alembic op.* migration statements hand-read line by line) via docs/gold/fastapi-template.v1.json; pallets/click@8abb77a8432e03ed14a95f972b44f905279415a7 (34 facts: 17 enumerated modules, 16 hand-read import edges, the human-verified _compat<->_winconsole cycle) via docs/gold/click.v1.json; psf/black@b4f1fcae48826790b6f93ca9226d20003bce0eaa (59 facts: 55 enumerated modules, 2 hand-read __main__ CLI declarations, 2 import edges) via docs/gold/black.v1.json. Evidence paths valid, zero suspected false positives in all audited scopes. Evaluation artifacts: .repomap/validation/fastapi-gold-full, .repomap/validation/click-gold and .repomap/validation/black-gold. Click full-view gates fail closed by design (dynamic omission); the click gold evaluates the module graph artifact only. authelia/authelia@32b0bdac395efc707bc098757afa232177965736 (27 facts: 14 hand-read route registrations with 2 handler directions, 11 line-verified channel async operations; targeted subset, no precision scopes by design) via docs/gold/authelia.v1.json. Evaluation artifacts now include .repomap/validation/authelia-gold.",
+    "note": "Targeted human audits: tiangolo/full-stack-fastapi-template@aabb90126964a164e02aff39e7c385bb0598236d backend/** (117 facts: 23 routes, 23 route-handler directions, 9 crud.py operations, all 62 alembic op.* migration statements hand-read line by line) via docs/gold/fastapi-template.v1.json; pallets/click@8abb77a8432e03ed14a95f972b44f905279415a7 (34 facts: 17 enumerated modules, 16 hand-read import edges, the human-verified _compat<->_winconsole cycle) via docs/gold/click.v1.json; psf/black@b4f1fcae48826790b6f93ca9226d20003bce0eaa (59 facts: 55 enumerated modules, 2 hand-read __main__ CLI declarations, 2 import edges) via docs/gold/black.v1.json. Evidence paths valid, zero suspected false positives in all audited scopes. Evaluation artifacts: .repomap/validation/fastapi-gold-full, .repomap/validation/click-gold and .repomap/validation/black-gold. Click full-view gates fail closed by design (dynamic omission); the click gold evaluates the module graph artifact only. authelia/authelia@32b0bdac395efc707bc098757afa232177965736 (27 facts: 14 hand-read route registrations with 2 handler directions, 11 line-verified channel async operations; targeted subset, no precision scopes by design) via docs/gold/authelia.v1.json. Evaluation artifacts now include .repomap/validation/authelia-gold. pallets/flask@49943b5a94413a530761350f04e896f76e8d620e examples/** (17 facts: every route registration hand-read across the flaskr tutorial and the celery task app, both complete-enumeration route scopes matched) via docs/gold/flask.v1.json; this audit drove the Flask blueprint slice (url_prefix composition, register_blueprint override, single relative-import child resolution, phantom-declaration paren-balance fix; add_url_rule fails closed by design).",
     "resolvedFindings": [
       "resolved: alembic multi-line op.alter_column/op.add_column under-reporting (hand-audited 62 op.* statements vs 31 emitted). Root cause: schemaMarkers and pythonSqlLineFilter lacked the alembic DDL helpers alter_column/create_index/drop_index/create_foreign_key/drop_constraint/create_primary_key, so their evidence rows were dropped. After the fix the fixed fastapi-template run emits 62/62 migration operations matching the hand count, the fixture test emits 7/7, the gold evaluation stays 59/59 with zero suspected false positives, and the authelia corpus gained 69 previously-missed executable migration statements (verified by hand as genuine SQL such as CALL PROC_DROP_INDEX(...))."
     ]

@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "corpusId": "flask",
+  "revision": "49943b5a94413a530761350f04e896f76e8d620e",
+  "auditedBy": "Lei Han",
+  "auditedAt": "2026-11-12",
+  "note": "Human-audited targeted facts from the pinned archive examples/** scope: all 17 route registrations hand-read (flaskr tutorial: /hello, auth blueprint with /auth prefix - register and login GET+POST pairs plus logout, blog blueprint without prefix - index, create GET+POST, update GET+POST, delete POST; celery task app: index and tasks blueprint with /tasks prefix - result GET, add/block/process POST). Route facts exist because this audit drove the Flask blueprint slice: Blueprint url_prefix composition, register_blueprint url_prefix override, single relative-import child resolution and a phantom-declaration paren-balance bug were all found and fixed here; the corpus's remaining add_url_rule endpoint indirection (flaskr/__init__.py) fails closed with a blocking omission by design and is asserted as expected behavior, not hidden. The 19 unsupported-language raw entries are ignored non-Python assets.",
+  "facts": [
+    {
+      "id": "route-get-hello-26",
+      "kind": "route",
+      "method": "GET",
+      "path": "/hello",
+      "sourcePath": "examples/tutorial/flaskr/__init__.py",
+      "evidencePath": "examples/tutorial/flaskr/__init__.py",
+      "note": "hand-read decorator at __init__.py:26"
+    },
+    {
+      "id": "route-get-auth-register-46",
+      "kind": "route",
+      "method": "GET",
+      "path": "/auth/register",
+      "sourcePath": "examples/tutorial/flaskr/auth.py",
+      "evidencePath": "examples/tutorial/flaskr/auth.py",
+      "note": "hand-read decorator at auth.py:46"
+    },
+    {
+      "id": "route-post-auth-register-46",
+      "kind": "route",
+      "method": "POST",
+      "path": "/auth/register",
+      "sourcePath": "examples/tutorial/flaskr/auth.py",
+      "evidencePath": "examples/tutorial/flaskr/auth.py",
+      "note": "hand-read decorator at auth.py:46"
+    },
+    {
+      "id": "route-get-auth-login-84",
+      "kind": "route",
+      "method": "GET",
+      "path": "/auth/login",
+      "sourcePath": "examples/tutorial/flaskr/auth.py",
+      "evidencePath": "examples/tutorial/flaskr/auth.py",
+      "note": "hand-read decorator at auth.py:84"
+    },
+    {
+      "id": "route-post-auth-login-84",
+      "kind": "route",
+      "method": "POST",
+      "path": "/auth/login",
+      "sourcePath": "examples/tutorial/flaskr/auth.py",
+      "evidencePath": "examples/tutorial/flaskr/auth.py",
+      "note": "hand-read decorator at auth.py:84"
+    },
+    {
+      "id": "route-get-auth-logout-112",
+      "kind": "route",
+      "method": "GET",
+      "path": "/auth/logout",
+      "sourcePath": "examples/tutorial/flaskr/auth.py",
+      "evidencePath": "examples/tutorial/flaskr/auth.py",
+      "note": "hand-read decorator at auth.py:112"
+    },
+    {
+      "id": "route-get--16",
+      "kind": "route",
+      "method": "GET",
+      "path": "/",
+      "sourcePath": "examples/tutorial/flaskr/blog.py",
+      "evidencePath": "examples/tutorial/flaskr/blog.py",
+      "note": "hand-read decorator at blog.py:16"
+    },
+    {
+      "id": "route-get-create-60",
+      "kind": "route",
+      "method": "GET",
+      "path": "/create",
+      "sourcePath": "examples/tutorial/flaskr/blog.py",
+      "evidencePath": "examples/tutorial/flaskr/blog.py",
+      "note": "hand-read decorator at blog.py:60"
+    },
+    {
+      "id": "route-post-create-60",
+      "kind": "route",
+      "method": "POST",
+      "path": "/create",
+      "sourcePath": "examples/tutorial/flaskr/blog.py",
+      "evidencePath": "examples/tutorial/flaskr/blog.py",
+      "note": "hand-read decorator at blog.py:60"
+    },
+    {
+      "id": "route-get-lt-intid--update-86",
+      "kind": "route",
+      "method": "GET",
+      "path": "/<int:id>/update",
+      "sourcePath": "examples/tutorial/flaskr/blog.py",
+      "evidencePath": "examples/tutorial/flaskr/blog.py",
+      "note": "hand-read decorator at blog.py:86"
+    },
+    {
+      "id": "route-post-lt-intid--update-86",
+      "kind": "route",
+      "method": "POST",
+      "path": "/<int:id>/update",
+      "sourcePath": "examples/tutorial/flaskr/blog.py",
+      "evidencePath": "examples/tutorial/flaskr/blog.py",
+      "note": "hand-read decorator at blog.py:86"
+    },
+    {
+      "id": "route-post-lt-intid--delete-113",
+      "kind": "route",
+      "method": "POST",
+      "path": "/<int:id>/delete",
+      "sourcePath": "examples/tutorial/flaskr/blog.py",
+      "evidencePath": "examples/tutorial/flaskr/blog.py",
+      "note": "hand-read decorator at blog.py:113"
+    },
+    {
+      "id": "route-get--19",
+      "kind": "route",
+      "method": "GET",
+      "path": "/",
+      "sourcePath": "examples/celery/src/task_app/__init__.py",
+      "evidencePath": "examples/celery/src/task_app/__init__.py",
+      "note": "hand-read decorator at __init__.py:19"
+    },
+    {
+      "id": "route-get-tasks-result-lt-id--10",
+      "kind": "route",
+      "method": "GET",
+      "path": "/tasks/result/<id>",
+      "sourcePath": "examples/celery/src/task_app/views.py",
+      "evidencePath": "examples/celery/src/task_app/views.py",
+      "note": "hand-read decorator at views.py:10"
+    },
+    {
+      "id": "route-post-tasks-add-21",
+      "kind": "route",
+      "method": "POST",
+      "path": "/tasks/add",
+      "sourcePath": "examples/celery/src/task_app/views.py",
+      "evidencePath": "examples/celery/src/task_app/views.py",
+      "note": "hand-read decorator at views.py:21"
+    },
+    {
+      "id": "route-post-tasks-block-29",
+      "kind": "route",
+      "method": "POST",
+      "path": "/tasks/block",
+      "sourcePath": "examples/celery/src/task_app/views.py",
+      "evidencePath": "examples/celery/src/task_app/views.py",
+      "note": "hand-read decorator at views.py:29"
+    },
+    {
+      "id": "route-post-tasks-process-35",
+      "kind": "route",
+      "method": "POST",
+      "path": "/tasks/process",
+      "sourcePath": "examples/celery/src/task_app/views.py",
+      "evidencePath": "examples/celery/src/task_app/views.py",
+      "note": "hand-read decorator at views.py:35"
+    }
+  ],
+  "precisionScopes": [
+    {
+      "id": "scope-routes-flaskr",
+      "kind": "route",
+      "sourcePathPrefix": "examples/tutorial/flaskr/",
+      "note": "complete route enumeration of the tutorial app (13 routes)"
+    },
+    {
+      "id": "scope-routes-taskapp",
+      "kind": "route",
+      "sourcePathPrefix": "examples/celery/src/task_app/",
+      "note": "complete route enumeration of the celery example (5 routes)"
+    }
+  ]
+}

@@ -440,4 +440,77 @@ describe("M8 Python protocols", () => {
     expect(analysis.candidates.some((candidate) => candidate.status === "omitted" && candidate.identity === "unknown")).toBe(true);
     expect(analysis.coverage.publishable).toBe(false);
   });
+
+  it("resolves a single relative-import blueprint without a false unresolved omission", () => {
+    const analysis = analyze({
+      "task_app/__init__.py": [
+        "from flask import Flask",
+        "def create_app():",
+        "    app = Flask(__name__)",
+        "    from . import views",
+        "    app.register_blueprint(views.bp)",
+        "    return app",
+      ].join("\n"),
+      "task_app/views.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('tasks', __name__, url_prefix='/tasks')",
+        "@bp.get('/result/<id>')",
+        "def result(id): return {}",
+      ].join("\n"),
+    });
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`)).toEqual(["GET /tasks/result/<id>"]);
+    expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+    expect(analysis.omissions.filter((omission) => omission.detail.includes("router"))).toHaveLength(0);
+  });
+
+  it("resolves Flask blueprint routes with url_prefix composition, overrides and add_url_rule fail-closed", () => {
+    const analysis = analyze({
+      "app/__init__.py": [
+        "from flask import Flask",
+        "def create_app():",
+        "    app = Flask(__name__)",
+        "    from . import auth",
+        "    from . import blog",
+        "    app.register_blueprint(auth.bp)",
+        "    app.register_blueprint(blog.bp, url_prefix='/posts')",
+        "    app.add_url_rule('/', endpoint='index')",
+        "    return app",
+      ].join("\n"),
+      "app/auth.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('auth', __name__, url_prefix='/auth')",
+        "@bp.route('/register', methods=('GET', 'POST'))",
+        "def register(): return {'ok': True}",
+        "@bp.route('/logout')",
+        "def logout(): return {'ok': True}",
+      ].join("\n"),
+      "app/blog.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('blog', __name__)",
+        "@bp.route('/')",
+        "def index(): return {'ok': True}",
+        "@bp.route('/create', methods=('GET', 'POST'))",
+        "def create(): return {'ok': True}",
+      ].join("\n"),
+      "app/plain.py": [
+        "class Registry:",
+        "    pass",
+        "registry = Registry()",
+        "helper = object()",
+        "registry.register_blueprint(helper)",
+      ].join("\n"),
+    });
+    // auth keeps its own url_prefix; blog is overridden to /posts by
+    // register_blueprint; add_url_rule is an omission, not a route.
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`).sort()).toEqual([
+      "GET /auth/logout", "GET /auth/register", "GET /posts/", "GET /posts/create",
+      "POST /auth/register", "POST /posts/create",
+    ]);
+    expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+    // add_url_rule endpoint indirection is unsupported and must fail closed
+    // with a blocking omission instead of disappearing silently.
+    expect(analysis.omissions.some((omission) => omission.detail.includes("add_url_rule"))).toBe(true);
+    // A plain object's register_blueprint is not Flask and must not emit routes or omissions.
+    expect(analysis.routeGraph.routes.every((route) => route.sourcePath !== "app/plain.py")).toBe(true);
+  });
 });

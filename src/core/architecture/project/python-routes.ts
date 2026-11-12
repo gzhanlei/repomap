@@ -148,12 +148,14 @@ interface RouterIndex {
   relations: RouterRelation[];
   constants: Map<string, string>;
   unresolved: { path: string; line: number; reference: string }[];
+  unsupported: { path: string; line: number; call: string }[];
 }
 
 function buildRouterIndex(snapshot: SourceSnapshot, project: ProjectPreparation): RouterIndex {
   const ownPrefixes = new Map<string, string>();
   const relations: RouterRelation[] = [];
   const unresolved: { path: string; line: number; reference: string }[] = [];
+  const unsupported: { path: string; line: number; call: string }[] = [];
   const constants = new Map<string, string>();
   const constantValue = (file: string, expression: string, parsed: PythonParsedFile) => {
     const key = expression.split(".").at(-1) ?? expression;
@@ -174,15 +176,28 @@ function buildRouterIndex(snapshot: SourceSnapshot, project: ProjectPreparation)
     const raw = snapshot.rawText(file.path) ?? "";
     const parsed = parsePythonSource(raw);
     if (!parsed) continue;
-    const knownRouterReceivers = new Set(parsed.calls.filter((call) => call.name === "FastAPI" || call.name === "APIRouter").map((call) => call.receiver ?? "app"));
+    const knownRouterReceivers = new Set(parsed.calls.filter((call) => call.name === "FastAPI" || call.name === "APIRouter" || call.name === "Flask" || call.name === "Blueprint").map((call) => call.receiver ?? "app"));
     for (const call of parsed.calls) {
       if (call.name === "APIRouter") {
         const argument = call.arguments.find((item) => item.text.startsWith("prefix"));
         ownPrefixes.set(`${file.path}:${call.receiver ?? "router"}`, argument ? (stringValue(argument) ?? `dynamic:${dynamicText(argument)}`) : "");
       }
-      if (call.name.endsWith("include_router") && knownRouterReceivers.has(call.name.split(".")[0])) {
+      // Flask blueprints carry their own url_prefix and are attached with
+      // register_blueprint; the composition machinery mirrors APIRouter.
+      if (call.name === "Blueprint") {
+        const argument = call.arguments.find((item) => item.text.startsWith("url_prefix"));
+        const prefixText = argument?.text.match(/url_prefix\s*=\s*(.+)/)?.[1];
+        ownPrefixes.set(`${file.path}:${call.receiver ?? "bp"}`, argument ? (stringValue({ text: prefixText ?? "", type: "string" }) ?? constantValue(file.path, prefixText ?? "", parsed) ?? `dynamic:${dynamicText(argument)}`) : "");
+      }
+      if (call.name.endsWith("add_url_rule") && knownRouterReceivers.has(call.name.split(".")[0])) {
+        // Endpoint indirection (add_url_rule maps a URL to an endpoint name
+        // defined elsewhere) has no deterministic local target here; fail closed.
+        unsupported.push({ path: file.path, line: call.line, call: call.name });
+        continue;
+      }
+      if ((call.name.endsWith("include_router") || call.name.endsWith("register_blueprint")) && knownRouterReceivers.has(call.name.split(".")[0])) {
         const reference = call.arguments[0]?.text.trim() ?? "router";
-        const prefixArgument = call.arguments.find((item) => item.text.startsWith("prefix"));
+        const prefixArgument = call.arguments.find((item) => item.text.startsWith("prefix")) ?? call.arguments.find((item) => item.text.startsWith("url_prefix"));
         const prefixText = prefixArgument?.text.match(/prefix\s*=\s*(.+)/)?.[1];
         const prefix = prefixArgument ? (stringValue({ text: prefixText ?? "", type: "string" }) ?? constantValue(file.path, prefixText ?? "", parsed) ?? `dynamic:${dynamicText(prefixArgument)}`) : "";
         let childFile = file.path;
@@ -205,7 +220,10 @@ function buildRouterIndex(snapshot: SourceSnapshot, project: ProjectPreparation)
           const candidates = project.imports.filter((item) => item.path === file.path && item.resolvedPath && (item.source === localModuleImport?.source || item.source === module || item.source.endsWith(`.${module}`)));
           const exact = candidates.find((item) => item.resolvedPath?.endsWith(`/${module}.py`) || item.resolvedPath?.endsWith(`/${module}/__init__.py`));
           const fallback = snapshot.files.filter((entry) => entry.path.endsWith(`/${module}.py`));
-          const target = exact?.resolvedPath ?? (candidates.length === 1 ? candidates[0].resolvedPath : undefined) ?? (fallback.length === 1 ? fallback[0].path : undefined);
+          // A unique submodule file beats a single relative-import candidate:
+          // `from . import views` resolves to the package __init__, which is
+          // never the child module that owns the blueprint variable.
+          const target = exact?.resolvedPath ?? (fallback.length === 1 ? fallback[0].path : undefined) ?? (candidates.length === 1 ? candidates[0].resolvedPath : undefined);
           if (target) childFile = target;
           else unresolved.push({ path: file.path, line: call.line, reference });
         }
@@ -217,7 +235,8 @@ function buildRouterIndex(snapshot: SourceSnapshot, project: ProjectPreparation)
     if (!ownPrefixes.has(`${relation.childFile}:${relation.childVariable}`)) unresolved.push({ path: relation.parentFile, line: relation.line, reference: `${relation.childFile}:${relation.childVariable}` });
   }
   const uniqueUnresolved = [...new Map(unresolved.map((item) => [`${item.path}:${item.line}:${item.reference}`, item])).values()];
-  return { ownPrefixes, relations, constants, unresolved: uniqueUnresolved };
+  const uniqueUnsupported = [...new Map(unsupported.map((item) => [`${item.path}:${item.line}`, item])).values()];
+  return { ownPrefixes, relations, constants, unresolved: uniqueUnresolved, unsupported: uniqueUnsupported };
 }
 
 function prefixFor(index: RouterIndex, file: string, variable: string, seen = new Set<string>()): string {
@@ -239,7 +258,7 @@ function analyzeFile(snapshot: SourceSnapshot, project: ProjectPreparation, file
   const kinds = new Map<string, "fastapi" | "flask">();
   for (const call of file.calls) {
     if (call.name === "FastAPI" || call.name === "APIRouter") kinds.set(call.receiver ?? "app", "fastapi");
-    if (call.name === "Flask") kinds.set(call.receiver ?? "app", "flask");
+    if (call.name === "Flask" || call.name === "Blueprint") kinds.set(call.receiver ?? "app", "flask");
   }
   for (const decorator of file.decorators) {
     const receiver = decorator.name.split(".")[0];
@@ -299,8 +318,8 @@ function independentDeclarations(snapshot: SourceSnapshot, routers: RouterIndex)
     const lines = pythonCodeLines(raw);
     const frameworks = new Map<string, "fastapi" | "flask">();
     for (const line of lines) {
-      const constructor = line.match(/([A-Za-z_]\w*)\s*=\s*(FastAPI|Flask|APIRouter)\s*\(/);
-      if (constructor) frameworks.set(constructor[1], constructor[2] === "Flask" ? "flask" : "fastapi");
+      const constructor = line.match(/([A-Za-z_]\w*)\s*=\s*(FastAPI|Flask|APIRouter|Blueprint)\s*\(/);
+      if (constructor) frameworks.set(constructor[1], constructor[2] === "Flask" || constructor[2] === "Blueprint" ? "flask" : "fastapi");
     }
     lines.forEach((line, index) => {
       const match = line.match(/^@([A-Za-z_]\w*)\.(get|post|put|delete|patch|route)\s*\((.*)$/);
@@ -308,7 +327,20 @@ function independentDeclarations(snapshot: SourceSnapshot, routers: RouterIndex)
       const receiver = match[1];
       const framework = frameworks.get(receiver);
       if (!framework) return;
-      const statement = lines.slice(index, index + 20).join("\n");
+      // Cut the decorator's own argument list by paren balance; a fixed line
+      // window would swallow methods= from the NEXT decorator in files with
+      // several Flask routes and fabricate phantom declarations.
+      const statementLines: string[] = [];
+      let depth = 0;
+      for (const candidate of lines.slice(index, index + 20)) {
+        statementLines.push(candidate);
+        for (const character of candidate) {
+          if (character === "(") depth += 1;
+          if (character === ")") depth -= 1;
+        }
+        if (depth <= 0 && statementLines.length > 0) break;
+      }
+      const statement = statementLines.join("\n");
       const argsText = statement.slice(statement.indexOf("(") + 1);
       const path = argsText.match(/["']([^"']+)["']/)?.[1] ?? `dynamic:${argsText.split(",")[0].replace(/\)\s*$/, "")}`;
       const fullPath = joinPath(prefixFor(routers, file.path, receiver), path);
@@ -335,6 +367,20 @@ export function analyzePythonRoutes(input: { snapshot: SourceSnapshot; project: 
       reason: "unresolved-import",
       detail: `Cannot resolve included Python router ${unresolved.reference}`,
       declarationIds: result.declarations.filter((declaration) => declaration.path === unresolved.path).map((declaration) => declaration.id),
+      evidenceIds: [evidence.id],
+      affectedViews: ["module-architecture", "protocol-flows", "full-declared-scope"],
+      blocking: true,
+    }));
+  }
+  for (const unsupported of routers.unsupported) {
+    const evidence = parserEvidence(unsupported.path, unsupported.line, "ast:python-router:unsupported");
+    result.evidenceRecords.push(evidence);
+    result.omissions.push(irOmissionSchema.parse({
+      id: `omission:python-router:${unsupported.path}:${unsupported.line}`,
+      owner: `python-router:${unsupported.path}:${unsupported.line}`,
+      reason: "unsupported-syntax",
+      detail: `Unsupported Python ${unsupported.call} endpoint indirection at ${unsupported.path}:${unsupported.line}`,
+      declarationIds: result.declarations.filter((declaration) => declaration.path === unsupported.path).map((declaration) => declaration.id),
       evidenceIds: [evidence.id],
       affectedViews: ["module-architecture", "protocol-flows", "full-declared-scope"],
       blocking: true,
