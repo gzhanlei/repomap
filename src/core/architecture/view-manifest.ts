@@ -502,6 +502,8 @@ function flowViewFacts(analysis: Analysis, runtime: NodeFact): FlowViewFacts {
   const edges = new Map<string, EdgeFact>();
   const addEdge = (edge: EdgeFact, ids: string[]) => { addViewEdge(edges, edge); mergeEvidenceIds(evidenceIds, edge.id, ids); };
   const omissions: ArchitectureFactSet["omissions"] = [];
+  // Handler calls record raw repo paths as targets, while module nodes are keyed by `module:<packageId>:<path>` ids.
+  const moduleByPath = new Map(analysis.moduleGraph.nodes.map((node) => [node.path, node]));
   for (const edge of analysis.routeGraph.edges.filter((candidate) => routeIds.has(candidate.from) && handlerIds.has(candidate.to))) {
     addEdge({ id: edge.id, from: edge.from, to: edge.to, kind: "http", label: "route → handler", signalIds: [], evidence: evidenceFromIds(analysis.routeGraph.evidenceRecords, edge.evidenceIds) }, edge.evidenceIds);
   }
@@ -513,7 +515,7 @@ function flowViewFacts(analysis: Analysis, runtime: NodeFact): FlowViewFacts {
     const evidence = evidenceFromIds(analysis.evidence.records, call.evidenceIds);
     let target = nodes.get(call.to);
     if (!target && call.toKind === "module") {
-      const canonical = moduleById.get(call.to);
+      const canonical = moduleByPath.get(call.to);
       if (!canonical) throw new Error(`Handler call module target is missing: ${call.to}`);
       target = moduleNode(canonical, moduleNodeEvidence(analysis, canonical.id));
     }
@@ -533,7 +535,6 @@ function flowViewFacts(analysis: Analysis, runtime: NodeFact): FlowViewFacts {
     addEdge({ id: call.id, from: call.from, to: target.id, kind: "process", label: `call ${call.source}`, signalIds: [], evidence }, call.evidenceIds);
   }
   const reachablePaths = new Set(paths);
-  const moduleByPath = new Map(analysis.moduleGraph.nodes.map((node) => [node.path, node]));
   const moduleOutgoing = new Map<string, string[]>();
   for (const edge of analysis.moduleGraph.edges) if (edge.toKind === "module") moduleOutgoing.set(edge.from, [...(moduleOutgoing.get(edge.from) ?? []), edge.to]);
   const pending = [...paths].map((path) => moduleByPath.get(path)?.id).filter((id): id is string => id !== undefined);

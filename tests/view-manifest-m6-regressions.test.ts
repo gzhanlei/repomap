@@ -45,6 +45,19 @@ describe("M6 manifest regression boundaries", () => {
     expect(validateViewManifest(substituted, pages, analysis.evidence.records).ok).toBe(false);
   });
 
+  it("resolves handler calls to imported modules in the flow view", () => {
+    const analysis = analyzeArchitectureFacts(scope, [
+      sources[0],
+      { path: "app/api/products/route.ts", content: 'import { getProducts } from "../../../lib/shopify";\nexport async function GET() { return getProducts(); }' },
+      sources[3],
+    ]);
+    const moduleId = analysis.moduleGraph.nodes.find((node) => node.path === "lib/shopify/index.ts")!.id;
+    const { detailFacts } = buildViewManifest(analysis, 1);
+    const flowFacts = detailFacts.filter((projection) => projection.scope === "protocol-flows");
+    expect(flowFacts.flatMap((projection) => projection.facts.nodes).some((node) => node.id === moduleId)).toBe(true);
+    expect(flowFacts.flatMap((projection) => projection.facts.edges).some((edge) => edge.to === moduleId && edge.kind === "process")).toBe(true);
+  });
+
   it("keeps config-binding operations with the runtime flow that owns their primary operation", () => {
     const analysis = analyzeArchitectureFacts(scope, [
       { path: "go.mod", content: "module example.com/demo" },
