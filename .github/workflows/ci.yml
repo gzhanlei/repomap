@@ -35,10 +35,9 @@ jobs:
 
   performance-gate:
     runs-on: ubuntu-latest
-    # Provisional: the recorded thresholds came from a darwin measurement; the
-    # fixed ubuntu runner must establish its own baseline before this job
-    # becomes blocking (docs/performance-baseline.v1.json, limitations).
-    continue-on-error: true
+    # Blocking as ratified: under the fixed 1GiB heap cap the gate passes on
+    # this runner with margin (runs recorded in
+    # docs/performance-baseline.v1.json gate.ciMeasurements).
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

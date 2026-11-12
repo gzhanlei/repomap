@@ -112,7 +112,7 @@
     },
     "note": "Measured after the migration-marker coverage fix; authelia gained 69 executable migration statements. Median remains ~4x the M1 baseline by real analysis growth; thresholds unchanged.",
     "ciMeasurements": {
-      "status": "passing-under-controlled-heap-blocking-ratification-pending",
+      "status": "passing-under-controlled-heap-blocking-ratified",
       "measuredAt": "2026-11-12",
       "runner": "ubuntu-latest (GitHub Actions), node 22, workflow run 43168737492 (both checks and performance-gate jobs succeeded)",
       "configuration": "node --max-old-space-size=1024 (same controlled heap as the local gate)",
@@ -149,7 +149,9 @@
         "worstElapsed": "pass",
         "peakRss": "pass 959729664 <= 1073741824 (~114MB margin)"
       },
-      "history": "The uncapped CI measurement (run 43064704274) failed peak RSS at ~1.22-1.25GB; see gate.investigation for the root-cause breakdown (node version + platform memory accounting) and the rejected MALLOC_ARENA_MAX alternative."
+      "history": "The uncapped CI measurement (run 43064704274) failed peak RSS at ~1.22-1.25GB; see gate.investigation for the root-cause breakdown (node version + platform memory accounting) and the rejected MALLOC_ARENA_MAX alternative.",
+      "ratifiedAt": "2026-11-12",
+      "ratification": "Approved by Lei Han on 2026-11-12: the performance-gate CI job became blocking after the controlled-heap configuration passed on ubuntu-latest with ~114MB peak-RSS margin (median 29196ms vs the 60000ms threshold)."
     },
     "investigation": {
       "trigger": "First fixed-CI measurement showed peak RSS ~1.22-1.25GB vs the 1GiB threshold while elapsed passed comfortably.",
