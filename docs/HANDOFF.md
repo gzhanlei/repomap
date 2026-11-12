@@ -1,7 +1,7 @@
 # RepoMap 接手文档
 
 - 更新日期：2026-11-12
-- 代码基线：`d766850`（CI workflow 728f50a、click Gold 8bd38a2、性能调查与受控堆 d766850）
+- 代码基线：`680fe76`（M7 收尾：gold 密度 237 facts 1cc2f77、black Gold ad64490、authelia Gold 58043ee、gold:report 680fe76；release 资格报告见 docs/release-qualification.v1.json，待作者批准）
 - 远程仓库：`https://github.com/gzhanlei/repomap`
 - 当前分支：`main`
 
@@ -20,7 +20,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 尚未完成：
 
-- M7 其余部分：更多 corpus 条目的 targeted Gold、把评估接入 CI、性能回归定位（见第 9 节）和 generator release qualification。
+- M7 收尾已完成（680fe76）：四个 corpus 的 targeted Gold 共 237 critical facts（fastapi 117、black 59、click 34、authelia 27），`npm run gold:report` 生成可复现汇总报告 `docs/gold-evaluation-report.v1.json`（237/237、0 FP、0 evidence invalid）；release 资格证据已整合进 `docs/release-qualification.v1.json`（status: evidence-complete-pending-author-approval，批准块留给作者；FastAPI 视觉独立确认仍未声明完成，receipt `visualReview` 仍为 `pending`）。
 - Django、RQ、完整动态依赖注入/ORM/SSA，以及更多语言和真实仓库审查。
 - 可选 Harness/LLM enrichment 尚未实现；默认分析保持 `aiRequests: 0`。
 
@@ -117,7 +117,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 在代码基线 `cad62c2` 上：
 
-- `npm test`：**37 个测试文件、264 项测试通过**（在 8bd38a2 上）。
+- `npm test`：**37 个测试文件、267 项测试通过**（在 680fe76 上）。
 - `npm run typecheck`：通过。
 - `npm run build`：通过。
 - `npm run smoke:production`：通过；生产包中 Go/Python parser 可用，Python route 为 1 条、总 route 为 2 条、Python async operations 为 3 条。

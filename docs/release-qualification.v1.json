@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "status": "evidence-complete-pending-author-approval",
+  "assembledAt": "2026-11-12",
+  "generatorHead": "680fe76",
+  "purpose": "Generator release qualification evidence per docs/full-architecture-plan.md M7 exit conditions. This file ASSEMBLES references to reproducible evidence sources; it is not itself a generated artifact and every referenced number was produced by a committed, runnable command. The qualification decision itself belongs to the author via the approval block; per-input fullArchitecture stays semantically separate from release qualification.",
+  "evidence": {
+    "corpusGold": {
+      "source": "docs/gold-evaluation-report.v1.json (npm run gold:report; regenerated, never hand-edited)",
+      "corpora": 4,
+      "criticalFacts": 237,
+      "covered": 237,
+      "suspectedFalsePositives": 0,
+      "evidenceInvalid": 0,
+      "breakdown": {
+        "fastapi-template": "117 facts (23 routes, 23 handler directions, 9 crud operations, all 62 alembic statements, 11 scopes fully matched)",
+        "black": "59 facts (55 enumerated modules, 2 hand-read CLI declarations, 2 edges, 2 complete scopes)",
+        "click": "34 facts (17 enumerated modules, 16 edges, 1 human-verified cycle; module-graph artifact evaluated by design because full gates fail closed on a dynamic omission)",
+        "authelia": "27 facts (14 route registrations, 2 handler directions, 11 line-verified channel async operations; targeted subset)"
+      },
+      "knownUnaudited": [
+        "click's second analyzer-reported 11-module cycle (chain not hand-read)",
+        "authelia's remaining 87 route registrations and 62 async declarations (read but not transcribed; targeted-subset policy)",
+        "writefreely and commerce corpora remain pinned-not-audited"
+      ]
+    },
+    "performance": {
+      "local": {
+        "source": "docs/performance-baseline.v1.json gate section (npm run perf:gate)",
+        "configuration": "fixed 1GiB V8 old-space cap; darwin arm64, node 25",
+        "medianElapsedMs": 24448,
+        "maxPeakRssBytes": 916619264,
+        "thresholds": "median <= 60000ms, peak RSS <= 1073741824"
+      },
+      "ci": {
+        "source": "docs/performance-baseline.v1.json gate.ciMeasurements (ubuntu-latest, node 22, ratified blocking 2026-11-12)",
+        "medianElapsedMs": 29196,
+        "maxPeakRssBytes": 959729664,
+        "note": "root-cause investigation of the earlier uncapped CI failure recorded in gate.investigation; MALLOC_ARENA_MAX alternative tested and rejected"
+      }
+    },
+    "productionInstall": {
+      "source": "npm run smoke:production (scripts/production-smoke.mjs) at generatorHead",
+      "result": "pass; packed tarball installs with production dependencies only; TypeScript Compiler API and fixed Tree-sitter Go/Python WASM grammars work in the consumer; TypeScript/Go/Python fixture analyses emit route graphs (totalRoutes 2, pythonRoutes 1) and async operations (3)"
+    },
+    "visualQualification": {
+      "status": "not-claimed-complete",
+      "facts": "FastAPI fixed-SHA delivery: 9 pages passed automated Archify visual checks and representative light/dark screenshots were inspected by the author during the M8 protocol slices; the receipts' visualReview field remains 'pending' by delivery contract until an independent human confirmation pass is recorded. This qualification therefore does NOT claim visual completeness."
+    },
+    "semanticsAndSafety": {
+      "perInputSeparation": "fullArchitecture=true remains a per-input declared-scope semantic gate result; nothing in this report turns it into a general capability claim.",
+      "omissionDiscipline": "omission counts are reported beside every evaluation and are never folded into coverage; click's gate failure-closed behavior is recorded as expected.",
+      "secrets": "no tokens in commands, logs, receipts or this report; GITHUB_TOKEN is environment-only in CI."
+    }
+  },
+  "failureMatrix": [
+    { "input": "click full view", "behavior": "CLI exits non-zero ('Architecture coverage is not publishable') due to the declared dynamic-import omission; module graph artifact complete and gold-evaluated by design" },
+    { "input": "authelia full view", "behavior": "passes declared-scope gates (fullArchitecture true for this input); 1062 recorded omissions reported, none folded into coverage" },
+    { "input": "unsupported dynamic python inputs", "behavior": "fail closed with omissions; documented capability boundary (HANDOFF section 4.6)" }
+  ],
+  "approval": {
+    "decision": null,
+    "decidedBy": null,
+    "decidedAt": null,
+    "instructions": "To qualify: fill decision with 'qualified' (or list conditions), set decidedBy and decidedAt. To decline: decision 'not-qualified' plus reasons. Approval must reference re-run evidence: npm run gold:report, npm run perf:gate, npm run smoke:production all exiting zero at a single HEAD."
+  }
+}
