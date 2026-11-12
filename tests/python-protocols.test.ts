@@ -135,6 +135,22 @@ describe("M8 Python protocols", () => {
     expect(analysis.ir.omissions.some((omission) => omission.owner.startsWith("python-sql:"))).toBe(false);
   });
 
+  it("does not treat marker-table definitions as file cache usage", () => {
+    const analysis = analyze({
+      "app/main.py": [
+        "from fastapi import FastAPI",
+        "app = FastAPI()",
+        "@app.get('/items')",
+        "def list_items():",
+        "    return {'items': []}",
+      ].join("\n"),
+      // A meta-tool declaring detection rules: the strings appear only inside marker tables.
+      "lib/architecture/detectors/storage.ts": 'const fileCacheMarkers = ["file_get_contents", "file_put_contents"];\nexport function detect() { return fileCacheMarkers.length; }',
+      "lib/architecture/signals.ts": 'export const signals = [{ kind: "store", markers: ["mysql2", "file_get_contents"] }];',
+    });
+    expect(analysis.facts.nodes.some((node) => node.id === "store:file-cache")).toBe(false);
+  });
+
   it("extracts asyncio queue and schedule operations", () => {
     const analysis = analyze({
       "app/jobs.py": [

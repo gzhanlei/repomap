@@ -13,12 +13,17 @@ function pythonSqlLineFilter(path: string, line: string) {
   const code = line.replace(/^\s*\d+:\s?/, "").trim();
   if (code.startsWith("@") || /\b(?:requests|httpx)\./.test(code)) return false;
   if (/(?:^|\/)(?:alembic|migrations?|migrate)(?:\/|$)/i.test(path) && /(?:from\s+alembic\s+import|from\s+sqlalchemy\s+import|import\s+(?:sqlalchemy|sqlmodel)|engine_from_config)/i.test(code)) return true;
-  if (/(?:execute|executemany|create_engine|commit|rollback|session\.(?:add|delete|query|get|exec|execute)|cursor\.execute|op\.(?:execute|create_table|drop_table|add_column|drop_column|alter_column|create_index|drop_index|create_foreign_key|drop_constraint|create_primary_key)|conn\.execute|db\.execute|engine\.execute)\s*\(/i.test(code)) return true;
+  if (/(?:execute|executemany|create_engine|commit|rollback|session\.(?:add|add_all|delete|query|get|exec|execute|scalars|stream)|cursor\.execute|op\.(?:execute|create_table|drop_table|add_column|drop_column|alter_column|create_index|drop_index|create_foreign_key|drop_constraint|create_primary_key)|conn\.execute|db\.execute|engine\.execute)\s*\(/i.test(code)) return true;
   return /["'](?:SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|BEGIN|COMMIT|ROLLBACK)\b/i.test(code);
 }
 
 function storageSourceContent(source: { path: string; content: string }) {
   return source.path.endsWith(".py") ? pythonCodeLines(source.content).join("\n") : source.content;
+}
+
+/** A line declaring a marker table (common in detection meta-tooling) defines rules, not storage usage. */
+function isMarkerTableLine(line: string) {
+  return /\w*[Mm]arkers?\b\s*[:=]/.test(line.replace(/^\s*\d+:\s?/, ""));
 }
 
 /** A migration or schema file can be huge; only lines with storage semantics are evidence. */
@@ -35,7 +40,7 @@ const schemaMarkers = [
 ];
 function storageEvidence(context: ArchitectureContext, markers: string[], detector: string) {
   return uniqueEvidence(context.sources.filter(isRuntimeEvidenceSource).flatMap((source) => {
-    const match = findArchitectureEvidence({ ...source, content: storageSourceContent(source) }, markers, detector);
+    const match = findArchitectureEvidence({ ...source, content: storageSourceContent(source) }, markers, detector, (line) => !isMarkerTableLine(line));
     return match ? [match] : [];
   }));
 }
@@ -45,7 +50,7 @@ function storageNode(context: ArchitectureContext, id: string, kind: NodeFact["k
   const pathEvidence = supportingPaths === undefined
     ? []
     : context.sources.filter((source) => isRuntimeEvidenceSource(source) && supportingPaths(source.path))
-      .flatMap((source) => findSemanticEvidence({ ...source, content: storageSourceContent(source) }, [...supportingMarkers, ...schemaMarkers], `${id}-schema`));
+      .flatMap((source) => findSemanticEvidence({ ...source, content: storageSourceContent(source) }, [...supportingMarkers, ...schemaMarkers], `${id}-schema`, (line) => !isMarkerTableLine(line)));
   const evidence = uniqueEvidence([...detected, ...pathEvidence]);
   if (evidence.length === 0) return undefined;
   return { id, kind, label, signalIds: signalIdsForPaths(context.signals, evidence.map((item) => item.path)), evidence };
@@ -118,7 +123,7 @@ function storageCalls(node: NodeFact, context: ArchitectureContext, markers: str
   const runtimeEvidence = architectureRuntimeSources(node, context.sources)
     .filter(isRuntimeEvidenceSource)
     .filter((source) => pythonDriverMatches(source, storeId, storeCount))
-    .flatMap((source) => findSemanticEvidence({ ...source, content: storageSourceContent(source) }, [...markers, "session.get", "session.exec", "session.query"], detector, (line) => pythonSqlLineFilter(source.path, line)));
+    .flatMap((source) => findSemanticEvidence({ ...source, content: storageSourceContent(source) }, [...markers, "session.get", "session.exec", "session.query"], detector, (line) => !isMarkerTableLine(line) && pythonSqlLineFilter(source.path, line)));
   if (runtimeEvidence.length === 0 && !schemaOnly) return [];
   const schemaEvidence = storeId === undefined ? [] : storageSchemaEvidence(context, storeId);
   return uniqueEvidence([...runtimeEvidence, ...schemaEvidence]);
