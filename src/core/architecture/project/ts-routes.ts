@@ -90,9 +90,12 @@ function symbolNode(sourceFile: ts.SourceFile, name: string): ts.Node | undefine
     if (namedDeclaration && (node.name?.text === name || defaultDeclaration)) { found = node; return; }
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === name) { found = node; return; }
     if (ts.isExportAssignment(node) && name === "default") { found = node; return; }
+    // Handler-local declarations must not shadow module-level symbols: a `const connection`
+    // inside a handler body is not a call target, so stop at function-like boundaries.
+    if (ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node) || ts.isFunctionLike(node)) return;
     ts.forEachChild(node, visit);
   };
-  visit(sourceFile);
+  for (const statement of sourceFile.statements) visit(statement);
   return found;
 }
 

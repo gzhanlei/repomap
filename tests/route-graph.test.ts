@@ -32,6 +32,17 @@ describe("M3 route and bounded handler call graph", () => {
     expect(graph.calls.some((call) => call.to === "lib/shopify/index.ts" && call.toKind === "module" && call.kind === "calls")).toBe(true);
   });
 
+  it("ignores handler-local variables when collecting direct calls", () => {
+    const analysis = analyzeArchitectureFacts(scope, [
+      next,
+      { path: "app/api/products/route.ts", content: 'import { getDb } from "../../../lib/db";\nexport async function POST() {\n const db = getDb();\n const connection = await db.getConnection();\n await connection.execute("SELECT 1");\n return Response.json({ ok: true });\n}' },
+      { path: "lib/db.ts", content: 'export function getDb() { return { getConnection: async () => ({}), execute: async () => {} }; }' },
+    ]);
+    const graph = analysis.routeGraph;
+    expect(graph.calls.some((call) => call.to === "app/api/products/route.ts")).toBe(false);
+    expect(graph.calls.some((call) => call.to === "lib/db.ts" && call.toKind === "module")).toBe(true);
+  });
+
   it("resolves Go HandleFunc package handlers and direct internal package calls", () => {
     const analysis = analyzeArchitectureFacts(scope, [
       { path: "go.mod", content: "module example.com/shop" },
