@@ -1013,6 +1013,26 @@ export function buildViewManifest(analysis: Analysis, pageSize = 48): ViewManife
       }
     }
   }
+  // Operations that no runtime flow claims still belong on a flow page: group them by call site
+  // path into detached projections so the flows view stays complete without inventing runtime owners.
+  const claimedOperations = new Set(detailFacts.filter((projection) => projection.scope === "protocol-flows").flatMap((projection) => projection.operations.map((operation) => operation.id)));
+  const requiresFlowOperation = (operation: OperationFact) => operation.kind !== "config-binding" && !(operation.kind === "sql" && operation.action === "migration" && operation.owner.startsWith("store:"));
+  const detachedGroups = new Map<string, OperationFact[]>();
+  for (const operation of analysis.ir.operations) {
+    if (!requiresFlowOperation(operation) || claimedOperations.has(operation.id)) continue;
+    const path = operation.callSite?.replace(/:\d+$/, "") ?? "unknown";
+    detachedGroups.set(path, [...(detachedGroups.get(path) ?? []), operation]);
+  }
+  for (const [path, operations] of [...detachedGroups].sort(([a], [b]) => a.localeCompare(b))) {
+    const evidence = evidenceFromIds(analysis.evidence.records, operations.flatMap((operation) => operation.evidenceIds));
+    const detachedRuntime: NodeFact = { id: `detached:${path}`, kind: "worker", label: compactViewLabel(path, 40), signalIds: [], evidence, sourcePaths: [path] };
+    const flow = flowViewFacts(analysis, detachedRuntime);
+    if (flow.facts.nodes.length === 0) continue;
+    detailFacts.push({ facts: flow.facts, scope: "protocol-flows", owner: detachedRuntime.id, operations: flow.operations, evidenceIds: flow.evidenceIds });
+    for (const page of pageFacts(flow.facts, flow.operations, Math.min(pageSize, 16), flow.evidenceIds, analysis, "flows")) {
+      pages.push({ ...page, id: `flows:${detachedRuntime.id}:${page.page}`, kind: "flows", owner: detachedRuntime.id, title: `${detachedRuntime.label} Flows` });
+    }
+  }
   for (const page of pages) for (const ids of page.sourceEvidenceIds.values()) ids.sort();
   for (const projection of detailFacts) for (const ids of projection.evidenceIds.values()) ids.sort();
   const views = [...new Map(pages.map((page) => [`${page.kind}:${page.owner}`, page])).values()].map((page) => ({

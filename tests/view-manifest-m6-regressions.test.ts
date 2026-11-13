@@ -58,6 +58,23 @@ describe("M6 manifest regression boundaries", () => {
     expect(flowFacts.flatMap((projection) => projection.facts.edges).some((edge) => edge.to === moduleId && edge.kind === "process")).toBe(true);
   });
 
+  it("gives detached operations a protocol flow owner and passes the flows gate", () => {
+    const analysis = analyzeArchitectureFacts(scope, [
+      sources[0],
+      { path: "app/page.tsx", content: "export default function Page() { return null; }" },
+      { path: "scripts/check-permissions.ts", content: 'export async function main() { await fetch("https://api.github.com/app"); }' },
+    ]);
+    const op = analysis.ir.operations.find((operation) => operation.kind === "http" && operation.callSite?.startsWith("scripts/check-permissions.ts"));
+    expect(op).toBeDefined();
+    const { detailFacts, pages } = buildViewManifest(analysis, 4);
+    const flowOwners = detailFacts.filter((projection) => projection.scope === "protocol-flows");
+    expect(flowOwners.some((projection) => projection.operations.some((operation) => operation.id === op!.id))).toBe(true);
+    expect(pages.some((page) => page.kind === "flows" && page.owner.startsWith("detached:") && page.operations.some((operation) => operation.id === op!.id))).toBe(true);
+    const evaluation = evaluateArchitectureViews(analysis, { viewManifest: buildViewManifest(analysis, 4).manifest, viewPages: pages, viewDetails: detailFacts });
+    expect(evaluation.views["protocol-flows"].status).toBe("passed");
+    expect(evaluation.views["protocol-flows"].blockingReasons.join("\n")).not.toContain("operation has no protocol flow owner");
+  });
+
   it("keeps config-binding operations with the runtime flow that owns their primary operation", () => {
     const analysis = analyzeArchitectureFacts(scope, [
       { path: "go.mod", content: "module example.com/demo" },
@@ -219,17 +236,18 @@ describe("M6 manifest regression boundaries", () => {
     }
   });
 
-  it("blocks operations that have no runtime flow owner", () => {
+  it("delivers unowned operations on detached flow pages", () => {
     const analysis = analyzeArchitectureFacts(scope, [
       { path: "package.json", content: '{"scripts":{"start":"node src/jobs/render.ts"}}' },
       { path: "src/jobs/render.ts", content: "setInterval(() => { console.log('render'); }, 1000);" },
     ]);
     expect(analysis.ir.operations.some((operation) => operation.kind === "schedule")).toBe(true);
     const model = buildViewManifest(analysis, 48);
-    const evaluation = evaluateArchitectureViews(analysis, { viewManifest: model.manifest, viewPages: model.pages, viewDetails: model.detailFacts });
-    expect(evaluation.views["protocol-flows"].status).toBe("failed");
-    expect(evaluation.views["protocol-flows"].blockingReasons.join(" ")).toContain("no protocol flow owner");
-    expect(evaluation.fullArchitecture).toBe(false);
+    const flowOwners = model.detailFacts.filter((projection) => projection.scope === "protocol-flows");
+    // never mis-attributed to a real runtime: only the detached call-site owner carries it
+    expect(flowOwners.filter((projection) => !projection.owner.startsWith("detached:")).flatMap((projection) => projection.operations.map((operation) => operation.id))).toHaveLength(0);
+    expect(flowOwners.filter((projection) => projection.owner.startsWith("detached:")).flatMap((projection) => projection.operations.map((operation) => operation.id)).length).toBeGreaterThan(0);
+    expect(model.pages.some((page) => page.kind === "flows" && page.owner.startsWith("detached:"))).toBe(true);
   });
 
   it("assigns frontend package operations without exact entrypoint closure", () => {
@@ -258,10 +276,11 @@ describe("M6 manifest regression boundaries", () => {
     const operation = analysis.ir.operations.find((candidate) => candidate.kind === "schedule" && candidate.callSite?.includes("jobs/render"));
     expect(operation).toBeDefined();
     const model = buildViewManifest(analysis, 48);
-    const flowIds = model.detailFacts.filter((projection) => projection.scope === "protocol-flows").flatMap((projection) => projection.operations.map((candidate) => candidate.id));
-    expect(flowIds).not.toContain(operation!.id);
-    const evaluation = evaluateArchitectureViews(analysis, { viewManifest: model.manifest, viewPages: model.pages, viewDetails: model.detailFacts });
-    expect(evaluation.views["protocol-flows"].status).toBe("failed");
+    // not attributed to the frontend runtime — only its detached call-site flow owner
+    const frontendFlowIds = model.detailFacts.filter((projection) => projection.scope === "protocol-flows" && !projection.owner.startsWith("detached:")).flatMap((projection) => projection.operations.map((candidate) => candidate.id));
+    expect(frontendFlowIds).not.toContain(operation!.id);
+    const detachedFlowIds = model.detailFacts.filter((projection) => projection.scope === "protocol-flows" && projection.owner.startsWith("detached:")).flatMap((projection) => projection.operations.map((candidate) => candidate.id));
+    expect(detachedFlowIds).toContain(operation!.id);
   });
 
   it("rejects deleting flows even when overview shares the same base facts", () => {
