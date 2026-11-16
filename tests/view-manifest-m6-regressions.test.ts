@@ -75,6 +75,20 @@ describe("M6 manifest regression boundaries", () => {
     expect(evaluation.views["protocol-flows"].blockingReasons.join("\n")).not.toContain("operation has no protocol flow owner");
   });
 
+  it("resolves Python handler calls to modules in the flow view", () => {
+    const analysis = analyzeArchitectureFacts(scope, [
+      { path: "backend/pyproject.toml", content: '[project]\nname = "backend"\nversion = "0.1.0"\n' },
+      { path: "backend/app/__init__.py", content: "" },
+      { path: "backend/app/main.py", content: "from fastapi import FastAPI\nfrom . import service\napp = FastAPI()\n@app.get('/items')\ndef list_items():\n    return service.list_items()\n" },
+      { path: "backend/app/service.py", content: "def list_items():\n    return []\n" },
+    ]);
+    const moduleId = analysis.moduleGraph.nodes.find((node) => node.path === "backend/app/service.py")!.id;
+    const { detailFacts } = buildViewManifest(analysis, 1);
+    const flowFacts = detailFacts.filter((projection) => projection.scope === "protocol-flows");
+    expect(flowFacts.flatMap((projection) => projection.facts.nodes).some((node) => node.id === moduleId)).toBe(true);
+    expect(flowFacts.flatMap((projection) => projection.facts.edges).some((edge) => edge.to === moduleId && edge.kind === "process")).toBe(true);
+  });
+
   it("keeps config-binding operations with the runtime flow that owns their primary operation", () => {
     const analysis = analyzeArchitectureFacts(scope, [
       { path: "go.mod", content: "module example.com/demo" },

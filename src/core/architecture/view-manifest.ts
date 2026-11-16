@@ -515,7 +515,8 @@ function flowViewFacts(analysis: Analysis, runtime: NodeFact): FlowViewFacts {
     const evidence = evidenceFromIds(analysis.evidence.records, call.evidenceIds);
     let target = nodes.get(call.to);
     if (!target && call.toKind === "module") {
-      const canonical = moduleByPath.get(call.to);
+      // TS handler calls record raw repo paths; Python calls record full `module:<packageId>:<path>` ids.
+      const canonical = moduleByPath.get(call.to) ?? moduleById.get(call.to);
       if (!canonical) throw new Error(`Handler call module target is missing: ${call.to}`);
       target = moduleNode(canonical, moduleNodeEvidence(analysis, canonical.id));
     }

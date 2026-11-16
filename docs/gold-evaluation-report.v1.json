@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-12",
+  "generatedAt": "2026-11-16",
   "generator": "scripts/gold-report.ts (npm run gold:report); regenerate, never hand-edit",
   "allPassed": true,
   "totals": {
