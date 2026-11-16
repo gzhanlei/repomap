@@ -43,7 +43,7 @@ function executableSqlEvidence(evidence: ArchitectureEvidence, source: Architect
   if (!evidence.path.endsWith(".py")) return true;
   const text = lineText(source, evidence.line).replace(/^\s*\d+:\s?/, "").trim();
   if (!text || /^(?:from|import)\s+/.test(text) || /\bcreate_engine\s*\(/.test(text)) return false;
-  if (/\b(?:session|sess|cursor|conn|db|engine|op)\.[A-Za-z_][\w]*\s*\(/.test(text)) return true;
+  if (/\b(?:session|sess|cursor|conn|db|engine|op)\.[A-Za-z_][\w]*\s*\(/i.test(text)) return true;
   return /["'](?:SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|BEGIN|COMMIT|ROLLBACK)\b/i.test(text);
 }
 

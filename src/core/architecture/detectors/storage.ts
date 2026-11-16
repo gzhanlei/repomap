@@ -118,21 +118,29 @@ function detectStorage(context: ArchitectureContext) {
   return fragment;
 }
 
-function pythonDriverMatches(source: { path: string; content: string }, storeId: string | undefined, storeCount: number) {
-  if (!storeId || !source.path.endsWith(".py")) return true;
-  const text = pythonDriverMentionText(storageSourceContent(source));
+function pythonDriversOf(text: string) {
   const drivers = new Set<string>();
   if (text.includes("sqlite")) drivers.add("sqlite");
   if (text.includes("postgres") || text.includes("psycopg") || text.includes("asyncpg")) drivers.add("postgres");
   if (text.includes("mysql")) drivers.add("mysql");
+  return drivers;
+}
+
+function pythonDriverMatches(source: { path: string; content: string }, storeId: string | undefined, storeCount: number, unitDrivers?: Set<string>) {
+  if (!storeId || !source.path.endsWith(".py")) return true;
+  // Per-file driver mention wins; a file whose engine lives in a sibling module
+  // falls back to its runtime unit's driver set before being judged ambiguous.
+  let drivers = pythonDriversOf(pythonDriverMentionText(storageSourceContent(source)));
+  if (drivers.size === 0 && unitDrivers) drivers = unitDrivers;
   const identity = storeId.replace(/^store:/, "");
   return drivers.size === 0 ? storeCount <= 1 : (drivers.size === 1 && drivers.has(identity));
 }
 
 function storageCalls(node: NodeFact, context: ArchitectureContext, markers: string[], detector: string, storeId?: string, schemaOnly = false, storeCount = 1, extraLineFilter?: (line: string) => boolean) {
-  const runtimeEvidence = architectureRuntimeSources(node, context.sources)
-    .filter(isRuntimeEvidenceSource)
-    .filter((source) => pythonDriverMatches(source, storeId, storeCount))
+  const runtimeSources = architectureRuntimeSources(node, context.sources).filter(isRuntimeEvidenceSource);
+  const unitDrivers = pythonDriversOf(runtimeSources.map((source) => pythonDriverMentionText(storageSourceContent(source))).join(" "));
+  const runtimeEvidence = runtimeSources
+    .filter((source) => pythonDriverMatches(source, storeId, storeCount, unitDrivers))
     .flatMap((source) => findSemanticEvidence({ ...source, content: storageSourceContent(source) }, [...markers, "session.get", "session.exec", "session.query", "session.scalars", "session.stream", "session.add_all", "sess.scalars", "sess.stream", "sess.add_all"], detector, (line) => (!extraLineFilter || extraLineFilter(line)) && pythonSqlLineFilter(source.path, line)));
   if (runtimeEvidence.length === 0 && !schemaOnly) return [];
   const schemaEvidence = storeId === undefined ? [] : storageSchemaEvidence(context, storeId);

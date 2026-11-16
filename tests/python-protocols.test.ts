@@ -202,6 +202,41 @@ describe("M8 Python protocols", () => {
     expect(analysis.ir.omissions.some((omission) => omission.owner.startsWith("python-sql:"))).toBe(false);
   });
 
+  it("attributes package-level engines to sibling script files of the same runtime unit", () => {
+    const analysis = analyze({
+      "app/environment.py": "engine = create_engine('sqlite:///app.db')\n",
+      "app/jobs.py": "session.add_all([Item()])\nsession.commit()\n",
+      "admin/pg.py": "engine = create_engine('postgresql://localhost/admin')\n",
+    });
+    const operations = analysis.ir.operations.filter((operation) => operation.kind === "sql").filter((operation) => operation.callSite?.startsWith("app/jobs.py"));
+    const byLine = new Map(operations.map((operation) => [Number(operation.callSite?.split(":")[1]), operation]));
+    expect(byLine.get(1)?.action).toBe("write");
+    expect(byLine.get(1)?.driver).toBe("sqlite");
+    expect(byLine.get(2)?.action).toBe("transaction");
+    expect(byLine.get(2)?.driver).toBe("sqlite");
+  });
+
+  it("classifies Session receivers regardless of case as SQL evidence", () => {
+    const analysis = analyze({
+      "app/main.py": [
+        "from fastapi import FastAPI",
+        "from sqlalchemy import create_engine",
+        "app = FastAPI()",
+        "engine = create_engine('sqlite:///app.db')",
+        "@app.get('/items')",
+        "def list_items():",
+        "    people = Session.scalars(select(Person)).all()",
+        "    Session.add_all([Person()])",
+        "    return {'items': []}",
+      ].join("\n"),
+    });
+    const operations = analysis.ir.operations.filter((operation) => operation.kind === "sql");
+    const byLine = new Map(operations.map((operation) => [Number(operation.callSite?.split(":")[1]), operation]));
+    expect(byLine.get(7)?.action).toBe("read");
+    expect(byLine.get(7)?.driver).toBe("sqlite");
+    expect(byLine.get(8)?.action).toBe("write");
+  });
+
   it("recognizes module-level script and asyncio.run entry files as runtime units", () => {
     const analysis = analyze({
       "app/script_style.py": [
