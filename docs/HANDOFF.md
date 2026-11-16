@@ -1,7 +1,7 @@
 # RepoMap 接手文档
 
-- 更新日期：2026-11-12
-- 代码基线：`680fe76`（M7 收尾：gold 密度 237 facts 1cc2f77、black Gold ad64490、authelia Gold 58043ee、gold:report 680fe76；release 资格报告见 docs/release-qualification.v1.json，待作者批准）
+- 更新日期：2026-11-16
+- 代码基线：`d05d0a5`（origin/main 已含 codelphi 实战修复批次 0daeede/5aeb90f/ab0ec48；在其之上新增三个未 push 提交：SQLAlchemy 2.0 action 分类 98664f2、flow 视图 Python 目标解析回归修复 d05d0a5、本 handoff 提交；push 后需按账本对账）
 - 远程仓库：`https://github.com/gzhanlei/repomap`
 - 当前分支：`main`
 
@@ -17,6 +17,9 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 - M0–M6：scope、census、独立 declarations、Evidence Index、IR v2、TypeScript/Go 项目图、RouteGraph、统一 External、Target/Config、SQL/Async operations、逐视图门禁、独立 mutation 和多视图无损投影。
 - M8 第一个 Python 切片：项目准备、Tree-sitter/WASM、src-layout、import/module graph、CLI 入口和 module 详图。
 - M8 第二个 Python 切片：FastAPI/Flask routes、常见 DB-API/SQLAlchemy/Alembic operations、asyncio/queue/Celery/broker operations 和 Python 外部 HTTP candidates。
+- codelphi 实战批次（1bc4068…ab0ec48，2026-11-13/16，已在 origin/main）：修复 TS handler 局部变量误判、flow 视图 TS 模块目标按路径解析、类型位置 `import()` 与 fetcher 注入封装的 blocking 误报、存储检测的标记表/引号内字面量误匹配，并新增游离操作流程投影（`detached:<路径>` owner），无运行时归属的操作也有流程页；codelphi@`d4a32ab` 五视图全过、交付 85 页。
+- SQLAlchemy 2.0 切片（识别半在 0daeede，分类半 98664f2）：`session.scalars/stream/add_all` 进入 pythonSqlLineFilter，action 分类 scalars/stream=read、add_all=write（账本 Python SQL 操作 HP-6）。
+- flow 视图 Python 目标解析回归修复（d05d0a5）：handler 调用目标 TS 记原始路径、Python 记 `module:<packageId>:<path>` 完整 ID，查找需双形式兜底；该回归由 `npm run gold:report` 的 fastapi analyzeExitCode 0→1 暴露——gold:report 必须每个切片都跑。
 
 尚未完成：
 
