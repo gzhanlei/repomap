@@ -22,6 +22,29 @@ describe("M4 SQL operations", () => {
     expect(operations.every((operation) => operation.evidenceIds.every((id) => evidenceIds.has(id)))).toBe(true);
   });
 
+  it("classifies SQLAlchemy 2.0 session scalars, stream and add_all as SQL evidence", () => {
+    const analysis = analyzeArchitectureFacts(scope, [
+      { path: "backend/pyproject.toml", content: '[project]\nname = "backend"\nversion = "0.1.0"\n' },
+      { path: "backend/app/__init__.py", content: "" },
+      { path: "backend/app/db.py", content: "import sqlite3\nconn = sqlite3.connect('app.db')\n" },
+      { path: "backend/app/__main__.py", content: [
+        "from . import db",
+        "if __name__ == '__main__':",
+        "    session.add_all([object()])",
+        "    row = session.scalars(select(object))",
+        "    stream = session.stream(select(object))",
+        "    db.conn.execute('SELECT 1')",
+      ].join("\n") },
+    ]);
+    const operations = analysis.ir.operations.filter((operation) => operation.kind === "sql");
+    const byLine = new Map(operations.map((operation) => [Number(operation.callSite?.split(":")[1]), operation.action]));
+    expect(byLine.get(3)).toBe("write");
+    expect(byLine.get(4)).toBe("read");
+    expect(byLine.get(5)).toBe("read");
+    expect(byLine.get(6)).toBe("read");
+    expect(operations.every((operation) => operation.driver === "sqlite")).toBe(true);
+  });
+
   it("emits a migration operation for every alembic op.* statement, including multi-line calls", () => {
     const migration = [
       "from alembic import op",

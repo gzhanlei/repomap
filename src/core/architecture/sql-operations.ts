@@ -60,7 +60,8 @@ function actionFor(evidence: ArchitectureEvidence, source: ArchitectureSource | 
   const migrationPath = /(?:^|\/)(?:migrations?|migrate|alembic|db\/migrate)(?:\/|$)/.test(path);
   const ddl = /CREATE TABLE|ALTER TABLE|CREATE INDEX|DROP TABLE/.test(text);
   if (migrationPath || (evidence.detector.includes("schema") && ddl)) return "migration";
-  if (/\bSESSION\.(?:GET|QUERY)\s*\(/.test(text)) return "read";
+  if (/\bSESSION\.(?:GET|QUERY|SCALARS|STREAM)\s*\(/.test(text)) return "read";
+  if (/\bSESSION\.ADD_ALL\s*\(/.test(text)) return "write";
   if (/\bSESSION\.(?:EXEC|EXECUTE)\s*\(/.test(text)) {
     if (/\bSELECT\b|\.(?:ALL|ONE|FIRST)\s*\(/.test(context)) return "read";
     if (/\b(?:INSERT|UPDATE|DELETE)\s*\(/.test(context)) return "write";
