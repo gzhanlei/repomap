@@ -32,6 +32,13 @@ function operation(action: string, path: string, line: number, topic: string, dy
 
 function independentDeclarations(snapshot: SourceSnapshot) {
   const result = emptyAsyncExtraction();
+  const repoAppNames = new Set<string>();
+  for (const file of snapshot.files) {
+    if (file.language !== "python" || file.role !== "source" || !file.path.endsWith(".py")) continue;
+    const raw = snapshot.rawText(file.path);
+    if (!raw) continue;
+    for (const name of celeryAppReceivers(raw)) repoAppNames.add(name);
+  }
   for (const file of snapshot.files) {
     if (file.language !== "python" || file.role !== "source" || !file.path.endsWith(".py")) continue;
     const raw = snapshot.rawText(file.path);
@@ -50,7 +57,7 @@ function independentDeclarations(snapshot: SourceSnapshot) {
       }
       if (/\basyncio\.(create_task|gather)\s*\(/.test(line)) result.declarations.push({ id: asyncDeclarationId("consume", file.path, index + 1, line.match(/asyncio\.(create_task|gather)/)?.[1] ?? "create_task"), path: file.path, line: index + 1 });
       if (/\basyncio\.sleep\s*\(|\bthreading\.Timer\s*\(|\bschedule\.every\s*\(/.test(line)) result.declarations.push({ id: asyncDeclarationId("schedule", file.path, index + 1, line.includes("threading.Timer") ? "threading.Timer" : line.includes("schedule.every") ? "schedule.every" : "asyncio.sleep"), path: file.path, line: index + 1 });
-      if (isCeleryDecorator(line, celeryContext)) {
+      if (isCeleryDecorator(line, celeryContext, repoAppNames)) {
         const handler = lines.slice(index, index + 5).join("\n").match(/def\s+([A-Za-z_]\w*)/)?.[1] ?? "celery";
         result.declarations.push({ id: asyncDeclarationId("consume", file.path, index + 1, handler), path: file.path, line: index + 1 });
       }
@@ -92,9 +99,30 @@ function celeryReceivers(raw: string) {
   return receivers;
 }
 
-function isCeleryDecorator(statement: string, receivers: Set<string>) {
+function isCeleryDecorator(statement: string, receivers: Set<string>, repoAppNames: Set<string>) {
   const match = statement.match(/^\s*@([A-Za-z_]\w*)(?:\.(task|shared_task))?\b/);
-  return Boolean(match && receivers.has(match[1]) && (match[2] || match[1] === "task" || match[1] === "shared_task"));
+  if (!match) return false;
+  const [, receiver, suffix] = match;
+  if (receivers.has(receiver)) return Boolean(suffix || receiver === "task" || receiver === "shared_task");
+  // A dotted .task/.shared_task decorator on a repo-wide constructed Celery app
+  // receiver is a celery task even when the app object is imported from a sibling module.
+  return Boolean(suffix && repoAppNames.has(receiver));
+}
+
+/** Receivers actually bound to a Celery constructor anywhere in the file. */
+function celeryAppReceivers(raw: string) {
+  const names = new Set<string>();
+  let hasConstructor = false;
+  for (const line of pythonCodeLines(raw)) {
+    if (/^\s*from\s+[\w.]*celery[\w.]*\s+import\s+.*\bCelery\b|^\s*import\s+celery\b/.test(line)) hasConstructor = true;
+    const assignment = line.match(/^\s*([A-Za-z_]\w*)\s*=\s*Celery\s*\(/);
+    if (assignment && hasConstructor) names.add(assignment[1]);
+  }
+  return names;
+}
+
+function importsCelery(raw: string) {
+  return pythonCodeLines(raw).some((line) => /(?:^|\s)from\s+[\w.]*celery[\w.]*\s+import\s+|\s*import\s+[\w.]*celery/.test(line));
 }
 
 function explicitImportSource(raw: string, receiver: string) {
@@ -140,6 +168,22 @@ export function analyzePythonAsync(input: { snapshot: SourceSnapshot; enabled?: 
     }));
     return result;
   }
+  // Repo-wide celery task registry: decorated task names let producer files
+  // (which import the task, not celery) attribute their enqueues to the task.
+  const repoTaskNames = new Set<string>();
+  const repoAppNames = new Set<string>();
+  for (const file of input.snapshot.files) {
+    if (file.language !== "python" || file.role !== "source" || !file.path.endsWith(".py")) continue;
+    const raw = input.snapshot.rawText(file.path);
+    if (!raw) continue;
+    for (const name of celeryAppReceivers(raw)) repoAppNames.add(name);
+    const parsed = parsePythonSource(raw);
+    if (!parsed) continue;
+    const celeryContext = celeryReceivers(raw);
+    for (const decorator of parsed.decorators) {
+      if (isCeleryDecorator(`@${decorator.name}`, celeryContext, repoAppNames)) repoTaskNames.add(decoratorTopic(decorator));
+    }
+  }
   for (const file of input.snapshot.files) {
     if (file.language !== "python" || file.role !== "source" || !file.path.endsWith(".py")) continue;
     const raw = input.snapshot.rawText(file.path);
@@ -156,6 +200,29 @@ export function analyzePythonAsync(input: { snapshot: SourceSnapshot; enabled?: 
       if ((name === "get" || name === "get_nowait") && queueReceivers.has(receiver)) result.operations.push(operation("consume", file.path, call.line, topicForCall(call), false, file.packageId));
       if (call.name === "asyncio.create_task" || call.name === "asyncio.gather") result.operations.push(operation("consume", file.path, call.line, name ?? "create_task", false, file.packageId));
       if (call.name === "asyncio.sleep" || call.name === "threading.Timer" || call.name === "schedule.every") result.operations.push(operation("schedule", file.path, call.line, name === "Timer" ? "threading.Timer" : name === "every" ? "schedule.every" : "asyncio.sleep", false, file.packageId));
+      // Celery enqueues: .delay()/.apply_async() on a task. The file must be
+      // celery-bound or the receiver must be a repo-wide decorated task name,
+      // so unrelated delay methods do not become queue operations. A clean
+      // identifier receiver names the task; a canvas expression fails closed
+      // as a dynamic identity with a blocking omission.
+      if ((name === "delay" || name === "apply_async") && (importsCelery(raw) || repoTaskNames.has(receiver))) {
+        if (/^[A-Za-z_]\w*$/.test(receiver)) {
+          result.operations.push(operation("enqueue", file.path, call.line, receiver, false, file.packageId));
+        } else {
+          const current = operation("enqueue", file.path, call.line, "dynamic", true, file.packageId);
+          result.operations.push(current);
+          result.omissions.push(irOmissionSchema.parse({
+            id: `omission:python-async-enqueue:${file.path}:${call.line}`,
+            owner: current.id,
+            reason: "unknown-identity",
+            detail: `Celery enqueue receiver is not a task identifier at ${file.path}:${call.line}`,
+            declarationIds: current.declarationIds,
+            evidenceIds: current.evidenceIds,
+            affectedViews: ["protocol-flows", "full-declared-scope"],
+            blocking: true,
+          }));
+        }
+      }
       if ((name === "publish" || name === "subscribe") && hasPubSubReceiver(receiver, raw)) {
         const topic = literal(call.arguments[0]);
         const current = operation(name, file.path, call.line, topic ?? "dynamic", topic === undefined, file.packageId);
@@ -173,7 +240,7 @@ export function analyzePythonAsync(input: { snapshot: SourceSnapshot; enabled?: 
       }
     }
     for (const decorator of parsed.decorators) {
-      if (isCeleryDecorator(`@${decorator.name}`, celeryContext)) result.operations.push(operation("consume", file.path, decorator.line, decoratorTopic(decorator), false, file.packageId));
+      if (isCeleryDecorator(`@${decorator.name}`, celeryContext, repoAppNames)) result.operations.push(operation("consume", file.path, decorator.line, decoratorTopic(decorator), false, file.packageId));
     }
   }
   result.evidenceRecords = result.operations.map((operation) => {

@@ -341,6 +341,43 @@ describe("M8 Python protocols", () => {
     expect(candidate?.target).toMatchObject({ kind: "service", resolution: "configured", configKey: "PAYMENTS_API_URL" });
   });
 
+  it("extracts celery delay and apply_async enqueues with task-name topics", () => {
+    const analysis = analyze({
+      "proj/tasks.py": [
+        "from celery import Celery",
+        "app = Celery('demo', broker='redis://localhost')",
+        "@app.task",
+        "def add(x, y):",
+        "    return x + y",
+        "@shared_task",
+        "def send_report():",
+        "    return 'ok'",
+      ].join("\n"),
+      "proj/producer.py": [
+        "from proj.tasks import add",
+        "add.delay(2, 2)",
+        "result = add.apply_async(args=[2, 2], countdown=10)",
+      ].join("\n"),
+      "proj/inline.py": [
+        "from celery import shared_task",
+        "def run_batch():",
+        "    send_report.delay()",
+      ].join("\n"),
+    });
+    const enqueues = analysis.asyncGraph.operations.filter((operation) => operation.action === "enqueue");
+    const topics = enqueues.map((operation) => `${operation.callSite}:${(operation as { topic?: string }).topic}`).sort();
+    expect(topics).toEqual([
+      "proj/inline.py:3:send_report",
+      "proj/producer.py:2:add",
+      "proj/producer.py:3:add",
+    ]);
+    // a file with no celery binding and no known task receiver is not a queue operation
+    const negative = analyze({
+      "app/util.py": "class Retry:\n    def delay(self):\n        return 1\n\nretry.delay()\n",
+    });
+    expect(negative.asyncGraph.operations.some((operation) => operation.action === "enqueue")).toBe(false);
+  });
+
   it("does not treat router, ORM, dict or HTTP methods as queue operations", () => {
     const analysis = analyze({
       "app/main.py": [
