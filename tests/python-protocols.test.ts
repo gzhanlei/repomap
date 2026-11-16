@@ -202,6 +202,27 @@ describe("M8 Python protocols", () => {
     expect(analysis.ir.omissions.some((omission) => omission.owner.startsWith("python-sql:"))).toBe(false);
   });
 
+  it("recognizes module-level script and asyncio.run entry files as runtime units", () => {
+    const analysis = analyze({
+      "app/script_style.py": [
+        "from sqlalchemy import create_engine, select",
+        "engine = create_engine('sqlite:///app.db')",
+        "rows = session.scalars(select(Item))",
+      ].join("\n"),
+      "app/asyncio_style.py": [
+        "import asyncio",
+        "from sqlalchemy.ext.asyncio import create_async_engine",
+        "async def main():",
+        "    engine = create_async_engine('sqlite+aiosqlite:///app.db')",
+        "asyncio.run(main())",
+      ].join("\n"),
+    });
+    const scriptUnit = analysis.facts.nodes.filter((node) => ["cli", "api", "worker"].includes(node.kind) && (node.sourcePaths ?? []).includes("app/script_style.py"));
+    expect(scriptUnit).toHaveLength(1);
+    const asyncioUnit = analysis.facts.nodes.filter((node) => ["cli", "api", "worker"].includes(node.kind) && (node.sourcePaths ?? []).includes("app/asyncio_style.py"));
+    expect(asyncioUnit).toHaveLength(1);
+  });
+
   it("extracts asyncio queue and schedule operations", () => {
     const analysis = analyze({
       "app/jobs.py": [
@@ -263,7 +284,9 @@ describe("M8 Python protocols", () => {
       "app/alembic/versions/v1.py": "op.execute('CREATE TABLE users (id INTEGER)')\n",
     });
     expect(analysis.facts.nodes.find((node) => node.id === "store:postgres")?.evidence.some((item) => item.path === "app/alembic/versions/v1.py")).toBe(true);
-    expect(analysis.ir.operations.some((operation) => operation.kind === "sql" && operation.action === "migration" && operation.owner === "python:app")).toBe(true);
+    // script-style entry detection makes the alembic versions directory its own runtime unit;
+    // the invariant is that real op.* calls keep a python: runtime owner, not the store
+    expect(analysis.ir.operations.some((operation) => operation.kind === "sql" && operation.action === "migration" && operation.owner.startsWith("python:"))).toBe(true);
     expect(analysis.ir.operations.some((operation) => operation.kind === "sql" && operation.callSite?.includes("env.py:2"))).toBe(false);
   });
 

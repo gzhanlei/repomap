@@ -8,7 +8,7 @@ const sqliteMarkers = ["go-sqlite3", "sqlite3_with_regex", "driverSQLite", "sqli
 const postgresMarkers = ["lib/pq", "pgx", "postgres", "postgresql", "psycopg", "psycopg2", "asyncpg", "postgres://", "postgresql://"];
 const fileCacheMarkers = ["file_get_contents", "file_put_contents"];
 
-function pythonSqlLineFilter(path: string, line: string) {
+export function pythonSqlLineFilter(path: string, line: string) {
   if (!path.endsWith(".py")) return true;
   const code = line.replace(/^\s*\d+:\s?/, "").trim();
   if (code.startsWith("@") || /\b(?:requests|httpx)\./.test(code)) return false;

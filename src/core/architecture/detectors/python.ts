@@ -1,6 +1,7 @@
 import { posix } from "node:path";
 import { findArchitectureEvidence, architectureLineNumber, type ArchitectureSource } from "../source.js";
 import { pythonCodeLines, pythonMainGuardLine } from "../project/python-source.js";
+import { pythonSqlLineFilter } from "./storage.js";
 import type { NodeFact } from "../facts.js";
 import { actorNode, emptyArchitectureFragment, factEdge, type ArchitectureContext, type ArchitectureDetector, type ArchitectureFragment } from "./types.js";
 
@@ -15,18 +16,33 @@ function sourcePaths(sources: ArchitectureSource[], unit: string, childUnits: st
   return sources.filter((candidate) => candidate.path.endsWith(".py") && (prefix === "" || candidate.path.startsWith(prefix)) && !childPrefixes.some((child) => candidate.path.startsWith(child))).map((candidate) => candidate.path).sort();
 }
 
+/** A script-style entrypoint executes at module level: an indent-0 statement that
+ *  issues a storage call or starts an asyncio run loop, with no main guard required. */
+function scriptEntryLine(source: ArchitectureSource) {
+  const lines = pythonCodeLines(source.content);
+  for (const [index, line] of lines.entries()) {
+    const code = line.replace(/^\s*\d+:\s?/, "");
+    if (code.slice(0, 1) === " " || code.slice(0, 1) === "\t" || code.trim().length === 0) continue;
+    if (/^(?:#|@|from |import |def |class )/.test(code.trim())) continue;
+    if (pythonSqlLineFilter(source.path, code) || /\basyncio\.run\s*\(/.test(code)) {
+      return { path: source.path, line: architectureLineNumber(line, index), detector: "python-script-entry" };
+    }
+  }
+  return undefined;
+}
+
 function entryEvidence(source: ArchitectureSource) {
   const guardLine = pythonMainGuardLine(source.content);
   if (guardLine >= 0) return { path: source.path, line: architectureLineNumber(source.content.split("\n")[guardLine], guardLine), detector: "python-main-guard" };
   if (source.path.endsWith("__main__.py") && source.content.trim().length > 0) return { path: source.path, line: 1, detector: "python-main-module" };
   if (/(?:^|\/)(?:wsgi|asgi)\.py$/.test(source.path) && source.content.trim().length > 0) return { path: source.path, line: 1, detector: "python-web-entrypoint" };
   if (/(?:FastAPI|Flask)\s*\(/.test(pythonCodeLines(source.content).join("\n"))) return findArchitectureEvidence({ ...source, content: pythonCodeLines(source.content).join("\n") }, ["FastAPI", "Flask"], "python-web-entrypoint");
-  return undefined;
+  return scriptEntryLine(source);
 }
 
 function detectPython(context: ArchitectureContext): ArchitectureFragment {
   const fragment = emptyArchitectureFragment();
-  const entries = context.sources.filter((source) => source.path.endsWith(".py") && (source.path.endsWith("__main__.py") || /(?:^|\/)(?:wsgi|asgi)\.py$/.test(source.path) || /(?:FastAPI|Flask)\s*\(/.test(pythonCodeLines(source.content).join("\n")) || pythonMainGuardLine(source.content) >= 0));
+  const entries = context.sources.filter((source) => source.path.endsWith(".py") && (source.path.endsWith("__main__.py") || /(?:^|\/)(?:wsgi|asgi)\.py$/.test(source.path) || /(?:FastAPI|Flask)\s*\(/.test(pythonCodeLines(source.content).join("\n")) || pythonMainGuardLine(source.content) >= 0 || scriptEntryLine(source) !== undefined));
   const entriesByUnit = new Map<string, ArchitectureSource[]>();
   for (const source of entries) {
     const unit = unitFor(source);
