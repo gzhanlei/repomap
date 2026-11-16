@@ -1,0 +1,434 @@
+{
+  "version": 1,
+  "corpusId": "celery",
+  "revision": "9c2f238334331db43f15956f131235fd3bb70fd1",
+  "auditedBy": "Lei Han",
+  "auditedAt": "2026-11-17",
+  "note": "Human-audited targeted facts from the pinned archive examples/** scope: complete enumeration of all 36 celery task decorators (consume, topic = decorated function name, including cross-module app receivers like from .celery import app and from config import app) and all 13 statically identifiable .delay()/.apply_async() enqueues (topic = receiver identifier). Three canvas-expression receivers (quorum-queues/myapp.py:109, resultgraph/tasks.py:54 and :83) are not task identifiers and fail closed as dynamic enqueue operations with blocking unknown-identity omissions by design - they are asserted as expected omissions, not gold facts. This audit drove the celery enqueue slice: .delay()/.apply_async() were previously undetected, the repo-wide decorated-task registry now lets producer files without celery imports attribute enqueues, cross-module app receivers are bound through the repo-wide constructed-app registry (repoAppNames), and non-identifier receivers fail closed. The analyze gate failure (blocking omissions in a library/test-heavy repo) is recorded as expectedGateFailure.",
+  "facts": [
+    {
+      "id": "async-celery-task-myapp-38",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/app/myapp.py:38",
+      "topic": "add",
+      "evidencePath": "examples/app/myapp.py",
+      "note": "@task decorator on add"
+    },
+    {
+      "id": "async-celery-task-tasks-4",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/celery_http_gateway/tasks.py:4",
+      "topic": "hello_world",
+      "evidencePath": "examples/celery_http_gateway/tasks.py",
+      "note": "@task decorator on hello_world"
+    },
+    {
+      "id": "async-celery-task-tasks-13",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/django/demoapp/tasks.py:13",
+      "topic": "mul",
+      "evidencePath": "examples/django/demoapp/tasks.py",
+      "note": "@task decorator on mul"
+    },
+    {
+      "id": "async-celery-task-tasks-18",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/django/demoapp/tasks.py:18",
+      "topic": "xsum",
+      "evidencePath": "examples/django/demoapp/tasks.py",
+      "note": "@task decorator on xsum"
+    },
+    {
+      "id": "async-celery-task-tasks-23",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/django/demoapp/tasks.py:23",
+      "topic": "count_widgets",
+      "evidencePath": "examples/django/demoapp/tasks.py",
+      "note": "@task decorator on count_widgets"
+    },
+    {
+      "id": "async-celery-task-tasks-28",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/django/demoapp/tasks.py:28",
+      "topic": "rename_widget",
+      "evidencePath": "examples/django/demoapp/tasks.py",
+      "note": "@task decorator on rename_widget"
+    },
+    {
+      "id": "async-celery-task-tasks-35",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/django/demoapp/tasks.py:35",
+      "topic": "error_task",
+      "evidencePath": "examples/django/demoapp/tasks.py",
+      "note": "@task decorator on error_task"
+    },
+    {
+      "id": "async-celery-task-tasks-44",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/django/demoapp/tasks.py:44",
+      "topic": "error_backoff_test",
+      "evidencePath": "examples/django/demoapp/tasks.py",
+      "note": "@task decorator on error_backoff_test"
+    },
+    {
+      "id": "async-celery-task-tasks-8",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/django/demoapp/tasks.py:8",
+      "topic": "add",
+      "evidencePath": "examples/django/demoapp/tasks.py",
+      "note": "@task decorator on add"
+    },
+    {
+      "id": "async-celery-task-celery-20",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/django/proj/celery.py:20",
+      "topic": "debug_task",
+      "evidencePath": "examples/django/proj/celery.py",
+      "note": "@task decorator on debug_task"
+    },
+    {
+      "id": "async-celery-task-tasks-6",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/eventlet/tasks.py:6",
+      "topic": "urlopen",
+      "evidencePath": "examples/eventlet/tasks.py",
+      "note": "@task decorator on urlopen"
+    },
+    {
+      "id": "async-celery-task-webcrawler-46",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/eventlet/webcrawler.py:46",
+      "topic": "crawl",
+      "evidencePath": "examples/eventlet/webcrawler.py",
+      "note": "@task decorator on crawl"
+    },
+    {
+      "id": "async-celery-task-tasks-6",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/gevent/tasks.py:6",
+      "topic": "urlopen",
+      "evidencePath": "examples/gevent/tasks.py",
+      "note": "@task decorator on urlopen"
+    },
+    {
+      "id": "async-celery-task-tasks-14",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/next-steps/proj/tasks.py:14",
+      "topic": "xsum",
+      "evidencePath": "examples/next-steps/proj/tasks.py",
+      "note": "@task decorator on xsum"
+    },
+    {
+      "id": "async-celery-task-tasks-4",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/next-steps/proj/tasks.py:4",
+      "topic": "add",
+      "evidencePath": "examples/next-steps/proj/tasks.py",
+      "note": "@task decorator on add"
+    },
+    {
+      "id": "async-celery-task-tasks-9",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/next-steps/proj/tasks.py:9",
+      "topic": "mul",
+      "evidencePath": "examples/next-steps/proj/tasks.py",
+      "note": "@task decorator on mul"
+    },
+    {
+      "id": "async-celery-task-myapp-45",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/periodic-tasks/myapp.py:45",
+      "topic": "say",
+      "evidencePath": "examples/periodic-tasks/myapp.py",
+      "note": "@task decorator on say"
+    },
+    {
+      "id": "async-celery-task-tasks-16",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/pydantic/tasks.py:16",
+      "topic": "x",
+      "evidencePath": "examples/pydantic/tasks.py",
+      "note": "@task decorator on x"
+    },
+    {
+      "id": "async-celery-task-myapp-61",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/quorum-queues/myapp.py:61",
+      "topic": "add",
+      "evidencePath": "examples/quorum-queues/myapp.py",
+      "note": "@task decorator on add"
+    },
+    {
+      "id": "async-celery-task-myapp-66",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/quorum-queues/myapp.py:66",
+      "topic": "identity",
+      "evidencePath": "examples/quorum-queues/myapp.py",
+      "note": "@task decorator on identity"
+    },
+    {
+      "id": "async-celery-task-tasks-27",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/resultgraph/tasks.py:27",
+      "topic": "add",
+      "evidencePath": "examples/resultgraph/tasks.py",
+      "note": "@task decorator on add"
+    },
+    {
+      "id": "async-celery-task-tasks-32",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/resultgraph/tasks.py:32",
+      "topic": "make_request",
+      "evidencePath": "examples/resultgraph/tasks.py",
+      "note": "@task decorator on make_request"
+    },
+    {
+      "id": "async-celery-task-tasks-38",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/resultgraph/tasks.py:38",
+      "topic": "B_callback",
+      "evidencePath": "examples/resultgraph/tasks.py",
+      "note": "@task decorator on B_callback"
+    },
+    {
+      "id": "async-celery-task-tasks-44",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/resultgraph/tasks.py:44",
+      "topic": "B",
+      "evidencePath": "examples/resultgraph/tasks.py",
+      "note": "@task decorator on B"
+    },
+    {
+      "id": "async-celery-task-tasks-52",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/resultgraph/tasks.py:52",
+      "topic": "A",
+      "evidencePath": "examples/resultgraph/tasks.py",
+      "note": "@task decorator on A"
+    },
+    {
+      "id": "async-celery-task-tasks-76",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/resultgraph/tasks.py:76",
+      "topic": "unlock_graph",
+      "evidencePath": "examples/resultgraph/tasks.py",
+      "note": "@task decorator on unlock_graph"
+    },
+    {
+      "id": "async-celery-task-tasks-89",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/resultgraph/tasks.py:89",
+      "topic": "A_callback",
+      "evidencePath": "examples/resultgraph/tasks.py",
+      "note": "@task decorator on A_callback"
+    },
+    {
+      "id": "async-celery-task-mysecureapp-47",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/security/mysecureapp.py:47",
+      "topic": "boom",
+      "evidencePath": "examples/security/mysecureapp.py",
+      "note": "@task decorator on boom"
+    },
+    {
+      "id": "async-celery-task-tasks-101",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/stamping/tasks.py:101",
+      "topic": "wait_for_revoke",
+      "evidencePath": "examples/stamping/tasks.py",
+      "note": "@task decorator on wait_for_revoke"
+    },
+    {
+      "id": "async-celery-task-tasks-57",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/stamping/tasks.py:57",
+      "topic": "identity_task",
+      "evidencePath": "examples/stamping/tasks.py",
+      "note": "@task decorator on identity_task"
+    },
+    {
+      "id": "async-celery-task-tasks-64",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/stamping/tasks.py:64",
+      "topic": "replaced_identity",
+      "evidencePath": "examples/stamping/tasks.py",
+      "note": "@task decorator on replaced_identity"
+    },
+    {
+      "id": "async-celery-task-tasks-74",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/stamping/tasks.py:74",
+      "topic": "identity",
+      "evidencePath": "examples/stamping/tasks.py",
+      "note": "@task decorator on identity"
+    },
+    {
+      "id": "async-celery-task-tasks-80",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/stamping/tasks.py:80",
+      "topic": "mul",
+      "evidencePath": "examples/stamping/tasks.py",
+      "note": "@task decorator on mul"
+    },
+    {
+      "id": "async-celery-task-tasks-86",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/stamping/tasks.py:86",
+      "topic": "xsum",
+      "evidencePath": "examples/stamping/tasks.py",
+      "note": "@task decorator on xsum"
+    },
+    {
+      "id": "async-celery-task-tasks-92",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/stamping/tasks.py:92",
+      "topic": "waitfor",
+      "evidencePath": "examples/stamping/tasks.py",
+      "note": "@task decorator on waitfor"
+    },
+    {
+      "id": "async-celery-task-tasks-6",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "examples/tutorial/tasks.py:6",
+      "topic": "add",
+      "evidencePath": "examples/tutorial/tasks.py",
+      "note": "@task decorator on add"
+    },
+    {
+      "id": "async-celery-enqueue-bulk_task_producer-87",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/eventlet/bulk_task_producer.py:87",
+      "topic": "task",
+      "evidencePath": "examples/eventlet/bulk_task_producer.py",
+      "note": ".delay()/.apply_async() enqueue on receiver task"
+    },
+    {
+      "id": "async-celery-enqueue-webcrawler-68",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/eventlet/webcrawler.py:68",
+      "topic": "subtasks",
+      "evidencePath": "examples/eventlet/webcrawler.py",
+      "note": ".delay()/.apply_async() enqueue on receiver subtasks"
+    },
+    {
+      "id": "async-celery-enqueue-myapp-91",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/quorum-queues/myapp.py:91",
+      "topic": "identity",
+      "evidencePath": "examples/quorum-queues/myapp.py",
+      "note": ".delay()/.apply_async() enqueue on receiver identity"
+    },
+    {
+      "id": "async-celery-enqueue-myapp-93",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/quorum-queues/myapp.py:93",
+      "topic": "identity",
+      "evidencePath": "examples/quorum-queues/myapp.py",
+      "note": ".delay()/.apply_async() enqueue on receiver identity"
+    },
+    {
+      "id": "async-celery-enqueue-tasks-103",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/resultgraph/tasks.py:103",
+      "topic": "unlock_graph",
+      "evidencePath": "examples/resultgraph/tasks.py",
+      "note": ".delay()/.apply_async() enqueue on receiver unlock_graph"
+    },
+    {
+      "id": "async-celery-enqueue-examples-18",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/stamping/examples.py:18",
+      "topic": "canvas",
+      "evidencePath": "examples/stamping/examples.py",
+      "note": ".delay()/.apply_async() enqueue on receiver canvas"
+    },
+    {
+      "id": "async-celery-enqueue-examples-30",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/stamping/examples.py:30",
+      "topic": "s1",
+      "evidencePath": "examples/stamping/examples.py",
+      "note": ".delay()/.apply_async() enqueue on receiver s1"
+    },
+    {
+      "id": "async-celery-enqueue-examples-40",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/stamping/examples.py:40",
+      "topic": "sig1",
+      "evidencePath": "examples/stamping/examples.py",
+      "note": ".delay()/.apply_async() enqueue on receiver sig1"
+    },
+    {
+      "id": "async-celery-enqueue-examples-46",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/stamping/examples.py:46",
+      "topic": "sig1",
+      "evidencePath": "examples/stamping/examples.py",
+      "note": ".delay()/.apply_async() enqueue on receiver sig1"
+    },
+    {
+      "id": "async-celery-enqueue-revoke_example-56",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/stamping/revoke_example.py:56",
+      "topic": "canvas",
+      "evidencePath": "examples/stamping/revoke_example.py",
+      "note": ".delay()/.apply_async() enqueue on receiver canvas"
+    },
+    {
+      "id": "async-celery-enqueue-revoke_example-75",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/stamping/revoke_example.py:75",
+      "topic": "canvas",
+      "evidencePath": "examples/stamping/revoke_example.py",
+      "note": ".delay()/.apply_async() enqueue on receiver canvas"
+    }
+  ],
+  "precisionScopes": []
+}

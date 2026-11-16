@@ -4,9 +4,9 @@
   "generator": "scripts/gold-report.ts (npm run gold:report); regenerate, never hand-edit",
   "allPassed": true,
   "totals": {
-    "corpora": 5,
-    "criticalFacts": 302,
-    "covered": 302,
+    "corpora": 6,
+    "criticalFacts": 349,
+    "covered": 349,
     "suspectedFalsePositives": 0,
     "evidenceInvalid": 0
   },
@@ -388,6 +388,60 @@
           "routeGraph": 0,
           "asyncGraph": 0,
           "ir": 1083
+        }
+      }
+    },
+    {
+      "corpusId": "celery",
+      "repository": "celery/celery@9c2f238334331db43f15956f131235fd3bb70fd1",
+      "revision": "9c2f238334331db43f15956f131235fd3bb70fd1",
+      "analyzeExitCode": 1,
+      "gateFailure": "library/test-heavy repo: blocking omissions (unresolved relative imports, unknown-identity external calls, and canvas-expression celery enqueues failing closed as dynamic identities) are by design; the async operations artifact is complete for gold evaluation",
+      "evaluation": {
+        "corpusId": "celery",
+        "revision": "9c2f238334331db43f15956f131235fd3bb70fd1",
+        "passed": true,
+        "recall": {
+          "total": 47,
+          "covered": 47,
+          "missing": [],
+          "byKind": {
+            "async-operation": {
+              "total": 47,
+              "covered": 47,
+              "missing": 0
+            }
+          },
+          "dimensions": {
+            "node": {
+              "total": 47,
+              "covered": 47,
+              "missing": 0
+            },
+            "edge": {
+              "total": 0,
+              "covered": 0,
+              "missing": 0
+            },
+            "direction": {
+              "total": 0,
+              "covered": 0,
+              "missing": 0
+            }
+          }
+        },
+        "precision": {
+          "scopes": [],
+          "suspectedFalsePositives": []
+        },
+        "evidence": {
+          "checked": 47,
+          "invalid": []
+        },
+        "omissions": {
+          "routeGraph": 0,
+          "asyncGraph": 39,
+          "ir": 577
         }
       }
     }
