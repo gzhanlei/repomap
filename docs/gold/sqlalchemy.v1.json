@@ -1,0 +1,539 @@
+{
+  "version": 1,
+  "corpusId": "sqlalchemy",
+  "revision": "fe8e67751891de18ba27171bbc8aa23b28bb8348",
+  "auditedBy": "Lei Han",
+  "auditedAt": "2026-11-17",
+  "note": "Human-audited targeted facts from the pinned archive examples/** scope: all 66 session.scalars/session.stream/session.add_all call sites hand-read (including the sess short alias in sharding/performance/versioned_history and the Session receiver in dogpile_caching), classified read for scalars/stream and write for add_all. This audit drove the SQLAlchemy 2.0 session slice: caller marker lists lacked the three methods (multi-line callee lines never matched), the sess alias was absent from the line filter and action classifier, and driver detection was poisoned by string literals (\"MySQL Crowbar\" suppressed every caller edge in examples/association). Measured recall at audit time: 24/66. Remaining known gaps, each a planned follow-up slice: (1) python runtime entrypoint detection misses module-level scripts and asyncio.run entry files (examples/asyncio, examples/inheritance, examples/generic_associations, examples/graphs, examples/nested_sets have no runtime unit, so their session calls are never scanned); (2) per-file driver attribution suppresses files whose engine lives in a sibling module (examples/dogpile_caching, examples/performance use engines from package-level environment/__init__). Commits and session.execute operations under examples/** are not yet enumerated; precision scopes are deferred until those slices converge.",
+  "facts": [
+    {
+      "id": "sql-session-add_all-adjacency_list-adjacency_list-79",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/adjacency_list/adjacency_list.py:79",
+      "evidencePath": "examples/adjacency_list/adjacency_list.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-adjacency_list-adjacency_list-106",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/adjacency_list/adjacency_list.py:106",
+      "evidencePath": "examples/adjacency_list/adjacency_list.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-association-basic_association-90",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/association/basic_association.py:90",
+      "evidencePath": "examples/association/basic_association.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-association-basic_association-104",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/association/basic_association.py:104",
+      "evidencePath": "examples/association/basic_association.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-association-basic_association-125",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/association/basic_association.py:125",
+      "evidencePath": "examples/association/basic_association.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-association-dict_of_sets_with_default-93",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/association/dict_of_sets_with_default.py:93",
+      "evidencePath": "examples/association/dict_of_sets_with_default.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-association-dict_of_sets_with_default-96",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/association/dict_of_sets_with_default.py:96",
+      "evidencePath": "examples/association/dict_of_sets_with_default.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-association-proxied_association-90",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/association/proxied_association.py:90",
+      "evidencePath": "examples/association/proxied_association.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-association-proxied_association-108",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/association/proxied_association.py:108",
+      "evidencePath": "examples/association/proxied_association.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-association-proxied_association-131",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/association/proxied_association.py:131",
+      "evidencePath": "examples/association/proxied_association.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-asyncio-async_orm-67",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/asyncio/async_orm.py:67",
+      "evidencePath": "examples/asyncio/async_orm.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-asyncio-async_orm-80",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/asyncio/async_orm.py:80",
+      "evidencePath": "examples/asyncio/async_orm.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-stream-asyncio-async_orm-90",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/asyncio/async_orm.py:90",
+      "evidencePath": "examples/asyncio/async_orm.py",
+      "note": "stream call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-asyncio-async_orm-98",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/asyncio/async_orm.py:98",
+      "evidencePath": "examples/asyncio/async_orm.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-asyncio-async_orm_writeonly-69",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/asyncio/async_orm_writeonly.py:69",
+      "evidencePath": "examples/asyncio/async_orm_writeonly.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-asyncio-async_orm_writeonly-79",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/asyncio/async_orm_writeonly.py:79",
+      "evidencePath": "examples/asyncio/async_orm_writeonly.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-asyncio-async_orm_writeonly-86",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/asyncio/async_orm_writeonly.py:86",
+      "evidencePath": "examples/asyncio/async_orm_writeonly.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-stream-asyncio-async_orm_writeonly-89",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/asyncio/async_orm_writeonly.py:89",
+      "evidencePath": "examples/asyncio/async_orm_writeonly.py",
+      "note": "stream call on the session session alias"
+    },
+    {
+      "id": "sql-session-stream-asyncio-async_orm_writeonly-95",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/asyncio/async_orm_writeonly.py:95",
+      "evidencePath": "examples/asyncio/async_orm_writeonly.py",
+      "note": "stream call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-asyncio-async_orm_writeonly-99",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/asyncio/async_orm_writeonly.py:99",
+      "evidencePath": "examples/asyncio/async_orm_writeonly.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-asyncio-gather_orm_statements-79",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/asyncio/gather_orm_statements.py:79",
+      "evidencePath": "examples/asyncio/gather_orm_statements.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-asyncio-greenlet_orm-79",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/asyncio/greenlet_orm.py:79",
+      "evidencePath": "examples/asyncio/greenlet_orm.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-dogpile_caching-advanced-57",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/dogpile_caching/advanced.py:57",
+      "evidencePath": "examples/dogpile_caching/advanced.py",
+      "note": "scalars call on the Session session alias"
+    },
+    {
+      "id": "sql-session-add_all-dogpile_caching-fixture_data-47",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/dogpile_caching/fixture_data.py:47",
+      "evidencePath": "examples/dogpile_caching/fixture_data.py",
+      "note": "add_all call on the Session session alias"
+    },
+    {
+      "id": "sql-session-scalars-dogpile_caching-helloworld-11",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/dogpile_caching/helloworld.py:11",
+      "evidencePath": "examples/dogpile_caching/helloworld.py",
+      "note": "scalars call on the Session session alias"
+    },
+    {
+      "id": "sql-session-scalars-dogpile_caching-helloworld-19",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/dogpile_caching/helloworld.py:19",
+      "evidencePath": "examples/dogpile_caching/helloworld.py",
+      "note": "scalars call on the Session session alias"
+    },
+    {
+      "id": "sql-session-scalars-dogpile_caching-helloworld-24",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/dogpile_caching/helloworld.py:24",
+      "evidencePath": "examples/dogpile_caching/helloworld.py",
+      "note": "scalars call on the Session session alias"
+    },
+    {
+      "id": "sql-session-scalars-dogpile_caching-helloworld-35",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/dogpile_caching/helloworld.py:35",
+      "evidencePath": "examples/dogpile_caching/helloworld.py",
+      "note": "scalars call on the Session session alias"
+    },
+    {
+      "id": "sql-session-scalars-dogpile_caching-helloworld-44",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/dogpile_caching/helloworld.py:44",
+      "evidencePath": "examples/dogpile_caching/helloworld.py",
+      "note": "scalars call on the Session session alias"
+    },
+    {
+      "id": "sql-session-scalars-dogpile_caching-local_session_caching-86",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/dogpile_caching/local_session_caching.py:86",
+      "evidencePath": "examples/dogpile_caching/local_session_caching.py",
+      "note": "scalars call on the Session session alias"
+    },
+    {
+      "id": "sql-session-scalars-dogpile_caching-local_session_caching-89",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/dogpile_caching/local_session_caching.py:89",
+      "evidencePath": "examples/dogpile_caching/local_session_caching.py",
+      "note": "scalars call on the Session session alias"
+    },
+    {
+      "id": "sql-session-scalars-dogpile_caching-local_session_caching-96",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/dogpile_caching/local_session_caching.py:96",
+      "evidencePath": "examples/dogpile_caching/local_session_caching.py",
+      "note": "scalars call on the Session session alias"
+    },
+    {
+      "id": "sql-session-scalars-dogpile_caching-relationship_caching-19",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/dogpile_caching/relationship_caching.py:19",
+      "evidencePath": "examples/dogpile_caching/relationship_caching.py",
+      "note": "scalars call on the Session session alias"
+    },
+    {
+      "id": "sql-session-add_all-extending_query-filter_public-93",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/extending_query/filter_public.py:93",
+      "evidencePath": "examples/extending_query/filter_public.py",
+      "note": "add_all call on the sess session alias"
+    },
+    {
+      "id": "sql-session-add_all-extending_query-temporal_range-78",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/extending_query/temporal_range.py:78",
+      "evidencePath": "examples/extending_query/temporal_range.py",
+      "note": "add_all call on the sess session alias"
+    },
+    {
+      "id": "sql-session-add_all-generic_associations-discriminator_on_association-144",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/generic_associations/discriminator_on_association.py:144",
+      "evidencePath": "examples/generic_associations/discriminator_on_association.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-generic_associations-generic_fk-140",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/generic_associations/generic_fk.py:140",
+      "evidencePath": "examples/generic_associations/generic_fk.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-generic_associations-table_per_association-95",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/generic_associations/table_per_association.py:95",
+      "evidencePath": "examples/generic_associations/table_per_association.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-generic_associations-table_per_related-127",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/generic_associations/table_per_related.py:127",
+      "evidencePath": "examples/generic_associations/table_per_related.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-graphs-directed_graph-72",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/graphs/directed_graph.py:72",
+      "evidencePath": "examples/graphs/directed_graph.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-concrete-127",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/concrete.py:127",
+      "evidencePath": "examples/inheritance/concrete.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-concrete-130",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/concrete.py:130",
+      "evidencePath": "examples/inheritance/concrete.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-concrete-144",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/concrete.py:144",
+      "evidencePath": "examples/inheritance/concrete.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-concrete-156",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/concrete.py:156",
+      "evidencePath": "examples/inheritance/concrete.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-joined-125",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/joined.py:125",
+      "evidencePath": "examples/inheritance/joined.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-joined-128",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/joined.py:128",
+      "evidencePath": "examples/inheritance/joined.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-joined-142",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/joined.py:142",
+      "evidencePath": "examples/inheritance/joined.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-joined-155",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/joined.py:155",
+      "evidencePath": "examples/inheritance/joined.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-single-145",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/single.py:145",
+      "evidencePath": "examples/inheritance/single.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-single-148",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/single.py:148",
+      "evidencePath": "examples/inheritance/single.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-single-160",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/single.py:160",
+      "evidencePath": "examples/inheritance/single.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-inheritance-single-172",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/inheritance/single.py:172",
+      "evidencePath": "examples/inheritance/single.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-materialized_paths-materialized_paths-117",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/materialized_paths/materialized_paths.py:117",
+      "evidencePath": "examples/materialized_paths/materialized_paths.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-nested_sets-nested_sets-101",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/nested_sets/nested_sets.py:101",
+      "evidencePath": "examples/nested_sets/nested_sets.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-performance-__init__-155",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/performance/__init__.py:155",
+      "evidencePath": "examples/performance/__init__.py",
+      "note": "add_all call on the sess session alias"
+    },
+    {
+      "id": "sql-session-add_all-performance-bulk_inserts-47",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/performance/bulk_inserts.py:47",
+      "evidencePath": "examples/performance/bulk_inserts.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-performance-bulk_inserts-65",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/performance/bulk_inserts.py:65",
+      "evidencePath": "examples/performance/bulk_inserts.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-scalars-performance-bulk_inserts-102",
+      "kind": "sql-operation",
+      "action": "read",
+      "callSite": "examples/performance/bulk_inserts.py:102",
+      "evidencePath": "examples/performance/bulk_inserts.py",
+      "note": "scalars call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-performance-short_selects-50",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/performance/short_selects.py:50",
+      "evidencePath": "examples/performance/short_selects.py",
+      "note": "add_all call on the sess session alias"
+    },
+    {
+      "id": "sql-session-add_all-sharding-asyncio-286",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/sharding/asyncio.py:286",
+      "evidencePath": "examples/sharding/asyncio.py",
+      "note": "add_all call on the sess session alias"
+    },
+    {
+      "id": "sql-session-add_all-sharding-separate_databases-269",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/sharding/separate_databases.py:269",
+      "evidencePath": "examples/sharding/separate_databases.py",
+      "note": "add_all call on the sess session alias"
+    },
+    {
+      "id": "sql-session-add_all-sharding-separate_schema_translates-194",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/sharding/separate_schema_translates.py:194",
+      "evidencePath": "examples/sharding/separate_schema_translates.py",
+      "note": "add_all call on the sess session alias"
+    },
+    {
+      "id": "sql-session-add_all-sharding-separate_tables-283",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/sharding/separate_tables.py:283",
+      "evidencePath": "examples/sharding/separate_tables.py",
+      "note": "add_all call on the sess session alias"
+    },
+    {
+      "id": "sql-session-add_all-space_invaders-space_invaders-386",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/space_invaders/space_invaders.py:386",
+      "evidencePath": "examples/space_invaders/space_invaders.py",
+      "note": "add_all call on the session session alias"
+    },
+    {
+      "id": "sql-session-add_all-versioned_history-test_versioning-401",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/versioned_history/test_versioning.py:401",
+      "evidencePath": "examples/versioned_history/test_versioning.py",
+      "note": "add_all call on the sess session alias"
+    },
+    {
+      "id": "sql-session-add_all-versioned_history-test_versioning-626",
+      "kind": "sql-operation",
+      "action": "write",
+      "callSite": "examples/versioned_history/test_versioning.py:626",
+      "evidencePath": "examples/versioned_history/test_versioning.py",
+      "note": "add_all call on the sess session alias"
+    }
+  ],
+  "precisionScopes": []
+}

@@ -20,6 +20,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 - codelphi 实战批次（1bc4068…ab0ec48，2026-11-13/16，已在 origin/main）：修复 TS handler 局部变量误判、flow 视图 TS 模块目标按路径解析、类型位置 `import()` 与 fetcher 注入封装的 blocking 误报、存储检测的标记表/引号内字面量误匹配，并新增游离操作流程投影（`detached:<路径>` owner），无运行时归属的操作也有流程页；codelphi@`d4a32ab` 五视图全过、交付 85 页。
 - SQLAlchemy 2.0 切片（识别半在 0daeede，分类半 98664f2）：`session.scalars/stream/add_all` 进入 pythonSqlLineFilter，action 分类 scalars/stream=read、add_all=write（账本 Python SQL 操作 HP-6）。
 - flow 视图 Python 目标解析回归修复（d05d0a5）：handler 调用目标 TS 记原始路径、Python 记 `module:<packageId>:<path>` 完整 ID，查找需双形式兜底；该回归由 `npm run gold:report` 的 fastapi analyzeExitCode 0→1 暴露——gold:report 必须每个切片都跑。
+- SQLAlchemy 真实语料批次（2026-11-16/17）：新增 `sqlalchemy/sqlalchemy@fe8e67751891de18ba27171bbc8aa23b28bb8348` examples/** 人工审计 Gold（`docs/gold/sqlalchemy.v1.json`，66 条 facts：全部 session.scalars/stream/add_all 调用点逐行核验，含 sess 别名与 Session 接收器；targeted subset，暂无 precision scopes）。审计驱动了三个修复：caller marker 列表补齐三个会话方法（多行调用的被调行此前无 marker 命中）、sess 别名进入行过滤与 action 分类、驱动判定剥离非 URL 字符串字面量（"MySQL Crowbar" 曾抑制 examples/association 全部 caller 边）。审计时实测召回 24/66、0 FP；已登记 gold-manifest，待两个后续切片（Python 入口检测覆盖模块级/asyncio 脚本；包级驱动归属）收敛后再接入 `npm run gold:report`。
 
 尚未完成：
 
