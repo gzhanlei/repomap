@@ -32,3 +32,15 @@ export function pythonCodeLines(content: string) {
 export function pythonMainGuardLine(content: string) {
   return pythonCodeLines(content).findIndex((line) => /^if\s+__name__\s*==\s*["']__main__["']\s*:/.test(line));
 }
+
+/**
+ * Text for Python driver detection: string literals are stripped so prose and
+ * data values ("MySQL Crowbar") cannot fake a second driver, but driver
+ * connection URLs keep their scheme because the URL string is the declaration.
+ */
+export function pythonDriverMentionText(content: string) {
+  return pythonCodeLines(content).join("\n").replace(/(["'])((?:\\.|(?!\1)[^\\])*)\1/g, (match, _quote: string, body: string) => {
+    const scheme = body.match(/\b(?:mysql|postgres(?:ql)?|sqlite)(?:\+\w+)?:\/\//);
+    return scheme ? ` ${scheme[0]} ` : " '' ";
+  }).toLowerCase();
+}

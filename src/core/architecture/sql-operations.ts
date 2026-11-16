@@ -4,7 +4,7 @@ import type { OperationFact } from "./ir.js";
 import { evidenceRecord, type EvidenceReference } from "./evidence-index.js";
 import { architectureLineNumber, type ArchitectureSource } from "./source.js";
 import { irOmissionSchema, type IrOmission } from "./ir.js";
-import { pythonCodeLines } from "./project/python-source.js";
+import { pythonCodeLines, pythonDriverMentionText } from "./project/python-source.js";
 
 // Line arrays and diff-prefix indexes are memoized per source object: the
 // previous implementations re-split the whole file content (and lineText
@@ -43,7 +43,7 @@ function executableSqlEvidence(evidence: ArchitectureEvidence, source: Architect
   if (!evidence.path.endsWith(".py")) return true;
   const text = lineText(source, evidence.line).replace(/^\s*\d+:\s?/, "").trim();
   if (!text || /^(?:from|import)\s+/.test(text) || /\bcreate_engine\s*\(/.test(text)) return false;
-  if (/\b(?:session|cursor|conn|db|engine|op)\.[A-Za-z_][\w]*\s*\(/.test(text)) return true;
+  if (/\b(?:session|sess|cursor|conn|db|engine|op)\.[A-Za-z_][\w]*\s*\(/.test(text)) return true;
   return /["'](?:SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|BEGIN|COMMIT|ROLLBACK)\b/i.test(text);
 }
 
@@ -60,9 +60,9 @@ function actionFor(evidence: ArchitectureEvidence, source: ArchitectureSource | 
   const migrationPath = /(?:^|\/)(?:migrations?|migrate|alembic|db\/migrate)(?:\/|$)/.test(path);
   const ddl = /CREATE TABLE|ALTER TABLE|CREATE INDEX|DROP TABLE/.test(text);
   if (migrationPath || (evidence.detector.includes("schema") && ddl)) return "migration";
-  if (/\bSESSION\.(?:GET|QUERY|SCALARS|STREAM)\s*\(/.test(text)) return "read";
-  if (/\bSESSION\.ADD_ALL\s*\(/.test(text)) return "write";
-  if (/\bSESSION\.(?:EXEC|EXECUTE)\s*\(/.test(text)) {
+  if (/\b(?:SESSION|SESS)\.(?:GET|QUERY|SCALARS|STREAM)\s*\(/.test(text)) return "read";
+  if (/\b(?:SESSION|SESS)\.ADD_ALL\s*\(/.test(text)) return "write";
+  if (/\b(?:SESSION|SESS)\.(?:EXEC|EXECUTE)\s*\(/.test(text)) {
     if (/\bSELECT\b|\.(?:ALL|ONE|FIRST)\s*\(/.test(context)) return "read";
     if (/\b(?:INSERT|UPDATE|DELETE)\s*\(/.test(context)) return "write";
     return "read-write";
@@ -118,7 +118,7 @@ export function sqlOperationOmissions(facts: ArchitectureFactSet, sources: Archi
   const omissions: IrOmission[] = [];
   for (const source of sources.filter((item) => item.path.endsWith(".py"))) {
     const sanitized = { ...source, content: pythonCodeLines(source.content).join("\n") };
-    const text = sanitized.content.toLowerCase();
+    const text = pythonDriverMentionText(sanitized.content);
     const drivers = new Set<string>();
     if (text.includes("sqlite")) drivers.add("sqlite");
     if (text.includes("postgres") || text.includes("psycopg") || text.includes("asyncpg")) drivers.add("postgres");

@@ -151,6 +151,57 @@ describe("M8 Python protocols", () => {
     expect(analysis.facts.nodes.some((node) => node.id === "store:file-cache")).toBe(false);
   });
 
+  it("recognizes session.scalars, stream and add_all on their own call lines in multi-line invocations", () => {
+    const analysis = analyze({
+      "app/main.py": [
+        "from fastapi import FastAPI",
+        "from sqlalchemy import create_engine, select",
+        "app = FastAPI()",
+        "engine = create_engine('sqlite:///app.db')",
+        "@app.get('/items')",
+        "def list_items():",
+        "    node = session.scalars(",
+        "        select(Item)",
+        "    )",
+        "    session.add_all(",
+        "        [Item(), Item()]",
+        "    )",
+        "    node2 = sess.scalars(",
+        "        select(Item)",
+        "    )",
+        "    session.commit()",
+        "    return {'items': []}",
+      ].join("\n"),
+    });
+    const operations = analysis.ir.operations.filter((operation) => operation.kind === "sql");
+    const byLine = new Map(operations.map((operation) => [Number(operation.callSite?.split(":")[1]), operation.action]));
+    expect(byLine.get(7)).toBe("read"); // session.scalars( own line, argument on following lines
+    expect(byLine.get(10)).toBe("write"); // session.add_all( own line
+    expect(byLine.get(13)).toBe("read"); // sess.scalars( canonical short alias
+    expect(byLine.get(16)).toBe("transaction");
+  });
+
+  it("does not let driver names inside string literals suppress SQL caller edges", () => {
+    const analysis = analyze({
+      "app/main.py": [
+        "from fastapi import FastAPI",
+        "from sqlalchemy import create_engine",
+        "app = FastAPI()",
+        "engine = create_engine('sqlite:///app.db')",
+        "@app.get('/items')",
+        "def list_items():",
+        "    session.add_all([Item(name='MySQL Crowbar', price=16.99)])",
+        "    session.commit()",
+        "    return {'items': []}",
+      ].join("\n"),
+    });
+    const operations = analysis.ir.operations.filter((operation) => operation.kind === "sql");
+    const byLine = new Map(operations.map((operation) => [Number(operation.callSite?.split(":")[1]), operation.action]));
+    expect(byLine.get(7)).toBe("write");
+    expect(byLine.get(8)).toBe("transaction");
+    expect(analysis.ir.omissions.some((omission) => omission.owner.startsWith("python-sql:"))).toBe(false);
+  });
+
   it("extracts asyncio queue and schedule operations", () => {
     const analysis = analyze({
       "app/jobs.py": [

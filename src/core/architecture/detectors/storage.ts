@@ -1,7 +1,7 @@
 import type { NodeFact } from "../facts.js";
 import { architectureRuntimeSources, findArchitectureEvidence, findSemanticEvidence, isRuntimeEvidenceSource, signalIdsForEvidence, signalIdsForPaths, uniqueEvidence } from "../source.js";
 import { emptyArchitectureFragment, factEdge, type ArchitectureContext, type ArchitectureDetector } from "./types.js";
-import { pythonCodeLines } from "../project/python-source.js";
+import { pythonCodeLines, pythonDriverMentionText } from "../project/python-source.js";
 
 const mysqlMarkers = ["sql.Open(\"mysql\"", "mysql2", "new PDO", "gorm.Open", "DB::", "go-sql-driver/mysql", "provider = \"mysql\"", "provider=\"mysql\"", "mysql.connector", "pymysql", "MySQLdb", "mysql://"];
 const sqliteMarkers = ["go-sqlite3", "sqlite3_with_regex", "driverSQLite", "sqlite_master", "sqlite3", "sqlite3.connect", "sqlite://"];
@@ -13,7 +13,7 @@ function pythonSqlLineFilter(path: string, line: string) {
   const code = line.replace(/^\s*\d+:\s?/, "").trim();
   if (code.startsWith("@") || /\b(?:requests|httpx)\./.test(code)) return false;
   if (/(?:^|\/)(?:alembic|migrations?|migrate)(?:\/|$)/i.test(path) && /(?:from\s+alembic\s+import|from\s+sqlalchemy\s+import|import\s+(?:sqlalchemy|sqlmodel)|engine_from_config)/i.test(code)) return true;
-  if (/(?:execute|executemany|create_engine|commit|rollback|session\.(?:add|add_all|delete|query|get|exec|execute|scalars|stream)|cursor\.execute|op\.(?:execute|create_table|drop_table|add_column|drop_column|alter_column|create_index|drop_index|create_foreign_key|drop_constraint|create_primary_key)|conn\.execute|db\.execute|engine\.execute)\s*\(/i.test(code)) return true;
+  if (/(?:execute|executemany|create_engine|commit|rollback|\b(?:session|sess)\.(?:add|add_all|delete|query|get|exec|execute|scalars|stream)|cursor\.execute|op\.(?:execute|create_table|drop_table|add_column|drop_column|alter_column|create_index|drop_index|create_foreign_key|drop_constraint|create_primary_key)|conn\.execute|db\.execute|engine\.execute)\s*\(/i.test(code)) return true;
   return /["'](?:SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|BEGIN|COMMIT|ROLLBACK)\b/i.test(code);
 }
 
@@ -83,7 +83,7 @@ function storageSchemaEvidence(context: ArchitectureContext, storeId: string) {
     const hasIdentity = (text: string) => identity === "postgres"
       ? text.includes("postgres") || text.includes("psycopg") || text.includes("asyncpg")
       : identity === "mysql" ? text.includes("mysql") : identity === "sqlite" ? text.includes("sqlite") : false;
-    const text = storageSourceContent(source).toLowerCase();
+    const text = pythonDriverMentionText(storageSourceContent(source));
     const driverCount = [text.includes("sqlite"), text.includes("postgres") || text.includes("psycopg") || text.includes("asyncpg"), text.includes("mysql")].filter(Boolean).length;
     if (driverCount > 1) return false;
     if (hasIdentity(text)) return true;
@@ -120,7 +120,7 @@ function detectStorage(context: ArchitectureContext) {
 
 function pythonDriverMatches(source: { path: string; content: string }, storeId: string | undefined, storeCount: number) {
   if (!storeId || !source.path.endsWith(".py")) return true;
-  const text = storageSourceContent(source).toLowerCase();
+  const text = pythonDriverMentionText(storageSourceContent(source));
   const drivers = new Set<string>();
   if (text.includes("sqlite")) drivers.add("sqlite");
   if (text.includes("postgres") || text.includes("psycopg") || text.includes("asyncpg")) drivers.add("postgres");
@@ -133,7 +133,7 @@ function storageCalls(node: NodeFact, context: ArchitectureContext, markers: str
   const runtimeEvidence = architectureRuntimeSources(node, context.sources)
     .filter(isRuntimeEvidenceSource)
     .filter((source) => pythonDriverMatches(source, storeId, storeCount))
-    .flatMap((source) => findSemanticEvidence({ ...source, content: storageSourceContent(source) }, [...markers, "session.get", "session.exec", "session.query"], detector, (line) => (!extraLineFilter || extraLineFilter(line)) && pythonSqlLineFilter(source.path, line)));
+    .flatMap((source) => findSemanticEvidence({ ...source, content: storageSourceContent(source) }, [...markers, "session.get", "session.exec", "session.query", "session.scalars", "session.stream", "session.add_all", "sess.scalars", "sess.stream", "sess.add_all"], detector, (line) => (!extraLineFilter || extraLineFilter(line)) && pythonSqlLineFilter(source.path, line)));
   if (runtimeEvidence.length === 0 && !schemaOnly) return [];
   const schemaEvidence = storeId === undefined ? [] : storageSchemaEvidence(context, storeId);
   return uniqueEvidence([...runtimeEvidence, ...schemaEvidence]);
