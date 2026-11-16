@@ -37,7 +37,7 @@ const cycleFactSchema = z.object({
 const routeFactSchema = z.object({
   id: z.string().min(1),
   kind: z.literal("route"),
-  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]),
+  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "PAGE"]),
   path: z.string().min(1),
   sourcePath: z.string().min(1),
   line: z.number().int().positive().optional(),
@@ -48,7 +48,7 @@ const routeFactSchema = z.object({
 const routeHandlerFactSchema = z.object({
   id: z.string().min(1),
   kind: z.literal("route-handler"),
-  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]),
+  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "PAGE"]),
   path: z.string().min(1),
   handlerSourcePath: z.string().min(1),
   evidencePath: z.string().min(1).optional(),

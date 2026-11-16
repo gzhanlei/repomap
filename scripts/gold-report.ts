@@ -32,6 +32,7 @@ const corpora: CorpusDefinition[] = [
   { corpusId: "authelia", repository: "authelia/authelia", revision: "32b0bdac395efc707bc098757afa232177965736", goldPath: "docs/gold/authelia.v1.json" },
   { corpusId: "sqlalchemy", repository: "sqlalchemy/sqlalchemy", revision: "fe8e67751891de18ba27171bbc8aa23b28bb8348", goldPath: "docs/gold/sqlalchemy.v1.json", expectedGateFailure: "library/test-heavy repo: 847 blocking omissions (117 unresolved relative imports in lib barrel files, 729 unknown-identity external calls, 1 uncertain direction) fail the publish gate by design; the sql operations artifact is complete for gold evaluation" },
   { corpusId: "celery", repository: "celery/celery", revision: "9c2f238334331db43f15956f131235fd3bb70fd1", goldPath: "docs/gold/celery.v1.json", expectedGateFailure: "library/test-heavy repo: blocking omissions (unresolved relative imports, unknown-identity external calls, and canvas-expression celery enqueues failing closed as dynamic identities) are by design; the async operations artifact is complete for gold evaluation" },
+  { corpusId: "django-healthchecks", repository: "healthchecks/healthchecks", revision: "6c05a7adf266efb70f9517727bef9ea8b2bbf52f", goldPath: "docs/gold/django-healthchecks.v1.json", expectedGateFailure: "SITE_ROOT subpath deployment makes every route prefix dynamic (blocking unsupported-syntax omissions) and admin.site.urls fails closed; the route artifact is complete for gold evaluation" },
 ];
 
 if (!existsSync(cliPath)) {

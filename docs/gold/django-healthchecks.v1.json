@@ -1,0 +1,1491 @@
+{
+  "version": 1,
+  "corpusId": "django-healthchecks",
+  "revision": "6c05a7adf266efb70f9517727bef9ea8b2bbf52f",
+  "auditedBy": "Lei Han",
+  "auditedAt": "2026-11-17",
+  "note": "Human-audited targeted facts from the pinned archive: all 149 non-include path()/re_path() call sites in urls.py files hand-reconciled (147 emitted as route facts; hc/urls.py:17 admin.site.urls fails closed as a blocking view-indirection omission by design, and hc/urls.py:16 emits with a dynamic prefix because the SITE_ROOT subpath is computed at runtime). This audit drove the Django urls slice (path/re_path raw-scan extraction with include composition, cross-module and aliased-import view resolution, admin.site.urls and dynamic-prefix fail-closed omissions). Route facts assert the deterministic dynamic: prefix composition.",
+  "facts": [
+    {
+      "id": "django-route-front-urls-62-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/docs/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 62,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-15-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/remove/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 15,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-45-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/<int:exitstatus>",
+      "sourcePath": "hc/api/urls.py",
+      "line": 45,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-pagertree-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_pagertree/",
+      "sourcePath": "hc/integrations/pagertree/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/pagertree/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-65-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/docs/<slug:doc>/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 65,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/name/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 9,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-rocketchat-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_rocketchat/",
+      "sourcePath": "hc/integrations/rocketchat/urls.py",
+      "line": 9,
+      "evidencePath": "hc/integrations/rocketchat/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-12-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/timeout/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 12,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-payments-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/pricing/",
+      "sourcePath": "hc/payments/urls.py",
+      "line": 9,
+      "evidencePath": "hc/payments/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-11-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/filtering_rules/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 11,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-60-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/menu/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 60,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-46-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/status/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 46,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-44-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 44,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-matrix-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_matrix/",
+      "sourcePath": "hc/integrations/matrix/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/matrix/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-27-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/profile/notifications/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 27,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-pushbullet-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_pushbullet/",
+      "sourcePath": "hc/integrations/pushbullet/urls.py",
+      "line": 9,
+      "evidencePath": "hc/integrations/pushbullet/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-50-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/<uuid:code>",
+      "sourcePath": "hc/api/urls.py",
+      "line": 50,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-44-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/log",
+      "sourcePath": "hc/api/urls.py",
+      "line": 44,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-slack-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/add_slack/",
+      "sourcePath": "hc/integrations/slack/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/slack/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-slack-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/add_slack_btn/",
+      "sourcePath": "hc/integrations/slack/urls.py",
+      "line": 9,
+      "evidencePath": "hc/integrations/slack/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-call-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_call/",
+      "sourcePath": "hc/integrations/call/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/call/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-63-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/docs/cron/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 63,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-19-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/status/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 19,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-52-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 52,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-36-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/start",
+      "sourcePath": "hc/api/urls.py",
+      "line": 36,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-43-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/start",
+      "sourcePath": "hc/api/urls.py",
+      "line": 43,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-14-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/resume/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 14,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-10-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/details/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 10,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-87-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/badge/<slug:badge_key>/<slug:signature>.<slug:fmt>",
+      "sourcePath": "hc/api/urls.py",
+      "line": 87,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-51-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/<sha1:unique_key>",
+      "sourcePath": "hc/api/urls.py",
+      "line": 51,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-66-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/contact.vcf",
+      "sourcePath": "hc/front/urls.py",
+      "line": 66,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-53-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/<uuid:code>/resume",
+      "sourcePath": "hc/api/urls.py",
+      "line": 53,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-37-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/log",
+      "sourcePath": "hc/api/urls.py",
+      "line": 37,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-pd-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/pagerduty/",
+      "sourcePath": "hc/integrations/pd/urls.py",
+      "line": 9,
+      "evidencePath": "hc/integrations/pd/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-35-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/fail",
+      "sourcePath": "hc/api/urls.py",
+      "line": 35,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-18-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/signup/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 18,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-44-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/two_factor/totp/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 44,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-mattermost-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/mattermost/",
+      "sourcePath": "hc/integrations/mattermost/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/mattermost/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-64-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/docs/search/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 64,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-whatsapp-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_whatsapp/",
+      "sourcePath": "hc/integrations/whatsapp/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/whatsapp/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-discord-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/add_discord/",
+      "sourcePath": "hc/integrations/discord/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/discord/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-webhook-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_webhook/",
+      "sourcePath": "hc/integrations/webhook/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/webhook/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-54-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/cron_preview/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 54,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-34-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/",
+      "sourcePath": "hc/api/urls.py",
+      "line": 34,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-shell-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_shell/",
+      "sourcePath": "hc/integrations/shell/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/shell/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-52-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/<uuid:code>/pause",
+      "sourcePath": "hc/api/urls.py",
+      "line": 52,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-googlechat-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_googlechat/",
+      "sourcePath": "hc/integrations/googlechat/urls.py",
+      "line": 9,
+      "evidencePath": "hc/integrations/googlechat/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-slack-urls-10-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_slack/",
+      "sourcePath": "hc/integrations/slack/urls.py",
+      "line": 10,
+      "evidencePath": "hc/integrations/slack/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-30-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/close/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 30,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-github-urls-10-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_github/save/",
+      "sourcePath": "hc/integrations/github/urls.py",
+      "line": 10,
+      "evidencePath": "hc/integrations/github/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-58-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/cloaked/<sha1:unique_key>/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 58,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-20-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/check_token/<str:username>/<str:token>/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 20,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-prometheus-urls-17-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/metrics/<slug:key>",
+      "sourcePath": "hc/integrations/prometheus/urls.py",
+      "line": 17,
+      "evidencePath": "hc/integrations/prometheus/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-45-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/two_factor/totp/remove/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 45,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-68-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/badges/",
+      "sourcePath": "hc/api/urls.py",
+      "line": 68,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-67-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/channels/",
+      "sourcePath": "hc/api/urls.py",
+      "line": 67,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-36-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/set_password/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 36,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-22-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/copy/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 22,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-93-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/b/<int:states>/<uuid:badge_key>.<slug:fmt>",
+      "sourcePath": "hc/api/urls.py",
+      "line": 93,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-70-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/status/",
+      "sourcePath": "hc/api/urls.py",
+      "line": 70,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-43-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/badges/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 43,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-pd-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/add_pagerduty/",
+      "sourcePath": "hc/integrations/pd/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/pd/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-75-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/ping/<uuid:code>",
+      "sourcePath": "hc/api/urls.py",
+      "line": 75,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/add/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 8,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-38-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/<uuid:code>/remove/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 38,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-payments-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/pricing/",
+      "sourcePath": "hc/payments/urls.py",
+      "line": 8,
+      "evidencePath": "hc/payments/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-15-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/login/two_factor/totp/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 15,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-email-urls-13-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/<uuid:code>/unsub/<str:signed_token>/",
+      "sourcePath": "hc/integrations/email/urls.py",
+      "line": 13,
+      "evidencePath": "hc/integrations/email/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-38-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/change_email/<str:signed_payload>/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 38,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-zulip-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_zulip/",
+      "sourcePath": "hc/integrations/zulip/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/zulip/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-82-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/badge/<slug:badge_key>/<slug:signature>/<quoted:tag>.<slug:fmt>",
+      "sourcePath": "hc/api/urls.py",
+      "line": 82,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-42-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/fail",
+      "sourcePath": "hc/api/urls.py",
+      "line": 42,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-46-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/two_factor/<uuid:code>/remove/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 46,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-71-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/bounces/",
+      "sourcePath": "hc/api/urls.py",
+      "line": 71,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-pd-urls-10-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_pd/",
+      "sourcePath": "hc/integrations/pd/urls.py",
+      "line": 10,
+      "evidencePath": "hc/integrations/pd/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-69-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/metrics/",
+      "sourcePath": "hc/api/urls.py",
+      "line": 69,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-telegram-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/telegram/bot/",
+      "sourcePath": "hc/integrations/telegram/urls.py",
+      "line": 9,
+      "evidencePath": "hc/integrations/telegram/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-37-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/<uuid:code>/test/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 37,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-56-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/validate_schedule/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 56,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-msteamsw-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_msteams/",
+      "sourcePath": "hc/integrations/msteamsw/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/msteamsw/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-trello-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/add_trello/settings/",
+      "sourcePath": "hc/integrations/trello/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/trello/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-gotify-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_gotify/",
+      "sourcePath": "hc/integrations/gotify/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/gotify/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/settings/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 9,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-pushbullet-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/add_pushbullet/",
+      "sourcePath": "hc/integrations/pushbullet/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/pushbullet/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-59-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/<uuid:code>/pings/",
+      "sourcePath": "hc/api/urls.py",
+      "line": 59,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-slack-urls-11-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_slack_btn/",
+      "sourcePath": "hc/integrations/slack/urls.py",
+      "line": 11,
+      "evidencePath": "hc/integrations/slack/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-55-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/oncalendar_preview/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 55,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-group-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_group/",
+      "sourcePath": "hc/integrations/group/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/group/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-mattermost-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_mattermost/",
+      "sourcePath": "hc/integrations/mattermost/urls.py",
+      "line": 9,
+      "evidencePath": "hc/integrations/mattermost/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-signal-urls-10-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/signal_verify/",
+      "sourcePath": "hc/integrations/signal/urls.py",
+      "line": 10,
+      "evidencePath": "hc/integrations/signal/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-github-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_github/",
+      "sourcePath": "hc/integrations/github/urls.py",
+      "line": 9,
+      "evidencePath": "hc/integrations/github/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-email-urls-18-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_email/",
+      "sourcePath": "hc/integrations/email/urls.py",
+      "line": 18,
+      "evidencePath": "hc/integrations/email/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-14-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/login/two_factor/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 14,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-37-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/change_email/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 37,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-10-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/remove/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 10,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-26-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/profile/appearance/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 26,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-45-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/add/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 45,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-apprise-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_apprise/",
+      "sourcePath": "hc/integrations/apprise/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/apprise/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-18-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/log_events/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 18,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-prometheus-urls-22-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/metrics/",
+      "sourcePath": "hc/integrations/prometheus/urls.py",
+      "line": 22,
+      "evidencePath": "hc/integrations/prometheus/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-googlechat-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/googlechat/",
+      "sourcePath": "hc/integrations/googlechat/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/googlechat/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-29-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/pings/<int:n>/body/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 29,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-43-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/two_factor/webauthn/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 43,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-13-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/login/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 13,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-telegram-urls-10-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/add_telegram/",
+      "sourcePath": "hc/integrations/telegram/urls.py",
+      "line": 10,
+      "evidencePath": "hc/integrations/telegram/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-signal-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/signal_captcha/",
+      "sourcePath": "hc/integrations/signal/urls.py",
+      "line": 9,
+      "evidencePath": "hc/integrations/signal/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-telegram-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/telegram/",
+      "sourcePath": "hc/integrations/telegram/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/telegram/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-21-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/transfer/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 21,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-36-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/<uuid:code>/edit/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 36,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-spike-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_spike/",
+      "sourcePath": "hc/integrations/spike/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/spike/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-34-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/<uuid:code>/checks/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 34,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-60-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/<uuid:code>/pings/<int:n>/body",
+      "sourcePath": "hc/api/urls.py",
+      "line": 60,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-signal-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_signal/",
+      "sourcePath": "hc/integrations/signal/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/signal/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-16-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/clear_events/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 16,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-prometheus-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_prometheus/",
+      "sourcePath": "hc/integrations/prometheus/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/prometheus/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-17-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/signup/csrf/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 17,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-po-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/add_pushover/",
+      "sourcePath": "hc/integrations/po/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/po/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-16-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/logout/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 16,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-66-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/<sha1:unique_key>/flips/",
+      "sourcePath": "hc/api/urls.py",
+      "line": 66,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-urls-16-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:f\"{prefix}admin/login/\"",
+      "sourcePath": "hc/urls.py",
+      "line": 16,
+      "evidencePath": "hc/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-rocketchat-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/rocketchat/",
+      "sourcePath": "hc/integrations/rocketchat/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/rocketchat/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-discord-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_discord/",
+      "sourcePath": "hc/integrations/discord/urls.py",
+      "line": 9,
+      "evidencePath": "hc/integrations/discord/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-38-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/<int:exitstatus>",
+      "sourcePath": "hc/api/urls.py",
+      "line": 38,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-13-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/pause/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 13,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-ntfy-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_ntfy/",
+      "sourcePath": "hc/integrations/ntfy/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/ntfy/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-payments-urls-10-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/profile/billing/",
+      "sourcePath": "hc/payments/urls.py",
+      "line": 10,
+      "evidencePath": "hc/payments/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-github-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/add_github/",
+      "sourcePath": "hc/integrations/github/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/github/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-35-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/<uuid:code>/name/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 35,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-trello-urls-13-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_trello/",
+      "sourcePath": "hc/integrations/trello/urls.py",
+      "line": 13,
+      "evidencePath": "hc/integrations/trello/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-23-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/channels/<uuid:channel_code>/enabled",
+      "sourcePath": "hc/front/urls.py",
+      "line": 23,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-49-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/",
+      "sourcePath": "hc/api/urls.py",
+      "line": 49,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-email-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/<uuid:code>/verify/<slug:token>/",
+      "sourcePath": "hc/integrations/email/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/email/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-prometheus-urls-13-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/checks/metrics/<slug:key>",
+      "sourcePath": "hc/integrations/prometheus/urls.py",
+      "line": 13,
+      "evidencePath": "hc/integrations/prometheus/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-53-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/tv/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 53,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-sms-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_sms/",
+      "sourcePath": "hc/integrations/sms/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/sms/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-28-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/pings/<int:n>/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 28,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-victorops-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_victorops/",
+      "sourcePath": "hc/integrations/victorops/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/victorops/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-54-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/notifications/<uuid:code>/status",
+      "sourcePath": "hc/api/urls.py",
+      "line": 54,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-opsgenie-urls-8-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_opsgenie/",
+      "sourcePath": "hc/integrations/opsgenie/urls.py",
+      "line": 8,
+      "evidencePath": "hc/integrations/opsgenie/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-31-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/unsubscribe_reports/<str:signed_username>/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 31,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-25-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/profile/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 25,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-77-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/ping/<slug:ping_key>/<slug:slug>",
+      "sourcePath": "hc/api/urls.py",
+      "line": 77,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-20-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/last_ping/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 20,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-integrations-po-urls-9-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/projects/<uuid:code>/add_pushover/",
+      "sourcePath": "hc/integrations/po/urls.py",
+      "line": 9,
+      "evidencePath": "hc/integrations/po/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-api-urls-65-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/checks/<uuid:code>/flips/",
+      "sourcePath": "hc/api/urls.py",
+      "line": 65,
+      "evidencePath": "hc/api/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-accounts-urls-19-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/accounts/login_link_sent/",
+      "sourcePath": "hc/accounts/urls.py",
+      "line": 19,
+      "evidencePath": "hc/accounts/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-17-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/log/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 17,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    },
+    {
+      "id": "django-route-front-urls-47-page",
+      "kind": "route",
+      "method": "PAGE",
+      "path": "/dynamic:prefix/integrations/",
+      "sourcePath": "hc/front/urls.py",
+      "line": 47,
+      "evidencePath": "hc/front/urls.py",
+      "note": "Django dynamic-prefix route"
+    }
+  ],
+  "precisionScopes": []
+}

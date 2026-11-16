@@ -4,9 +4,9 @@
   "generator": "scripts/gold-report.ts (npm run gold:report); regenerate, never hand-edit",
   "allPassed": true,
   "totals": {
-    "corpora": 6,
-    "criticalFacts": 349,
-    "covered": 349,
+    "corpora": 7,
+    "criticalFacts": 497,
+    "covered": 497,
     "suspectedFalsePositives": 0,
     "evidenceInvalid": 0
   },
@@ -442,6 +442,60 @@
           "routeGraph": 0,
           "asyncGraph": 39,
           "ir": 577
+        }
+      }
+    },
+    {
+      "corpusId": "django-healthchecks",
+      "repository": "healthchecks/healthchecks@6c05a7adf266efb70f9517727bef9ea8b2bbf52f",
+      "revision": "6c05a7adf266efb70f9517727bef9ea8b2bbf52f",
+      "analyzeExitCode": 1,
+      "gateFailure": "SITE_ROOT subpath deployment makes every route prefix dynamic (blocking unsupported-syntax omissions) and admin.site.urls fails closed; the route artifact is complete for gold evaluation",
+      "evaluation": {
+        "corpusId": "django-healthchecks",
+        "revision": "6c05a7adf266efb70f9517727bef9ea8b2bbf52f",
+        "passed": true,
+        "recall": {
+          "total": 148,
+          "covered": 148,
+          "missing": [],
+          "byKind": {
+            "route": {
+              "total": 148,
+              "covered": 148,
+              "missing": 0
+            }
+          },
+          "dimensions": {
+            "node": {
+              "total": 148,
+              "covered": 148,
+              "missing": 0
+            },
+            "edge": {
+              "total": 0,
+              "covered": 0,
+              "missing": 0
+            },
+            "direction": {
+              "total": 0,
+              "covered": 0,
+              "missing": 0
+            }
+          }
+        },
+        "precision": {
+          "scopes": [],
+          "suspectedFalsePositives": []
+        },
+        "evidence": {
+          "checked": 148,
+          "invalid": []
+        },
+        "omissions": {
+          "routeGraph": 157,
+          "asyncGraph": 0,
+          "ir": 671
         }
       }
     }
