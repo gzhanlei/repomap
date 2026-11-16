@@ -341,6 +341,42 @@ describe("M8 Python protocols", () => {
     expect(candidate?.target).toMatchObject({ kind: "service", resolution: "configured", configKey: "PAYMENTS_API_URL" });
   });
 
+  it("extracts rq enqueues and job decorators as queue operations", () => {
+    const analysis = analyze({
+      "app/tasks.py": [
+        "from rq.decorators import job",
+        "@job('default', connection=conn)",
+        "def slow_fib(arg):",
+        "    return arg",
+      ].join("\n"),
+      "app/producer.py": [
+        "from rq import Queue",
+        "from redis import Redis",
+        "from app.tasks import slow_fib",
+        "q = Queue('default', connection=Redis())",
+        "job = q.enqueue(slow_fib)",
+        "job2 = q.enqueue('slow_fib')",
+        "chained = Queue('other', connection=Redis()).enqueue(slow_fib)",
+        "q.enqueue(pick_runtime())",
+      ].join("\n"),
+    });
+    const enqueues = analysis.asyncGraph.operations.filter((operation) => operation.action === "enqueue");
+    const topics = enqueues.map((operation) => `${operation.callSite}:${(operation as { topic?: string }).topic}/${operation.resolution}`).sort();
+    expect(topics).toEqual([
+      "app/producer.py:5:slow_fib/static",
+      "app/producer.py:6:slow_fib/static",
+      "app/producer.py:7:slow_fib/static",
+      "app/producer.py:8:dynamic/dynamic",
+    ]);
+    const consumes = analysis.asyncGraph.operations.filter((operation) => operation.action === "consume" && operation.callSite === "app/tasks.py:2");
+    expect(consumes.map((operation) => (operation as { topic?: string }).topic)).toEqual(["slow_fib"]);
+    // a file with no rq import is not an rq queue operation
+    const negative = analyze({
+      "app/util.py": "class Registry:\n    def enqueue(self, x):\n        return x\n\nq = Registry()\nq.enqueue(1)\n",
+    });
+    expect(negative.asyncGraph.operations.some((operation) => operation.action === "enqueue")).toBe(false);
+  });
+
   it("extracts celery delay and apply_async enqueues with task-name topics", () => {
     const analysis = analyze({
       "proj/tasks.py": [

@@ -121,6 +121,29 @@ function celeryAppReceivers(raw: string) {
   return names;
 }
 
+function importsRq(raw: string) {
+  return pythonCodeLines(raw).some((line) => /(?:^|\s)from\s+rq(?:\.[\w.]+)?\s+import\s+|(?:^|\s)import\s+rq(?:\.[\w.]+)?\b/.test(line));
+}
+
+/** Receivers bound to rq.Queue constructors when Queue is imported from rq. */
+function rqQueueImport(raw: string) {
+  return pythonCodeLines(raw).some((line) => /(?:^|\s)from\s+rq(?:\.[\w.]+)?\s+import\s+.*\bQueue\b/.test(line));
+}
+
+/** Alias names bound to the rq @job decorator. */
+function rqJobReceivers(raw: string) {
+  const names = new Set<string>();
+  for (const line of pythonCodeLines(raw)) {
+    const from = line.match(/^\s*from\s+rq(?:\.[\w.]+)?\s+import\s+(.+)/);
+    if (!from) continue;
+    for (const part of from[1].split(",")) {
+      const [original, alias] = part.trim().split(/\s+as\s+/);
+      if (original === "job") names.add(alias ?? original);
+    }
+  }
+  return names;
+}
+
 function importsCelery(raw: string) {
   return pythonCodeLines(raw).some((line) => /(?:^|\s)from\s+[\w.]*celery[\w.]*\s+import\s+|\s*import\s+[\w.]*celery/.test(line));
 }
@@ -192,9 +215,14 @@ export function analyzePythonAsync(input: { snapshot: SourceSnapshot; enabled?: 
     if (!parsed) continue;
     const queueReceivers = new Set(parsed.calls.filter((call) => call.name === "asyncio.Queue" || call.name === "queue.Queue").map((call) => call.receiver ?? call.name.split(".")[0]));
     const celeryContext = celeryReceivers(raw);
+    const rqQueueImported = rqQueueImport(raw);
+    const rqJobs = rqJobReceivers(raw);
+    const rqQueueReceivers = new Set<string>();
     for (const call of parsed.calls) {
       const name = call.name.split(".").at(-1);
       const receiver = call.name.split(".")[0];
+      const nameHead = call.name.split(".")[0];
+      if (rqQueueImported && call.name === "Queue" && call.receiver) rqQueueReceivers.add(call.receiver);
       if (call.name === "asyncio.Queue" || call.name === "queue.Queue") result.operations.push(operation("declare", file.path, call.line, topicForCall(call), false, file.packageId));
       if ((name === "put" || name === "put_nowait") && queueReceivers.has(receiver)) result.operations.push(operation("enqueue", file.path, call.line, topicForCall(call), false, file.packageId));
       if ((name === "get" || name === "get_nowait") && queueReceivers.has(receiver)) result.operations.push(operation("consume", file.path, call.line, topicForCall(call), false, file.packageId));
@@ -223,6 +251,29 @@ export function analyzePythonAsync(input: { snapshot: SourceSnapshot; enabled?: 
           }));
         }
       }
+      // rq enqueues: q.enqueue(...) on an rq Queue receiver (or a chained
+      // Queue(...) construction). The topic is the job function: identifier or
+      // string literal resolves statically, anything else fails closed.
+      if (name === "enqueue" && importsRq(raw) && (rqQueueReceivers.has(nameHead) || nameHead.startsWith("Queue("))) {
+        const first = call.arguments[0];
+        const identifier = first && /^[A-Za-z_]\w*$/.test(first.text) ? first.text : literal(first);
+        if (identifier) {
+          result.operations.push(operation("enqueue", file.path, call.line, identifier, false, file.packageId));
+        } else {
+          const current = operation("enqueue", file.path, call.line, "dynamic", true, file.packageId);
+          result.operations.push(current);
+          result.omissions.push(irOmissionSchema.parse({
+            id: `omission:python-async-rq-enqueue:${file.path}:${call.line}`,
+            owner: current.id,
+            reason: "unknown-identity",
+            detail: `rq enqueue job is dynamic at ${file.path}:${call.line}`,
+            declarationIds: current.declarationIds,
+            evidenceIds: current.evidenceIds,
+            affectedViews: ["protocol-flows", "full-declared-scope"],
+            blocking: true,
+          }));
+        }
+      }
       if ((name === "publish" || name === "subscribe") && hasPubSubReceiver(receiver, raw)) {
         const topic = literal(call.arguments[0]);
         const current = operation(name, file.path, call.line, topic ?? "dynamic", topic === undefined, file.packageId);
@@ -241,6 +292,7 @@ export function analyzePythonAsync(input: { snapshot: SourceSnapshot; enabled?: 
     }
     for (const decorator of parsed.decorators) {
       if (isCeleryDecorator(`@${decorator.name}`, celeryContext, repoAppNames)) result.operations.push(operation("consume", file.path, decorator.line, decoratorTopic(decorator), false, file.packageId));
+      if (rqJobs.has(decorator.name)) result.operations.push(operation("consume", file.path, decorator.line, decoratorTopic(decorator), false, file.packageId));
     }
   }
   result.evidenceRecords = result.operations.map((operation) => {
