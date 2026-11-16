@@ -5,7 +5,7 @@ import { evidenceRecord, evidenceRecordSchema, evidenceReferenceSchema, stableEv
 import { irOmissionSchema, type IrOmission, type OperationFact } from "../ir.js";
 import { architectureViewSchema } from "../scope.js";
 
-export const routeFrameworkSchema = z.enum(["next-app-router", "vite-react-router", "go-http", "fastapi", "flask"]);
+export const routeFrameworkSchema = z.enum(["next-app-router", "vite-react-router", "go-http", "fastapi", "flask", "django"]);
 export const routeSchema = z.object({
   id: z.string().min(1),
   framework: routeFrameworkSchema,

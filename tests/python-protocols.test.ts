@@ -341,6 +341,58 @@ describe("M8 Python protocols", () => {
     expect(candidate?.target).toMatchObject({ kind: "service", resolution: "configured", configKey: "PAYMENTS_API_URL" });
   });
 
+  it("extracts django urls path and re_path routes with include composition and cross-module views", () => {
+    const analysis = analyze({
+      "app/views.py": [
+        "def home(request):",
+        "    return 'home'",
+        "",
+        "def year_archive(request, year):",
+        "    return 'archive'",
+      ].join("\n"),
+      "app/aggregator/feeds.py": [
+        "def latest(request):",
+        "    return 'feeds'",
+      ].join("\n"),
+      "app/aggregator/urls.py": [
+        "from django.urls import path",
+        "from app.aggregator import feeds",
+        "urlpatterns = [",
+        "    path('latest/', feeds.latest),",
+        "]",
+      ].join("\n"),
+      "app/urls.py": [
+        "from django.urls import path, re_path, include",
+        "from . import views",
+        "from app.views import year_archive as ya",
+        "from app.aggregator import urls as agg_urls",
+        "urlpatterns = [",
+        "    path('', views.home),",
+        "    path('articles/<int:year>/', views.year_archive),",
+        "    path('ya/', ya),",
+        "    re_path(r'^archive/(?P<month>\\d{2})/$', views.year_archive),",
+        "    path('feeds/', include('app.aggregator.urls')),",
+        "    path('agg2/', include(agg_urls)),",
+        "    path('admin/', admin.site.urls),",
+        "]",
+      ].join("\n"),
+    });
+    const routes = analysis.routeGraph.routes.filter((route) => route.framework === "django").sort((a, b) => a.path.localeCompare(b.path));
+    expect(routes.map((route) => route.path)).toEqual([
+      "/",
+      "/^archive/(?P<month>\\d{2})/$",
+      "/agg2/latest/",
+      "/articles/<int:year>/",
+      "/feeds/latest/",
+      "/ya/",
+    ].sort((a, b) => a.localeCompare(b, "en")));
+    const handlers = analysis.routeGraph.handlers.filter((handler) => handler.id.includes("django") || handler.sourcePath.startsWith("app/"));
+    expect(handlers.some((handler) => handler.sourcePath === "app/views.py" && handler.name === "home")).toBe(true);
+    expect(handlers.some((handler) => handler.sourcePath === "app/views.py" && handler.name === "year_archive")).toBe(true);
+    // admin.site.urls view indirection fails closed with a blocking omission
+    expect(analysis.ir.omissions.some((omission) => omission.blocking && omission.detail.includes("admin.site.urls"))).toBe(true);
+  });
+
   it("extracts rq enqueues and job decorators as queue operations", () => {
     const analysis = analyze({
       "app/tasks.py": [
