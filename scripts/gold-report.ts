@@ -30,6 +30,7 @@ const corpora: CorpusDefinition[] = [
   { corpusId: "click", repository: "pallets/click", revision: "8abb77a8432e03ed14a95f972b44f905279415a7", goldPath: "docs/gold/click.v1.json", expectedGateFailure: "dynamic-import omission blocks full-view gates by design; the module graph artifact is complete" },
   { corpusId: "black", repository: "psf/black", revision: "b4f1fcae48826790b6f93ca9226d20003bce0eaa", goldPath: "docs/gold/black.v1.json" },
   { corpusId: "authelia", repository: "authelia/authelia", revision: "32b0bdac395efc707bc098757afa232177965736", goldPath: "docs/gold/authelia.v1.json" },
+  { corpusId: "sqlalchemy", repository: "sqlalchemy/sqlalchemy", revision: "fe8e67751891de18ba27171bbc8aa23b28bb8348", goldPath: "docs/gold/sqlalchemy.v1.json", expectedGateFailure: "library/test-heavy repo: 847 blocking omissions (117 unresolved relative imports in lib barrel files, 729 unknown-identity external calls, 1 uncertain direction) fail the publish gate by design; the sql operations artifact is complete for gold evaluation" },
 ];
 
 if (!existsSync(cliPath)) {

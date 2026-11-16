@@ -4,7 +4,7 @@
   "revision": "fe8e67751891de18ba27171bbc8aa23b28bb8348",
   "auditedBy": "Lei Han",
   "auditedAt": "2026-11-17",
-  "note": "Human-audited targeted facts from the pinned archive examples/** scope: all 66 session.scalars/session.stream/session.add_all call sites hand-read (including the sess short alias in sharding/performance/versioned_history and the Session receiver in dogpile_caching), classified read for scalars/stream and write for add_all. This audit drove the SQLAlchemy 2.0 session slice: caller marker lists lacked the three methods (multi-line callee lines never matched), the sess alias was absent from the line filter and action classifier, and driver detection was poisoned by string literals (\"MySQL Crowbar\" suppressed every caller edge in examples/association). Measured recall at audit time: 24/66. Remaining known gaps, each a planned follow-up slice: (1) python runtime entrypoint detection misses module-level scripts and asyncio.run entry files (examples/asyncio, examples/inheritance, examples/generic_associations, examples/graphs, examples/nested_sets have no runtime unit, so their session calls are never scanned); (2) per-file driver attribution suppresses files whose engine lives in a sibling module (examples/dogpile_caching, examples/performance use engines from package-level environment/__init__). Commits and session.execute operations under examples/** are not yet enumerated; precision scopes are deferred until those slices converge.",
+  "note": "Human-audited targeted facts from the pinned archive examples/** scope: all session.scalars/session.stream/session.add_all call sites hand-read (66 grep hits audited down to 65 real calls: performance/__init__.py:155 sits inside the module docstring and is documentation, not runtime code) (including the sess short alias in sharding/performance/versioned_history and the Session receiver in dogpile_caching), classified read for scalars/stream and write for add_all. This audit drove the SQLAlchemy 2.0 session slice: caller marker lists lacked the three methods (multi-line callee lines never matched), the sess alias was absent from the line filter and action classifier, and driver detection was poisoned by string literals (\"MySQL Crowbar\" suppressed every caller edge in examples/association). Measured recall at audit time: 24/66; after the script-entry and case-insensitive receiver slices the corpus passes 65/65. Remaining known gaps, each a planned follow-up slice: (1) python runtime entrypoint detection misses module-level scripts and asyncio.run entry files (examples/asyncio, examples/inheritance, examples/generic_associations, examples/graphs, examples/nested_sets have no runtime unit, so their session calls are never scanned); (2) per-file driver attribution suppresses files whose engine lives in a sibling module (examples/dogpile_caching, examples/performance use engines from package-level environment/__init__). Commits and session.execute operations under examples/** are not yet enumerated; precision scopes are deferred until those slices converge.",
   "facts": [
     {
       "id": "sql-session-add_all-adjacency_list-adjacency_list-79",
@@ -437,14 +437,6 @@
       "callSite": "examples/nested_sets/nested_sets.py:101",
       "evidencePath": "examples/nested_sets/nested_sets.py",
       "note": "add_all call on the session session alias"
-    },
-    {
-      "id": "sql-session-add_all-performance-__init__-155",
-      "kind": "sql-operation",
-      "action": "write",
-      "callSite": "examples/performance/__init__.py:155",
-      "evidencePath": "examples/performance/__init__.py",
-      "note": "add_all call on the sess session alias"
     },
     {
       "id": "sql-session-add_all-performance-bulk_inserts-47",

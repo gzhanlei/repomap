@@ -4,9 +4,9 @@
   "generator": "scripts/gold-report.ts (npm run gold:report); regenerate, never hand-edit",
   "allPassed": true,
   "totals": {
-    "corpora": 4,
-    "criticalFacts": 237,
-    "covered": 237,
+    "corpora": 5,
+    "criticalFacts": 302,
+    "covered": 302,
     "suspectedFalsePositives": 0,
     "evidenceInvalid": 0
   },
@@ -334,6 +334,60 @@
           "routeGraph": 0,
           "asyncGraph": 0,
           "ir": 1062
+        }
+      }
+    },
+    {
+      "corpusId": "sqlalchemy",
+      "repository": "sqlalchemy/sqlalchemy@fe8e67751891de18ba27171bbc8aa23b28bb8348",
+      "revision": "fe8e67751891de18ba27171bbc8aa23b28bb8348",
+      "analyzeExitCode": 1,
+      "gateFailure": "library/test-heavy repo: 847 blocking omissions (117 unresolved relative imports in lib barrel files, 729 unknown-identity external calls, 1 uncertain direction) fail the publish gate by design; the sql operations artifact is complete for gold evaluation",
+      "evaluation": {
+        "corpusId": "sqlalchemy",
+        "revision": "fe8e67751891de18ba27171bbc8aa23b28bb8348",
+        "passed": true,
+        "recall": {
+          "total": 65,
+          "covered": 65,
+          "missing": [],
+          "byKind": {
+            "sql-operation": {
+              "total": 65,
+              "covered": 65,
+              "missing": 0
+            }
+          },
+          "dimensions": {
+            "node": {
+              "total": 65,
+              "covered": 65,
+              "missing": 0
+            },
+            "edge": {
+              "total": 0,
+              "covered": 0,
+              "missing": 0
+            },
+            "direction": {
+              "total": 0,
+              "covered": 0,
+              "missing": 0
+            }
+          }
+        },
+        "precision": {
+          "scopes": [],
+          "suspectedFalsePositives": []
+        },
+        "evidence": {
+          "checked": 65,
+          "invalid": []
+        },
+        "omissions": {
+          "routeGraph": 0,
+          "asyncGraph": 0,
+          "ir": 1083
         }
       }
     }
