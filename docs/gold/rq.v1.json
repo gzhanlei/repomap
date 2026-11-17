@@ -1,0 +1,4403 @@
+{
+  "version": 1,
+  "corpusId": "rq",
+  "revision": "535172412469b78d4ac690a446284d8ec1e9f541",
+  "auditedBy": "Lei Han",
+  "auditedAt": "2026-11-17",
+  "note": "Human-audited targeted facts from the pinned archive: the full statically-determinable subset of rq usage (483 facts = @job decorator consumes with topic = decorated function name, plus .enqueue/.enqueue_at/.enqueue_in/.enqueue_many calls whose first argument is a defined/imported function identifier or a string literal, topic = that job function). 113 dynamic enqueues (parameter references and call-expression job arguments) fail closed as dynamic operations with blocking unknown-identity omissions by design and are asserted as expected omissions, not facts. This audit unlocked the census test-only boundary: the async extractor is now the only consumer of python test files (rq demonstrates its protocol in tests/**), fed by extract.ts with CRLF-normalized content; importsFor handles parenthesized multi-line imports, and enqueue topic resolution verifies the identifier against def/import bindings so parameter references fail closed. The analyze gate failure (blocking dynamic-identity omissions in a library/test-heavy repo) is recorded as expectedGateFailure.",
+  "facts": [
+    {
+      "id": "rq-enqueue-tests-test_spawn_worker-221",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_spawn_worker.py:221",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_spawn_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-543",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:543",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-127",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:127",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-127",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:127",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-33",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:33",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-711",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:711",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-786",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:786",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-126",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:126",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-480",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:480",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1529",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1529",
+      "topic": "say_pid",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_pid) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-379",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:379",
+      "topic": "return_retry",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(return_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-170",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:170",
+      "topic": "bar",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on bar"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-99",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:99",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-154",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:154",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-444",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:444",
+      "topic": "return_retry",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(return_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1768",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1768",
+      "topic": "launch_process_within_worker_and_store_pid",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(launch_process_within_worker_and_store_pid) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-71",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:71",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-908",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:908",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-232",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:232",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_intermediate_queue-65",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_intermediate_queue.py:65",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_intermediate_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-653",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:653",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-93",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:93",
+      "topic": "long_process",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(long_process) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1199",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1199",
+      "topic": "tests.fixtures.say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(tests.fixtures.say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-70",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:70",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-375",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:375",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-137",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:137",
+      "topic": "foo",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on foo"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-60",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:60",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-285",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:285",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-469",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:469",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-519",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:519",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1066",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1066",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-195",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:195",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-459",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:459",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_intermediate_queue-79",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_intermediate_queue.py:79",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_intermediate_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-249",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:249",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-374",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:374",
+      "topic": "echo",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(echo) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_spawn_worker-244",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_spawn_worker.py:244",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_spawn_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-588",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:588",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1165",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1165",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1152",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1152",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1674",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1674",
+      "topic": "create_file_after_timeout",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(create_file_after_timeout) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_webhooks-336",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_webhooks.py:336",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_webhooks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-217",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:217",
+      "topic": "long_process",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(long_process) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1203",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1203",
+      "topic": "tests.fixtures.say_hello_unicode",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(tests.fixtures.say_hello_unicode) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_webhooks-294",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_webhooks.py:294",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_webhooks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-491",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:491",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker_pool-119",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker_pool.py:119",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker_pool.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-517",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:517",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-690",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:690",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-87",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:87",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-97",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:97",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_scripts-31",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_scripts.py:31",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_scripts.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-303",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:303",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1210",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1210",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1151",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1151",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-370",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:370",
+      "topic": "echo",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(echo) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-84",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:84",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-199",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:199",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-examples-run_example-17",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "examples/run_example.py:17",
+      "topic": "slow_fib",
+      "evidencePath": "examples/run_example.py",
+      "note": ".enqueue(slow_fib) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_repeat-305",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_repeat.py:305",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_repeat.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-502",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:502",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-879",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:879",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-335",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:335",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1797",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1797",
+      "topic": "access_self",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(access_self) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_intermediate_queue-49",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_intermediate_queue.py:49",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_intermediate_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-96",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:96",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-542",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:542",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-266",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:266",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1725",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1725",
+      "topic": "create_file_after_timeout",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(create_file_after_timeout) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-852",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:852",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1108",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1108",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-304",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:304",
+      "topic": "hello",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on hello"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-412",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:412",
+      "topic": "return_retry",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(return_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_commands-103",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_commands.py:103",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_commands.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1088",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1088",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-187",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:187",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1140",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1140",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_repeat-238",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_repeat.py:238",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_repeat.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-250",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:250",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1129",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1129",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-643",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:643",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-446",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:446",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_job-37",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_job.py:37",
+      "topic": "gather",
+      "evidencePath": "tests/test_job.py",
+      "note": "@job decorator on gather"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-518",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:518",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-423",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:423",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-792",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:792",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1814",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1814",
+      "topic": "access_self",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(access_self) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-948",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:948",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-618",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:618",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-574",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:574",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-388",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:388",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue_unique-26",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue_unique.py:26",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue_unique.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_webhooks-368",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_webhooks.py:368",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_webhooks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-180",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:180",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-23",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:23",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-313",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:313",
+      "topic": "return_retry",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(return_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1252",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1252",
+      "topic": "do_nothing",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(do_nothing) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-739",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:739",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-761",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:761",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-474",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:474",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-170",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:170",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-203",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:203",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-219",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:219",
+      "topic": "foo",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on foo"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-89",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:89",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1982",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1982",
+      "topic": "say_pid",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_pid) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-188",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:188",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-76",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:76",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-832",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:832",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-268",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:268",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1573",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1573",
+      "topic": "say_pid",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_pid) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-540",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:540",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_timeouts-46",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_timeouts.py:46",
+      "topic": "thread_friendly_sleep_func",
+      "evidencePath": "tests/test_timeouts.py",
+      "note": ".enqueue(thread_friendly_sleep_func) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-290",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:290",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-640",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:640",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-840",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:840",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-116",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:116",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker_pool-167",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker_pool.py:167",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_worker_pool.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-119",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:119",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1031",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1031",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-925",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:925",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-336",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:336",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1128",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1128",
+      "topic": "returns_retry",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(returns_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue_unique-22",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue_unique.py:22",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue_unique.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_intermediate_queue-137",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_intermediate_queue.py:137",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_intermediate_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1368",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1368",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_timeouts-54",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_timeouts.py:54",
+      "topic": "thread_friendly_sleep_func",
+      "evidencePath": "tests/test_timeouts.py",
+      "note": ".enqueue(thread_friendly_sleep_func) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-261",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:261",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-488",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:488",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-222",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:222",
+      "topic": "long_process",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(long_process) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1107",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1107",
+      "topic": "save_key_ttl",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(save_key_ttl) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_webhooks-237",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_webhooks.py:237",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_webhooks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_timeouts-40",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_timeouts.py:40",
+      "topic": "thread_friendly_sleep_func",
+      "evidencePath": "tests/test_timeouts.py",
+      "note": ".enqueue(thread_friendly_sleep_func) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1430",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1430",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-776",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:776",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-622",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:622",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue_unique-95",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue_unique.py:95",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue_unique.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-351",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:351",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-327",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:327",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-321",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:321",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1824",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1824",
+      "topic": "schedule_access_self",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(schedule_access_self) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-166",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:166",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_spawn_worker-197",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_spawn_worker.py:197",
+      "topic": "get_job_id_from_environ",
+      "evidencePath": "tests/test_spawn_worker.py",
+      "note": ".enqueue(get_job_id_from_environ) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-187",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:187",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_webhooks-308",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_webhooks.py:308",
+      "topic": "fail_while_retries_remain",
+      "evidencePath": "tests/test_webhooks.py",
+      "note": ".enqueue(fail_while_retries_remain) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-35",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:35",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-107",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:107",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-909",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:909",
+      "topic": "create_file_after_timeout",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(create_file_after_timeout) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-906",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:906",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-459",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:459",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-101",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:101",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-789",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:789",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_repeat-290",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_repeat.py:290",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_repeat.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-260",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:260",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-16",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:16",
+      "topic": "decorated_job",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on decorated_job"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1087",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1087",
+      "topic": "returns_retry_with_delay",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(returns_retry_with_delay) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1699",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1699",
+      "topic": "create_file_after_timeout",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(create_file_after_timeout) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-564",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:564",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-429",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:429",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-598",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:598",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-774",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:774",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-990",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:990",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-244",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:244",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-352",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:352",
+      "topic": "return_retry",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(return_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-156",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:156",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-444",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:444",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-394",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:394",
+      "topic": "return_retry",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(return_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-310",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:310",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-677",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:677",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-576",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:576",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-110",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:110",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-810",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:810",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-318",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:318",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-341",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:341",
+      "topic": "return_retry",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(return_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-273",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:273",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-480",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:480",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_repeat-204",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_repeat.py:204",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_repeat.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-288",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:288",
+      "topic": "hello",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on hello"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-165",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:165",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-693",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:693",
+      "topic": "do_nothing",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(do_nothing) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-383",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:383",
+      "topic": "echo",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(echo) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-754",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:754",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-33",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:33",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-239",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:239",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1050",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1050",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-185",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:185",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_spawn_worker-158",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_spawn_worker.py:158",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_spawn_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-143",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:143",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-148",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:148",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-830",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:830",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-261",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:261",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-149",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:149",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-75",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:75",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-717",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:717",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1615",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1615",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker_pool-109",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker_pool.py:109",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_worker_pool.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-273",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:273",
+      "topic": "custom_queue_job",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on custom_queue_job"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-490",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:490",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-890",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:890",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-431",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:431",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-196",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:196",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-691",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:691",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-195",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:195",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1466",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1466",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-99",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:99",
+      "topic": "hello",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on hello"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1484",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1484",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-408",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:408",
+      "topic": "echo",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(echo) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1197",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1197",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-104",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:104",
+      "topic": "long_process",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(long_process) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1196",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1196",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_spawn_worker-234",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_spawn_worker.py:234",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_spawn_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-136",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:136",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1945",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1945",
+      "topic": "say_pid",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_pid) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-139",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:139",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-177",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:177",
+      "topic": "baz",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on baz"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-352",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:352",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-297",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:297",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-530",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:530",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1034",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1034",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-152",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:152",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-223",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:223",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-268",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:268",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_repeat-97",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_repeat.py:97",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_repeat.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue_unique-105",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue_unique.py:105",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue_unique.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_webhooks-341",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_webhooks.py:341",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_webhooks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-529",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:529",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_webhooks-259",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_webhooks.py:259",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_webhooks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1240",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1240",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-68",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:68",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-408",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:408",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-51",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:51",
+      "topic": "hello",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on hello"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-166",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:166",
+      "topic": "foo",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on foo"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-157",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:157",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-803",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:803",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-266",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:266",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-274",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:274",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-143",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:143",
+      "topic": "bar",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on bar"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-263",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:263",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1097",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1097",
+      "topic": "say_pid",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_pid) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-544",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:544",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-355",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:355",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-671",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:671",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-664",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:664",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_job_lifecycle-51",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_job_lifecycle.py:51",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_job_lifecycle.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-207",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:207",
+      "topic": "long_process",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(long_process) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-284",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:284",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-213",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:213",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-807",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:807",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-956",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:956",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-878",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:878",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_commands-78",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_commands.py:78",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_commands.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-501",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:501",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1211",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1211",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-157",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:157",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-421",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:421",
+      "topic": "echo",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(echo) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-98",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:98",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-826",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:826",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-597",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:597",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_repeat-167",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_repeat.py:167",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_repeat.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-638",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:638",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1745",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1745",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-397",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:397",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-449",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:449",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-543",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:543",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-63",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:63",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-750",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:750",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-663",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:663",
+      "topic": "returns_retry",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(returns_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_repeat-144",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_repeat.py:144",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_repeat.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-304",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:304",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-503",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:503",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-853",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:853",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-274",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:274",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-237",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:237",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-182",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:182",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-644",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:644",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-121",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:121",
+      "topic": "hello",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on hello"
+    },
+    {
+      "id": "rq-enqueue-tests-test_spawn_worker-166",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_spawn_worker.py:166",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_spawn_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1179",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1179",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker_pool-129",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker_pool.py:129",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker_pool.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-823",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:823",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_spawn_worker-211",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_spawn_worker.py:211",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_spawn_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-530",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:530",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-327",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:327",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-153",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:153",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-205",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:205",
+      "topic": "hello",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on hello"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-746",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:746",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-271",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:271",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-294",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:294",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-920",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:920",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1457",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1457",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-851",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:851",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-809",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:809",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-951",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:951",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-445",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:445",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-158",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:158",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-168",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:168",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-279",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:279",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-128",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:128",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-22",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:22",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-970",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:970",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-230",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:230",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-326",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:326",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-551",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:551",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-308",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:308",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-939",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:939",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-426",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:426",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-413",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:413",
+      "topic": "echo",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(echo) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1166",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1166",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1475",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1475",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-727",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:727",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-964",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:964",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-654",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:654",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-138",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:138",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_spawn_worker-321",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_spawn_worker.py:321",
+      "topic": "create_file_after_timeout",
+      "evidencePath": "tests/test_spawn_worker.py",
+      "note": ".enqueue(create_file_after_timeout) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_intermediate_queue-125",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_intermediate_queue.py:125",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_intermediate_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-170",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:170",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-880",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:880",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-276",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:276",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-226",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:226",
+      "topic": "hello",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on hello"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-99",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:99",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-396",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:396",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker_pool-136",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker_pool.py:136",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker_pool.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1116",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1116",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-844",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:844",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_intermediate_queue-24",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_intermediate_queue.py:24",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_intermediate_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-432",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:432",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_intermediate_queue-36",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_intermediate_queue.py:36",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_intermediate_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-339",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:339",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1107",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1107",
+      "topic": "returns_retry",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(returns_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-245",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:245",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-907",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:907",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-156",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:156",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-809",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:809",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-62",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:62",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-262",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:262",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-311",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:311",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-874",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:874",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-173",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:173",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-376",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:376",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1220",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1220",
+      "topic": "create_file",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(create_file) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-141",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:141",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-943",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:943",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-108",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:108",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-228",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:228",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue_unique-79",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue_unique.py:79",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue_unique.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-976",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:976",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-296",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:296",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-189",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:189",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-46",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:46",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-39",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:39",
+      "topic": "hello",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on hello"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-91",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:91",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-118",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:118",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-132",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:132",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-243",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:243",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_commands-140",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_commands.py:140",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_commands.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-285",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:285",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1391",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1391",
+      "topic": "modify_self",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(modify_self) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-224",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:224",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-198",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:198",
+      "topic": "foo",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on foo"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-234",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:234",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-967",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:967",
+      "topic": "echo",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(echo) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-951",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:951",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-103",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:103",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-621",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:621",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-239",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:239",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-395",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:395",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-353",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:353",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-771",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:771",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-787",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:787",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1446",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1446",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-248",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:248",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-724",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:724",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_spawn_worker-44",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_spawn_worker.py:44",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_spawn_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-185",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:185",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-831",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:831",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-289",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:289",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-858",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:858",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-120",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:120",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-180",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:180",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-402",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:402",
+      "topic": "echo",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(echo) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-748",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:748",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-121",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:121",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-161",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:161",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_webhooks-358",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_webhooks.py:358",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_webhooks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-728",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:728",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-76",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:76",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-810",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:810",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-694",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:694",
+      "topic": "do_nothing",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(do_nothing) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker_pool-184",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker_pool.py:184",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker_pool.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-330",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:330",
+      "topic": "return_retry",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(return_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-854",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:854",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-304",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:304",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-673",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:673",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-445",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:445",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-158",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:158",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_webhooks-286",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_webhooks.py:286",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_webhooks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-89",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:89",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-129",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:129",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-356",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:356",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-783",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:783",
+      "topic": "create_file",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(create_file) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-785",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:785",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-64",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:64",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-261",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:261",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-356",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:356",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_webhooks-319",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_webhooks.py:319",
+      "topic": "returns_retry",
+      "evidencePath": "tests/test_webhooks.py",
+      "note": ".enqueue(returns_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-253",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:253",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-467",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:467",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-299",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:299",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-170",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:170",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-262",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:262",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-283",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:283",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-97",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:97",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-293",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:293",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-147",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:147",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-269",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:269",
+      "topic": "tests.fixtures.say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(tests.fixtures.say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-753",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:753",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-391",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:391",
+      "topic": "echo",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(echo) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-274",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:274",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-376",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:376",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-740",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:740",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-238",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:238",
+      "topic": "hello",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on hello"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-263",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:263",
+      "topic": "check_dependencies_are_met",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(check_dependencies_are_met) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-942",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:942",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1166",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1166",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-350",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:350",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-145",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:145",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-267",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:267",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1188",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1188",
+      "topic": "tests.fixtures.say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(tests.fixtures.say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-760",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:760",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1065",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1065",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-564",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:564",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-930",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:930",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-279",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:279",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-83",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:83",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_spawn_worker-58",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_spawn_worker.py:58",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_spawn_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-157",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:157",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_webhooks-280",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_webhooks.py:280",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_webhooks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-282",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:282",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-138",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:138",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-186",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:186",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-808",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:808",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-190",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:190",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-952",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:952",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-1408",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:1408",
+      "topic": "modify_self_and_error",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(modify_self_and_error) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-442",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:442",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-405",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:405",
+      "topic": "echo",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(echo) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_repeat-270",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_repeat.py:270",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_repeat.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-296",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:296",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_intermediate_queue-93",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_intermediate_queue.py:93",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_intermediate_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_intermediate_queue-182",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_intermediate_queue.py:182",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_intermediate_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-462",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:462",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-122",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:122",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-165",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:165",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-487",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:487",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-912",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:912",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-808",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:808",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-250",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:250",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-308",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:308",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-458",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:458",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-948",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:948",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-1009",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:1009",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-64",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:64",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-431",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:431",
+      "topic": "echo",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(echo) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-876",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:876",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-452",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:452",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-129",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:129",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-708",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:708",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-924",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:924",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-831",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:831",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-consume-tests-test_decorator-86",
+      "kind": "async-operation",
+      "action": "consume",
+      "callSite": "tests/test_decorator.py:86",
+      "topic": "hello",
+      "evidencePath": "tests/test_decorator.py",
+      "note": "@job decorator on hello"
+    },
+    {
+      "id": "rq-enqueue-tests-test_results-218",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_results.py:218",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_results.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-958",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:958",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-451",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:451",
+      "topic": "return_retry",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(return_retry) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-674",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:674",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_retry-468",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_retry.py:468",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_retry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-307",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:307",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_repeat-259",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_repeat.py:259",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_repeat.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-363",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:363",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-909",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:909",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_dependencies-189",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_dependencies.py:189",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_dependencies.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_rate_limit-830",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_rate_limit.py:830",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_rate_limit.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_intermediate_queue-170",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_intermediate_queue.py:170",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_intermediate_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_cli-382",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_cli.py:382",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_cli.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-454",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:454",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_callbacks-193",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_callbacks.py:193",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_callbacks.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_registry-386",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_registry.py:386",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_registry.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_worker-604",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_worker.py:604",
+      "topic": "div_by_zero",
+      "evidencePath": "tests/test_worker.py",
+      "note": ".enqueue(div_by_zero) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_queue-139",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_queue.py:139",
+      "topic": "say_hello",
+      "evidencePath": "tests/test_queue.py",
+      "note": ".enqueue(say_hello) on an rq Queue receiver"
+    },
+    {
+      "id": "rq-enqueue-tests-test_executions-304",
+      "kind": "async-operation",
+      "action": "enqueue",
+      "callSite": "tests/test_executions.py:304",
+      "topic": "long_running_job",
+      "evidencePath": "tests/test_executions.py",
+      "note": ".enqueue(long_running_job) on an rq Queue receiver"
+    }
+  ],
+  "precisionScopes": []
+}

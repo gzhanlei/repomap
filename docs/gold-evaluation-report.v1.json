@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-16",
+  "generatedAt": "2026-11-17",
   "generator": "scripts/gold-report.ts (npm run gold:report); regenerate, never hand-edit",
   "allPassed": true,
   "totals": {
-    "corpora": 7,
-    "criticalFacts": 497,
-    "covered": 497,
+    "corpora": 8,
+    "criticalFacts": 985,
+    "covered": 985,
     "suspectedFalsePositives": 0,
     "evidenceInvalid": 0
   },
@@ -440,8 +440,8 @@
         },
         "omissions": {
           "routeGraph": 0,
-          "asyncGraph": 39,
-          "ir": 577
+          "asyncGraph": 46,
+          "ir": 584
         }
       }
     },
@@ -496,6 +496,60 @@
           "routeGraph": 157,
           "asyncGraph": 0,
           "ir": 671
+        }
+      }
+    },
+    {
+      "corpusId": "rq",
+      "repository": "nvie/rq@535172412469b78d4ac690a446284d8ec1e9f541",
+      "revision": "535172412469b78d4ac690a446284d8ec1e9f541",
+      "analyzeExitCode": 1,
+      "gateFailure": "library/test-heavy repo: 113 dynamic enqueues (parameter or expression job arguments) fail closed as blocking unknown-identity omissions; the queue operations artifact is complete for gold evaluation",
+      "evaluation": {
+        "corpusId": "rq",
+        "revision": "535172412469b78d4ac690a446284d8ec1e9f541",
+        "passed": true,
+        "recall": {
+          "total": 488,
+          "covered": 488,
+          "missing": [],
+          "byKind": {
+            "async-operation": {
+              "total": 488,
+              "covered": 488,
+              "missing": 0
+            }
+          },
+          "dimensions": {
+            "node": {
+              "total": 488,
+              "covered": 488,
+              "missing": 0
+            },
+            "edge": {
+              "total": 0,
+              "covered": 0,
+              "missing": 0
+            },
+            "direction": {
+              "total": 0,
+              "covered": 0,
+              "missing": 0
+            }
+          }
+        },
+        "precision": {
+          "scopes": [],
+          "suspectedFalsePositives": []
+        },
+        "evidence": {
+          "checked": 488,
+          "invalid": []
+        },
+        "omissions": {
+          "routeGraph": 0,
+          "asyncGraph": 118,
+          "ir": 152
         }
       }
     }
