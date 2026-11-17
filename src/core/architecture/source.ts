@@ -22,6 +22,10 @@ const nonRuntimePathPattern = /(?:^|\/)(?:__tests__|tests?|fixtures?|mocks?)(?:\
 const generatedArtifactPathPattern = /(?:^|\/)(?:vendor|third_party|node_modules|bower_components|dist|build|out|coverage)(?:\/|$)|(?:^|\/)(?:static|public|assets)\/(?:.*\/)?(?:mathjax|katex|plotly|monaco|codemirror|ckeditor|tinymce|ace|jquery|bootstrap|mode|theme)(?:\/|[-.])|(?:^|\/)(?:static|public|assets)\/.*-full\.js$/i;
 
 export function isArchitectureSourcePath(path: string) {
+  // Python test files stay in the source list: the async extractor is allowed
+  // to scan them (library repositories demonstrate their queue protocols in
+  // tests), while every other consumer keeps excluding them via census roles.
+  if (nonRuntimePathPattern.test(path) && path.endsWith(".py")) return !generatedArtifactPathPattern.test(path);
   return !generatedArtifactPathPattern.test(path) && (path.endsWith("go.mod") || runtimeSourcePattern.test(path)) && !nonRuntimePathPattern.test(path) && !path.endsWith(".min.js");
 }
 

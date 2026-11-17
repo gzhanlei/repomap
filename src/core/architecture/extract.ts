@@ -234,13 +234,24 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
       analyzePythonRoutes({ snapshot, project, enabled: project.parsers.find((parser) => parser.id === "ast-python")?.status !== "unavailable" }),
     ],
   });
+  // The async extractor is the only consumer of python test files: library
+  // repositories demonstrate their queue protocols in test code, while the
+  // snapshot keeps tests out of every other detector and the module graph.
+  // candidateSources excludes test paths; the census still carries their test role.
+  const pythonTestFiles = sources
+    .filter((source) => source.path.endsWith(".py") && baseCensus.files.find((file) => file.path === source.path)?.role === "test")
+    .map((source) => ({
+      path: source.path,
+      packageId: baseCensus.files.find((file) => file.path === source.path)?.packageId ?? "package:root",
+      content: source.content.replace(/^\s*\d+:\s?/gm, ""),
+    }));
   const asyncGraph = buildAsyncGraph({
     revision: input.revision,
     snapshotId: snapshot.snapshotId,
     extractions: [
       analyzeTypeScriptAsync(snapshot, project.parsers.find((parser) => parser.id === "ast-typescript")?.status !== "unavailable"),
       analyzeGoAsync({ snapshot, context: project.buildContext, enabled: project.parsers.find((parser) => parser.id === "ast-go")?.status !== "unavailable" }),
-      analyzePythonAsync({ snapshot, enabled: project.parsers.find((parser) => parser.id === "ast-python")?.status !== "unavailable" }),
+      analyzePythonAsync({ snapshot, enabled: project.parsers.find((parser) => parser.id === "ast-python")?.status !== "unavailable", testFiles: pythonTestFiles }),
     ],
   });
 

@@ -30,18 +30,15 @@ function operation(action: string, path: string, line: number, topic: string, dy
   } as OperationFact;
 }
 
-function independentDeclarations(snapshot: SourceSnapshot) {
+function independentDeclarations(files: PythonAsyncInputFile[]) {
   const result = emptyAsyncExtraction();
   const repoAppNames = new Set<string>();
-  for (const file of snapshot.files) {
-    if (file.language !== "python" || file.role !== "source" || !file.path.endsWith(".py")) continue;
-    const raw = snapshot.rawText(file.path);
-    if (!raw) continue;
-    for (const name of celeryAppReceivers(raw)) repoAppNames.add(name);
+  for (const file of files) {
+    if (!file.raw) continue;
+    for (const name of celeryAppReceivers(file.raw)) repoAppNames.add(name);
   }
-  for (const file of snapshot.files) {
-    if (file.language !== "python" || file.role !== "source" || !file.path.endsWith(".py")) continue;
-    const raw = snapshot.rawText(file.path);
+  for (const file of files) {
+    const raw = file.raw;
     if (!raw) continue;
     const queueReceivers = new Set<string>();
     const celeryContext = celeryReceivers(raw);
@@ -125,9 +122,27 @@ function importsRq(raw: string) {
   return pythonCodeLines(raw).some((line) => /(?:^|\s)from\s+rq(?:\.[\w.]+)?\s+import\s+|(?:^|\s)import\s+rq(?:\.[\w.]+)?\b/.test(line));
 }
 
-/** Receivers bound to rq.Queue constructors when Queue is imported from rq. */
-function rqQueueImport(raw: string) {
-  return pythonCodeLines(raw).some((line) => /(?:^|\s)from\s+rq(?:\.[\w.]+)?\s+import\s+.*\bQueue\b/.test(line));
+/** Names imported from any module in the file (for job-argument resolution). */
+function importsFor(raw: string) {
+  const names = new Set<string>();
+  const lines = pythonCodeLines(raw);
+  for (let index = 0; index < lines.length; index += 1) {
+    const from = lines[index].match(/^\s*from\s+([\w.]+)\s+import\s+(.*)$/);
+    if (!from) continue;
+    let body = from[2];
+    if (body.includes("(")) {
+      // Parenthesized multi-line import: gather names until the closing paren.
+      while (!/\)\s*$/.test(body) && index + 1 < lines.length) {
+        index += 1;
+        body += ` ${lines[index].trim()}`;
+      }
+    }
+    for (const part of body.replace(/[()]/g, "").split(",")) {
+      const [original, alias] = part.trim().split(/\s+as\s+/);
+      if (original) names.add((alias ?? original).trim());
+    }
+  }
+  return names;
 }
 
 /** Alias names bound to the rq @job decorator. */
@@ -175,9 +190,31 @@ function hasPubSubReceiver(receiver: string, raw: string) {
   return /(?:from|import)\s+(?:redis|aioredis|kombu|pika)\b/.test(pythonCodeLines(raw).join("\n"));
 }
 
-export function analyzePythonAsync(input: { snapshot: SourceSnapshot; enabled?: boolean }): AsyncExtraction {
+export interface PythonAsyncInputFile { path: string; packageId: string; raw?: string; content?: string }
+
+/** The async extractor is the only consumer allowed to see python test files:
+ *  library repositories (rq, celery) demonstrate their queue protocols in test
+ *  code, and the census excludes tests from the snapshot for every other
+ *  detector. extract.ts passes the census-excluded python test files here. */
+function pythonAsyncFiles(input: { snapshot: SourceSnapshot; testFiles?: PythonAsyncInputFile[] }): PythonAsyncInputFile[] {
+  const files: PythonAsyncInputFile[] = [];
+  for (const file of input.snapshot.files) {
+    if (file.language !== "python" || file.role !== "source" || !file.path.endsWith(".py")) continue;
+    files.push({ path: file.path, packageId: file.packageId, raw: input.snapshot.rawText(file.path) ?? "" });
+  }
+  for (const file of input.testFiles ?? []) {
+    if (!file.path.endsWith(".py")) continue;
+    // Normalize CRLF/CR line endings: tree-sitter treats a stray \r as a
+    // line joiner and error-recovery drops most of the file's calls.
+    files.push({ path: file.path, packageId: file.packageId, raw: (file.raw ?? file.content ?? "").replace(/\r\n?/g, "\n") });
+  }
+  return files;
+}
+
+export function analyzePythonAsync(input: { snapshot: SourceSnapshot; enabled?: boolean; testFiles?: PythonAsyncInputFile[] }): AsyncExtraction {
+  const asyncFiles = pythonAsyncFiles(input);
   const result = emptyAsyncExtraction();
-  result.declarations = independentDeclarations(input.snapshot);
+  result.declarations = independentDeclarations(asyncFiles);
   if (input.enabled === false || pythonParserStatus().status === "unavailable") {
     result.omissions.push(irOmissionSchema.parse({
       id: "omission:python-async:parser-unavailable",
@@ -195,9 +232,8 @@ export function analyzePythonAsync(input: { snapshot: SourceSnapshot; enabled?: 
   // (which import the task, not celery) attribute their enqueues to the task.
   const repoTaskNames = new Set<string>();
   const repoAppNames = new Set<string>();
-  for (const file of input.snapshot.files) {
-    if (file.language !== "python" || file.role !== "source" || !file.path.endsWith(".py")) continue;
-    const raw = input.snapshot.rawText(file.path);
+  for (const file of asyncFiles) {
+    const raw = file.raw;
     if (!raw) continue;
     for (const name of celeryAppReceivers(raw)) repoAppNames.add(name);
     const parsed = parsePythonSource(raw);
@@ -207,22 +243,18 @@ export function analyzePythonAsync(input: { snapshot: SourceSnapshot; enabled?: 
       if (isCeleryDecorator(`@${decorator.name}`, celeryContext, repoAppNames)) repoTaskNames.add(decoratorTopic(decorator));
     }
   }
-  for (const file of input.snapshot.files) {
-    if (file.language !== "python" || file.role !== "source" || !file.path.endsWith(".py")) continue;
-    const raw = input.snapshot.rawText(file.path);
+  for (const file of asyncFiles) {
+    const raw = file.raw;
     if (!raw) continue;
     const parsed = parsePythonSource(raw);
     if (!parsed) continue;
     const queueReceivers = new Set(parsed.calls.filter((call) => call.name === "asyncio.Queue" || call.name === "queue.Queue").map((call) => call.receiver ?? call.name.split(".")[0]));
     const celeryContext = celeryReceivers(raw);
-    const rqQueueImported = rqQueueImport(raw);
     const rqJobs = rqJobReceivers(raw);
-    const rqQueueReceivers = new Set<string>();
     for (const call of parsed.calls) {
       const name = call.name.split(".").at(-1);
       const receiver = call.name.split(".")[0];
       const nameHead = call.name.split(".")[0];
-      if (rqQueueImported && call.name === "Queue" && call.receiver) rqQueueReceivers.add(call.receiver);
       if (call.name === "asyncio.Queue" || call.name === "queue.Queue") result.operations.push(operation("declare", file.path, call.line, topicForCall(call), false, file.packageId));
       if ((name === "put" || name === "put_nowait") && queueReceivers.has(receiver)) result.operations.push(operation("enqueue", file.path, call.line, topicForCall(call), false, file.packageId));
       if ((name === "get" || name === "get_nowait") && queueReceivers.has(receiver)) result.operations.push(operation("consume", file.path, call.line, topicForCall(call), false, file.packageId));
@@ -251,16 +283,22 @@ export function analyzePythonAsync(input: { snapshot: SourceSnapshot; enabled?: 
           }));
         }
       }
-      // rq enqueues: q.enqueue(...) on an rq Queue receiver (or a chained
+      // rq enqueues: in an rq-bound file every .enqueue call is an rq enqueue,
+      // whatever the receiver shape (q, self.q, a passed-in queue, a chained
       // Queue(...) construction). The topic is the job function: identifier or
       // string literal resolves statically, anything else fails closed.
-      if (name === "enqueue" && importsRq(raw) && (rqQueueReceivers.has(nameHead) || nameHead.startsWith("Queue("))) {
+      if (name === "enqueue" && importsRq(raw)) {
         const first = call.arguments[0];
-        const identifier = first && /^[A-Za-z_]\w*$/.test(first.text) ? first.text : literal(first);
+        // The topic is the enqueued job function: a defined/imported function
+        // identifier or a string literal resolves statically; a parameter
+        // reference or expression fails closed.
+        const literalTopic = literal(first);
+        const identifierTopic = first && /^[A-Za-z_]\w*$/.test(first.text) && (parsed.symbols.some((symbol) => symbol.name === first.text) || importsFor(raw).has(first.text)) ? first.text : undefined;
+        const identifier = literalTopic ?? identifierTopic;
         if (identifier) {
           result.operations.push(operation("enqueue", file.path, call.line, identifier, false, file.packageId));
         } else {
-          const current = operation("enqueue", file.path, call.line, "dynamic", true, file.packageId);
+          const current = operation("enqueue", file.path, call.line, first?.text ?? "dynamic", true, file.packageId);
           result.operations.push(current);
           result.omissions.push(irOmissionSchema.parse({
             id: `omission:python-async-rq-enqueue:${file.path}:${call.line}`,

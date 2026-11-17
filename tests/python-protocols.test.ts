@@ -1,10 +1,11 @@
-import { mkdtemp } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { analyzeSources } from "../src/core/analyze.js";
 import { analyzeArchitectureFacts } from "../src/core/architecture/extract.js";
 import { analyzePythonAsync } from "../src/core/architecture/project/python-async.js";
+import { loadLocalRepositorySources } from "../src/core/source/local.js";
 import { analyzePythonRoutes } from "../src/core/architecture/project/python-routes.js";
 import { createUnavailableAdapter } from "../src/core/architecture/project/adapter.js";
 import { buildSourceCensus } from "../src/core/architecture/census.js";
@@ -393,6 +394,23 @@ describe("M8 Python protocols", () => {
     expect(analysis.ir.omissions.some((omission) => omission.blocking && omission.detail.includes("admin.site.urls"))).toBe(true);
   });
 
+  it("scans python test files for async queue operations", () => {
+    const analysis = analyze({
+      "app/queues.py": "from rq import Queue\nfrom redis import Redis\nq = Queue('default', connection=Redis())\n",
+      "tests/test_jobs.py": "from rq import Queue\nfrom redis import Redis\nq = Queue('default', connection=Redis())\nq.enqueue(slow_fib)\n",
+    });
+    expect(analysis.asyncGraph.operations.some((operation) => operation.action === "enqueue" && operation.callSite === "tests/test_jobs.py:4")).toBe(true);
+  });
+
+  it("loads python test files from local repositories for async extraction", async () => {
+    const root = await mkdtemp(join(tmpdir(), "rq-test-scan-"));
+    await mkdir(join(root, "tests"), { recursive: true });
+    await writeFile(join(root, "tests", "test_jobs.py"), "from rq import Queue\nfrom redis import Redis\nq = Queue('default', connection=Redis())\nq.enqueue(slow_fib)\n");
+    const loaded = await loadLocalRepositorySources(root);
+    const analysis = analyzeArchitectureFacts({ revision, scope: "repository" }, loaded.sources);
+    expect(analysis.asyncGraph.operations.some((operation) => operation.action === "enqueue" && operation.callSite === "tests/test_jobs.py:4")).toBe(true);
+  });
+
   it("extracts rq enqueues and job decorators as queue operations", () => {
     const analysis = analyze({
       "app/tasks.py": [
@@ -405,23 +423,43 @@ describe("M8 Python protocols", () => {
         "from rq import Queue",
         "from redis import Redis",
         "from app.tasks import slow_fib",
+        "from app.tasks import (",
+        "    slow_fib_multi,",
+        ")",
         "q = Queue('default', connection=Redis())",
         "job = q.enqueue(slow_fib)",
         "job2 = q.enqueue('slow_fib')",
         "chained = Queue('other', connection=Redis()).enqueue(slow_fib)",
         "q.enqueue(pick_runtime())",
+        "q.enqueue(slow_fib_multi)",
       ].join("\n"),
     });
     const enqueues = analysis.asyncGraph.operations.filter((operation) => operation.action === "enqueue");
     const topics = enqueues.map((operation) => `${operation.callSite}:${(operation as { topic?: string }).topic}/${operation.resolution}`).sort();
     expect(topics).toEqual([
-      "app/producer.py:5:slow_fib/static",
-      "app/producer.py:6:slow_fib/static",
-      "app/producer.py:7:slow_fib/static",
-      "app/producer.py:8:dynamic/dynamic",
+      "app/producer.py:10:slow_fib/static",
+      "app/producer.py:11:pick_runtime()/dynamic",
+      "app/producer.py:12:slow_fib_multi/static",
+      "app/producer.py:8:slow_fib/static",
+      "app/producer.py:9:slow_fib/static",
     ]);
     const consumes = analysis.asyncGraph.operations.filter((operation) => operation.action === "consume" && operation.callSite === "app/tasks.py:2");
     expect(consumes.map((operation) => (operation as { topic?: string }).topic)).toEqual(["slow_fib"]);
+    // any .enqueue call in an rq-bound file is an rq enqueue, whatever the
+    // receiver shape (self.q, a passed-in queue...); the job argument names it
+    const runner = analyze({
+      "app/worker.py": [
+        "from rq import Queue",
+        "class Runner:",
+        "    def setup(self):",
+        "        self.q = Queue('default', connection=conn)",
+        "    def run(self, fn):",
+        "        self.q.enqueue(fn)",
+        "        self.q.enqueue('send_report')",
+      ].join("\n"),
+    });
+    const runnerEnqueues = runner.asyncGraph.operations.filter((operation) => operation.action === "enqueue");
+    expect(runnerEnqueues.map((operation) => `${(operation as { topic?: string }).topic}/${operation.resolution}`).sort()).toEqual(["fn/dynamic", "send_report/static"]);
     // a file with no rq import is not an rq queue operation
     const negative = analyze({
       "app/util.py": "class Registry:\n    def enqueue(self, x):\n        return x\n\nq = Registry()\nq.enqueue(1)\n",
