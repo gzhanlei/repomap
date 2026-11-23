@@ -152,6 +152,7 @@ interface RouterRelation {
   childVariable: string;
   prefix: string;
   line: number;
+  replacesOwnPrefix: boolean;
 }
 
 interface RouterIndex {
@@ -194,7 +195,9 @@ function buildRouterIndex(snapshot: SourceSnapshot, project: ProjectPreparation)
         ownPrefixes.set(`${file.path}:${call.receiver ?? "router"}`, argument ? (stringValue(argument) ?? `dynamic:${dynamicText(argument)}`) : "");
       }
       // Flask blueprints carry their own url_prefix and are attached with
-      // register_blueprint; the composition machinery mirrors APIRouter.
+      // register_blueprint; the composition machinery mirrors APIRouter, except
+      // that a register_blueprint url_prefix replaces the blueprint's own where
+      // an include_router prefix is prepended to the router's own.
       if (call.name === "Blueprint") {
         const argument = call.arguments.find((item) => item.text.startsWith("url_prefix"));
         const prefixText = argument?.text.match(/url_prefix\s*=\s*(.+)/)?.[1];
@@ -234,7 +237,7 @@ function buildRouterIndex(snapshot: SourceSnapshot, project: ProjectPreparation)
           if (target) childFile = target;
           else unresolved.push({ path: file.path, line: call.line, reference });
         }
-        relations.push({ parentFile: file.path, parentVariable: call.name.split(".")[0], childFile, childVariable, prefix, line: call.line });
+        relations.push({ parentFile: file.path, parentVariable: call.name.split(".")[0], childFile, childVariable, prefix, line: call.line, replacesOwnPrefix: call.name.endsWith("register_blueprint") && prefixArgument !== undefined });
       }
     }
   }
@@ -256,7 +259,7 @@ function prefixFor(index: RouterIndex, file: string, variable: string, seen = ne
   if (relations.length > 1) return `dynamic:ambiguous`;
   const relation = relations[0];
   const parent = relation.parentVariable ? prefixFor(index, relation.parentFile, relation.parentVariable, seen) : "";
-  return joinPath(parent, joinPath(relation.prefix, own));
+  return joinPath(parent, joinPath(relation.prefix, relation.replacesOwnPrefix ? "" : own));
 }
 
 function analyzeFile(snapshot: SourceSnapshot, project: ProjectPreparation, file: PythonParsedFile, path: string, routers: RouterIndex): RouteExtraction {

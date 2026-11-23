@@ -944,4 +944,97 @@ describe("M8 Python protocols", () => {
     // A plain object's register_blueprint is not Flask and must not emit routes or omissions.
     expect(analysis.routeGraph.routes.every((route) => route.sourcePath !== "app/plain.py")).toBe(true);
   });
+
+  it("lets register_blueprint url_prefix replace the blueprint's own prefix", () => {
+    const analysis = analyze({
+      "app/__init__.py": [
+        "from flask import Flask",
+        "def create_app():",
+        "    app = Flask(__name__)",
+        "    from .api import bp",
+        "    app.register_blueprint(bp, url_prefix='/v2')",
+        "    return app",
+      ].join("\n"),
+      "app/api.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('api', __name__, url_prefix='/api')",
+        "@bp.get('/status')",
+        "def status(): return {}",
+      ].join("\n"),
+    });
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`)).toEqual(["GET /v2/status"]);
+    expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+    expect(analysis.routeGraph.omissions).toHaveLength(0);
+  });
+
+  it("keeps a parent blueprint's prefix and replaces a nested blueprint's own prefix with its registration override", () => {
+    const analysis = analyze({
+      "app/__init__.py": [
+        "from flask import Flask",
+        "def create_app():",
+        "    app = Flask(__name__)",
+        "    from .api import bp",
+        "    app.register_blueprint(bp)",
+        "    return app",
+      ].join("\n"),
+      "app/api/__init__.py": [
+        "from flask import Blueprint",
+        "from .admin import bp as admin_bp",
+        "bp = Blueprint('api', __name__, url_prefix='/api')",
+        "bp.register_blueprint(admin_bp, url_prefix='/admin')",
+        "@bp.get('/health')",
+        "def health(): return {}",
+      ].join("\n"),
+      "app/api/admin.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('admin', __name__, url_prefix='/internal')",
+        "@bp.get('/users')",
+        "def users(): return {}",
+      ].join("\n"),
+    });
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`).sort()).toEqual(["GET /api/admin/users", "GET /api/health"]);
+    expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+    expect(analysis.routeGraph.omissions).toHaveLength(0);
+  });
+
+  it("lets an explicit empty register_blueprint url_prefix cancel the blueprint's own prefix", () => {
+    const analysis = analyze({
+      "app/__init__.py": [
+        "from flask import Flask",
+        "def create_app():",
+        "    app = Flask(__name__)",
+        "    from .api import bp",
+        "    app.register_blueprint(bp, url_prefix='')",
+        "    return app",
+      ].join("\n"),
+      "app/api.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('api', __name__, url_prefix='/api')",
+        "@bp.get('/status')",
+        "def status(): return {}",
+      ].join("\n"),
+    });
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`)).toEqual(["GET /status"]);
+    expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+    expect(analysis.routeGraph.omissions).toHaveLength(0);
+  });
+
+  it("keeps prepending include_router prefix to the APIRouter's own prefix", () => {
+    const analysis = analyze({
+      "app/main.py": [
+        "from fastapi import FastAPI",
+        "from .router import router",
+        "app = FastAPI()",
+        "app.include_router(router, prefix='/v2')",
+      ].join("\n"),
+      "app/router.py": [
+        "from fastapi import APIRouter",
+        "router = APIRouter(prefix='/api')",
+        "@router.get('/status')",
+        "def status(): return {}",
+      ].join("\n"),
+    });
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`)).toEqual(["GET /v2/api/status"]);
+    expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+  });
 });

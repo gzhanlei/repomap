@@ -1,7 +1,7 @@
 # RepoMap 接手文档
 
 - 更新日期：2026-11-23
-- 代码基线：`25169ff`（本地与 origin/main 一致：已含 SQLAlchemy/Celery/RQ/Django 真实语料批次、脚本式入口检测、函数内导入的路由作用域修复 433a30e、flask 接入 gold:report 25169ff；本文档提交位于该基线之后。账本最新发布停在 #256 @ `e0af3f9`，其后的 push 未触发分析，见 §9）
+- 代码基线：`25169ff` 加上其后的 Flask `register_blueprint` 前缀覆盖修复提交（本地与 origin/main 一致：已含 SQLAlchemy/Celery/RQ/Django 真实语料批次、脚本式入口检测、函数内导入的路由作用域修复 433a30e、flask 接入 gold:report 25169ff。账本最新发布停在 #256 @ `e0af3f9`，其后的 push 未触发分析，见 §9）
 - 远程仓库：`https://github.com/gzhanlei/repomap`
 - 当前分支：`main`
 
@@ -31,11 +31,12 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 - Django 路由切片（2026-11-17，收敛并接入报告）：python-routes.ts 新增 raw-scan Django 分析（无需 AST parser，声明在 parser-unavailable 模式下保留，与 flask 独立分母纪律一致）——`django.urls` 绑定、path()/re_path() 路由事实（framework "django"、method "PAGE"）、include 组合（字符串模块、模块对象变量 `include(uuid_urls)`、别名导入 `from hc.accounts import views as accounts_views` 均通过 def/class 索引与导入绑定解析；多前缀实例化——同一模块被多个前缀 include 时每实例产出路由集）、跨模块/类视图 handler（resolution re-export，sourcePath = 定义文件）、fail-closed（admin.site.urls 视图间接引用、动态前缀——healthchecks 的 SITE_ROOT 子路径部署、不可解析 include）。语料 `healthchecks/healthchecks@6c05a7ad`（149 个非 include 路由调用点人工对账：147 产出 + admin fail-closed omission + 动态前缀 omission）→ **django-healthchecks 语料 148/148 一次通过、0 FP，接入 gold:report——七语料 497/497 critical facts、0 FP、0 invalid evidence**。corpus-gold 的 route method 枚举补 "PAGE"（vite-react-router 先例已有该方法）。
 - Flask 路由解析的作用域修复（2026-11-23）：router 组合解析此前只在模块级导入里找名字绑定，应用工厂里函数体内的 `from . import views` + `app.register_blueprint(views.bp)` 会退到"快照内唯一 `views.py` 文件名"兜底——flask 语料 `examples/**` 有三个 `views.py`，于是在 `examples/celery/src/task_app/__init__.py:25` 报出假的 `unresolved-import` 阻断 omission（路由本身由 Blueprint 声明产出、17/17 不丢，所以 gold 没暴露；现有单测只因夹具里只有一个 `views.py` 才通过）。修复：解析器为函数内导入记录所属函数的行范围（`PythonParsedImport.enclosingFunction`），`python-routes.ts` 新增 `importBindingAt` 按 Python 名字解析规则取绑定——函数内导入只在所属函数内且已执行到的行生效，否则取模块级导入；router 子引用、前缀常量和 `project.imports` 候选（按语句行号区分同名模块的重复导入）统一走它。同时去掉 `8b476f0` 为同一问题加的"唯一文件名"兜底（当时把函数内导入误判为"解析到包 `__init__`"）：名字没有导入绑定时按文件名猜与 §2"未知身份必须形成 omission"相悖，去掉后无绑定的引用失败关闭。flask 路由 omission 2→1（只剩设计内的 add_url_rule），其余八语料 236 个语义产物文件与修复前逐字节一致。
 - flask 语料接入 `gold:report`（2026-11-23）：`pallets/flask@49943b5a` examples/** 的 17 条路由 Gold（两个完整枚举 scope：flaskr 12/12、celery task app 5/5）此前只登记在 manifest、从未进报告脚本——`8b476f0` 晚于建脚本的 `680fe76`，是漏接而非卡住；作用域修复后接入，**九语料 1002/1002 critical facts、0 FP、0 invalid evidence**，flask 的 analyze 门禁通过（退出码 0，无需 expectedGateFailure），唯一路由 omission 是设计内的 add_url_rule。
+- Flask `register_blueprint` 前缀覆盖修复（2026-11-23）：`register_blueprint(bp, url_prefix=…)` 的注册前缀按 Flask 语义**替换**蓝图自身的 `url_prefix`，此前与 FastAPI 的 `include_router` 一样被拼接——自身前缀为 `/api` 的蓝图以 `url_prefix='/v2'` 注册会得到 `/v2/api/...`。依据是固定版本归档里的 Flask 源码（`src/flask/sansio/blueprints.py`：`url_prefix = options.get("url_prefix")`，仅为 None 时回退到蓝图自身；嵌套蓝图取父前缀 + 子蓝图的有效前缀）；显式 `url_prefix=''` 同样取消自身前缀。FastAPI `include_router` 逐层拼接的语义不变。flask 语料没有这种组合，九语料 260 个语义产物逐字节不变；行为由 4 个单测钉住（含 FastAPI 守卫），两个错误修法经变异验证都会被拦住。
 
 尚未完成：
 
 - M7 发布资格（未完成）：`npm run gold:report` 已覆盖九语料 1002/1002（见上），但 `docs/release-qualification.v1.json` 仍停在 `680fe76` 的四语料 237 条，需要在单一 HEAD 上重跑 `gold:report`、`perf:gate`、`smoke:production` 并全部退出 0 后重新汇总——本地 perf:gate 目前在本机不稳定（§9），2026-11-23 未重新汇总。批准块（decision/decidedBy/decidedAt）与 FastAPI 视觉独立确认留给作者，receipt `visualReview` 仍为 `pending`。writefreely 与 commerce 两个语料仍是 pinned-not-audited。
-- Django ORM（`Model.objects.*`、`.save()` 等目前不产生 SQL 操作）、Flask `register_blueprint` 同时带注册前缀与蓝图自身前缀时的组合语义（§4.2）、完整动态依赖注入/ORM/SSA，以及更多语言和真实仓库审查。
+- Django ORM（`Model.objects.*`、`.save()` 等目前不产生 SQL 操作）、完整动态依赖注入/ORM/SSA，以及更多语言和真实仓库审查。
 - 可选 Harness/LLM enrichment 尚未实现；默认分析保持 `aiRequests: 0`。
 
 **`fullArchitecture: true` 只表示某个固定输入在声明范围内通过语义门禁，不表示所有 Python 项目均受支持，也不等于 M7 或发布资格完成。**
@@ -99,7 +100,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 - 普通对象的 `include_router` 不会被误判为 FastAPI，也不会无故阻断全图。
 - Flask Blueprint：`Blueprint(url_prefix=…)` 自身前缀与 `register_blueprint` 组合；蓝图模块名按作用域绑定导入（`importBindingAt`：函数内导入只在所属函数内且已执行的行生效，否则取模块级导入），没有导入绑定的引用失败关闭、不按文件名猜；`add_url_rule` 端点间接引用失败关闭。
 - Django `urls.py`：`path()`/`re_path()` 路由（framework `django`、method `PAGE`）、`include()` 组合（字符串模块、模块对象变量、别名导入；同一模块被多个前缀 include 时每实例一套路由）、跨模块与类视图 handler；`admin.site.urls` 这类视图间接引用和动态前缀（如 SITE_ROOT 子路径部署）失败关闭。
-- 已知缺陷：Flask `register_blueprint(bp, url_prefix='/v2')` 与蓝图自身 `url_prefix='/api'` 同时存在时，当前实现拼成 `/v2/api/...`，而 Flask 的语义是替换（应为 `/v2/...`）；FastAPI `include_router(router, prefix=…)` 本身就是拼接，不涉及。flask 语料没有这种组合，gold 未覆盖。
+- Flask 注册前缀：`register_blueprint(bp, url_prefix=…)` 的 `url_prefix` 替换蓝图自身前缀（显式空串同样取消）；嵌套蓝图的最终前缀 = 父蓝图前缀 + 子蓝图的有效前缀。FastAPI `include_router(router, prefix=…)` 则是逐层拼接：父路由器前缀 + include 前缀 + 子路由器自身前缀。
 
 ### 4.3 SQL / Alembic
 
@@ -140,9 +141,9 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 ### 5.1 最新全量检查
 
-在代码基线 `25169ff` 上（2026-11-23，darwin arm64，node v25.5.0）：
+在代码基线 `25169ff` 加上 Flask 前缀覆盖修复上（2026-11-23，darwin arm64，node v25.5.0）：
 
-- `npm test`：**37 个测试文件、293 项测试通过**。
+- `npm test`：**37 个测试文件、297 项测试通过**。
 - `npm run typecheck`：通过。
 - `npm run build`：通过。
 - `npm run smoke:production`：通过；生产包中 Go/Python parser 可用，Python route 为 1 条、总 route 为 2 条、Python async operations 为 3 条。
@@ -305,7 +306,7 @@ node dist/cli.js analyze \
 ### P1：Python 真实仓库与协议扩展
 
 - 已有固定 SHA 真实语料：Flask、SQLAlchemy、Celery、Django（urls.py 路由）、RQ（§5.6）；asyncio 还没有人工审计语料。
-- 下一个候选切片：Django ORM → SQL 操作（healthchecks 的路由有 148 条，但全仓库 IR 只有 5 条 SQL；归档里粗数约 765 行 `.objects.<方法>(`、935 行 `.save(`，含测试代码）；Flask `register_blueprint` 前缀覆盖语义（§4.2 已知缺陷）。
+- 下一个候选切片：Django ORM → SQL 操作（healthchecks 的路由有 148 条，但全仓库 IR 只有 5 条 SQL；归档里粗数约 765 行 `.objects.<方法>(`、935 行 `.save(`，含测试代码）。
 - 每个新框架或协议先写独立 declarations、负例和失败关闭测试。
 - 扩展动态 ORM/SSA、HTTP wrapper 和 broker 时，不能复用“同名方法即协议”的捷径。
 
@@ -326,4 +327,3 @@ node dist/cli.js analyze \
 - `docs/gold-manifest.v1.json` 现含九个 human-audited-targeted 语料，全部接入 `gold:report`；writefreely 与 commerce 仍是 pinned-not-audited。sqlalchemy、celery、django-healthchecks、rq 四个条目尚未登记 archiveSha256（其余七个都有）。
 - **本地 perf gate 噪声（2026-11-23）**：同一份代码在本机的 6 次峰值 RSS——`680fe76` 为 751,550,464–1,132,445,696 字节（3/6 超阈值）、`401b50b` 为 958,038,016–1,102,495,744（5/6 超阈值）、`f949b59` 3 次为 939,638,784–1,069,236,224、`25169ff` 3 次为 950,288,384–1,110,867,968（退出码 1）；文档记录的本地基线是 916,619,264；同期 CI 三次运行的最大值分别为 945,750,016（`f949b59`）、891,551,744（`433a30e`）、880,959,488 字节（`25169ff`）。当日本机 swap 已用 14.1/15.4GB、负载约 5，原因未验证（推测是内存压力改变了 GC 时序）。阈值未改动。本地 perf:gate 失败时不要归因于切片：先对基线提交做临时 worktree 的 A/B（各 ≥6 次、比较范围），以 CI 的 performance-gate（ubuntu/node 22）为准。
 - **账本对账积压（2026-11-23）**：codelphi 账本的最新分析与发布停在 run 371 / #256 @ `e0af3f9`；其后的 push（`401b50b`、`f949b59`、`433a30e`、`25169ff`）都没有触发分析（`wait_for_release` 返回 `analysisRunId: null`），需要在 codelphi 侧检查 webhook/摄取；恢复后对这段区间的发布做意图对账。
-- **已知缺陷：Flask `register_blueprint` 前缀覆盖**（§4.2）：注册前缀与蓝图自身前缀同时存在时被拼接，Flask 的语义是替换；现有 gold 与单测都没有覆盖这种组合。
