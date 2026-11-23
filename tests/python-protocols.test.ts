@@ -751,6 +751,149 @@ describe("M8 Python protocols", () => {
     expect(analysis.omissions.filter((omission) => omission.detail.includes("router"))).toHaveLength(0);
   });
 
+  it("resolves a function-local blueprint module import when the blueprint filename is not unique", () => {
+    const analysis = analyze({
+      "task_app/__init__.py": [
+        "from flask import Flask",
+        "def create_app():",
+        "    app = Flask(__name__)",
+        "    from . import views",
+        "    app.register_blueprint(views.bp)",
+        "    return app",
+      ].join("\n"),
+      "task_app/views.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('tasks', __name__, url_prefix='/tasks')",
+        "@bp.get('/result/<id>')",
+        "def result(id): return {}",
+      ].join("\n"),
+      "admin/views.py": ["value = 1"].join("\n"),
+    });
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`)).toEqual(["GET /tasks/result/<id>"]);
+    expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+    expect(analysis.omissions.filter((omission) => omission.detail.includes("router"))).toHaveLength(0);
+  });
+
+  it("resolves a blueprint bound by a function-local from-import", () => {
+    const analysis = analyze({
+      "task_app/__init__.py": [
+        "from flask import Flask",
+        "def create_app():",
+        "    app = Flask(__name__)",
+        "    from .views import bp",
+        "    app.register_blueprint(bp)",
+        "    return app",
+      ].join("\n"),
+      "task_app/views.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('tasks', __name__, url_prefix='/tasks')",
+        "@bp.get('/result/<id>')",
+        "def result(id): return {}",
+      ].join("\n"),
+    });
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`)).toEqual(["GET /tasks/result/<id>"]);
+    expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+    expect(analysis.omissions.filter((omission) => omission.detail.includes("router"))).toHaveLength(0);
+  });
+
+  it("resolves a function-local from-import that repeats a module-level import of the same name", () => {
+    const analysis = analyze({
+      "task_app/__init__.py": [
+        "from flask import Flask",
+        "from .views import bp",
+        "def create_app():",
+        "    app = Flask(__name__)",
+        "    from .views import bp",
+        "    app.register_blueprint(bp)",
+        "    return app",
+      ].join("\n"),
+      "task_app/views.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('tasks', __name__, url_prefix='/tasks')",
+        "@bp.get('/result/<id>')",
+        "def result(id): return {}",
+      ].join("\n"),
+    });
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`)).toEqual(["GET /tasks/result/<id>"]);
+    expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+    expect(analysis.omissions.filter((omission) => omission.detail.includes("router"))).toHaveLength(0);
+  });
+
+  it("resolves a blueprint url_prefix constant through a function-local module import", () => {
+    const analysis = analyze({
+      "task_app/__init__.py": [
+        "from flask import Blueprint, Flask",
+        "from . import settings",
+        "def create_app():",
+        "    from . import settings",
+        "    app = Flask(__name__)",
+        "    bp = Blueprint('tasks', __name__, url_prefix=settings.API_PREFIX)",
+        "    @bp.get('/status')",
+        "    def status(): return {}",
+        "    app.register_blueprint(bp)",
+        "    return app",
+      ].join("\n"),
+      "task_app/settings.py": ["API_PREFIX = '/tasks'"].join("\n"),
+    });
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`)).toEqual(["GET /tasks/status"]);
+    expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+    expect(analysis.routeGraph.omissions).toHaveLength(0);
+  });
+
+  it("fails closed for a blueprint module reference that no import binds, even when a same-named file is unique", () => {
+    const analysis = analyze({
+      "task_app/__init__.py": [
+        "from flask import Flask",
+        "def create_app():",
+        "    app = Flask(__name__)",
+        "    app.register_blueprint(views.bp)",
+        "    return app",
+      ].join("\n"),
+      "task_app/views.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('tasks', __name__, url_prefix='/tasks')",
+        "@bp.get('/result/<id>')",
+        "def result(id): return {}",
+      ].join("\n"),
+    });
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`)).toEqual(["GET /tasks/result/<id>"]);
+    const routerOmissions = analysis.routeGraph.omissions.filter((omission) => omission.detail.includes("router"));
+    expect(routerOmissions).toHaveLength(1);
+    expect(routerOmissions[0].reason).toBe("unresolved-import");
+    expect(routerOmissions[0].blocking).toBe(true);
+  });
+
+  it("binds a blueprint module name by scope: a sibling function's local import does not shadow the module import", () => {
+    const analysis = analyze({
+      "task_app/__init__.py": [
+        "from flask import Flask",
+        "from .api import views",
+        "def load_admin():",
+        "    from .admin import views",
+        "    return views",
+        "def create_app():",
+        "    app = Flask(__name__)",
+        "    app.register_blueprint(views.bp, url_prefix='/api')",
+        "    return app",
+      ].join("\n"),
+      "task_app/api/views.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('api', __name__)",
+        "@bp.get('/status')",
+        "def status(): return {}",
+      ].join("\n"),
+      "task_app/admin/views.py": [
+        "from flask import Blueprint",
+        "bp = Blueprint('admin', __name__)",
+        "@bp.get('/dashboard')",
+        "def dashboard(): return {}",
+      ].join("\n"),
+    });
+    expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`).sort()).toEqual(["GET /api/status", "GET /dashboard"]);
+    expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+    expect(analysis.omissions.filter((omission) => omission.detail.includes("router"))).toHaveLength(0);
+  });
+
   it("resolves Flask blueprint routes with url_prefix composition, overrides and add_url_rule fail-closed", () => {
     const analysis = analyze({
       "app/__init__.py": [

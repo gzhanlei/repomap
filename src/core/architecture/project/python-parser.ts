@@ -39,6 +39,7 @@ export interface PythonParsedImport {
   package?: string;
   level?: number;
   line: number;
+  enclosingFunction?: { line: number; endLine: number };
 }
 
 export interface PythonParsedSymbol {
@@ -140,16 +141,16 @@ export function parsePythonSource(raw: string): PythonParsedFile | undefined {
   let allExportsDynamic = false;
   let mainGuardLine: number | undefined;
 
-  const collectImport = (statement: SyntaxNode, moduleScope: boolean) => {
+  const collectImport = (statement: SyntaxNode, moduleScope: boolean, enclosingFunction?: PythonParsedImport["enclosingFunction"]) => {
     if (statement.type === "import_statement") {
       for (const child of statement.namedChildren) {
         if (child.type === "dotted_name") {
           const original = child.text.split(".")[0];
-          imports.push({ source: child.text, kind: "static", importedNames: [], bindings: { [original]: original }, moduleScope, wildcard: false, line: child.startPosition.row + 1 });
+          imports.push({ source: child.text, kind: "static", importedNames: [], bindings: { [original]: original }, moduleScope, wildcard: false, line: child.startPosition.row + 1, ...(enclosingFunction ? { enclosingFunction } : {}) });
         } else if (child.type === "aliased_import") {
           const name = child.childForFieldName("name") ?? firstNamed(child, "dotted_name");
           const alias = child.childForFieldName("alias")?.text;
-          if (name) imports.push({ source: name.text, kind: "static", importedNames: [], bindings: { [alias ?? name.text]: name.text }, moduleScope, wildcard: false, line: child.startPosition.row + 1 });
+          if (name) imports.push({ source: name.text, kind: "static", importedNames: [], bindings: { [alias ?? name.text]: name.text }, moduleScope, wildcard: false, line: child.startPosition.row + 1, ...(enclosingFunction ? { enclosingFunction } : {}) });
         }
       }
     } else if (statement.type === "import_from_statement" || statement.type === "future_import_statement") {
@@ -176,12 +177,12 @@ export function parsePythonSource(raw: string): PythonParsedFile | undefined {
         }
         return [];
       }));
-      imports.push({ source: moduleName.text, kind: "static", importedNames, bindings, moduleScope, wildcard: statement.namedChildren.some((child) => child.type === "wildcard_import"), line: statement.startPosition.row + 1 });
+      imports.push({ source: moduleName.text, kind: "static", importedNames, bindings, moduleScope, wildcard: statement.namedChildren.some((child) => child.type === "wildcard_import"), line: statement.startPosition.row + 1, ...(enclosingFunction ? { enclosingFunction } : {}) });
     }
   };
 
-  const visit = (node: SyntaxNode, moduleScope: boolean) => {
-    collectImport(node, moduleScope);
+  const visit = (node: SyntaxNode, moduleScope: boolean, enclosingFunction?: PythonParsedImport["enclosingFunction"]) => {
+    collectImport(node, moduleScope, enclosingFunction);
     if (node.type === "decorator") {
       const call = firstNamed(node, "call");
       const fn = call?.childForFieldName("function")?.text ?? firstNamed(node, "attribute", "identifier")?.text ?? node.text.replace(/^@/, "");
@@ -223,7 +224,7 @@ export function parsePythonSource(raw: string): PythonParsedFile | undefined {
       const condition = node.childForFieldName("condition")?.text.replaceAll("'", '"').replaceAll(" ", "");
       if (condition === '__name__=="__main__"') mainGuardLine = node.startPosition.row + 1;
     }
-    for (const child of node.namedChildren) visit(child, moduleScope && node.type !== "function_definition" && node.type !== "class_definition");
+    for (const child of node.namedChildren) visit(child, moduleScope && node.type !== "function_definition" && node.type !== "class_definition", node.type === "function_definition" ? { line: node.startPosition.row + 1, endLine: node.endPosition.row + 1 } : enclosingFunction);
   };
   visit(root, true);
 

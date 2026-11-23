@@ -1,7 +1,7 @@
 import { posix } from "node:path";
 import type { ProjectPreparation } from "./adapter.js";
 import type { SourceSnapshot } from "./snapshot.js";
-import { parsePythonSource, type PythonParsedCall, type PythonParsedDecorator, type PythonParsedFile } from "./python-parser.js";
+import { parsePythonSource, type PythonParsedCall, type PythonParsedDecorator, type PythonParsedFile, type PythonParsedImport } from "./python-parser.js";
 import { pythonParserStatus } from "./python-parser.js";
 import {
   emptyRouteExtraction, handlerCallId, handlerId, parserEvidence, routeEdgeId, routeId,
@@ -78,6 +78,16 @@ function localHandler(file: PythonParsedFile, decorator: PythonParsedDecorator, 
     resolution: "local", targetId: `python-module:${path}`,
     evidenceIds: [parserEvidence(path, line, "ast:python-handler:local").id],
   };
+}
+
+// The import statement binding `name` where `line` is used, as Python resolves
+// it: a function-local import only inside its own function and only once that
+// line is reached, otherwise a module-level import from anywhere in the file.
+function importBindingAt(file: PythonParsedFile, name: string, line: number) {
+  const binds = (item: PythonParsedImport) => item.bindings[name] !== undefined;
+  const local = file.imports.filter((item) => !item.moduleScope && binds(item) && item.enclosingFunction !== undefined && item.enclosingFunction.line <= line && line <= item.enclosingFunction.endLine);
+  if (local.length > 0) return local.filter((item) => item.line <= line).at(-1);
+  return file.imports.filter((item) => item.moduleScope && binds(item)).at(-1);
 }
 
 function importedCallTarget(file: PythonParsedFile, project: ProjectPreparation, call: PythonParsedCall, path: string, handler: RouteHandler, endLine: number) {
@@ -158,12 +168,12 @@ function buildRouterIndex(snapshot: SourceSnapshot, project: ProjectPreparation)
   const unresolved: { path: string; line: number; reference: string }[] = [];
   const unsupported: { path: string; line: number; call: string }[] = [];
   const constants = new Map<string, string>();
-  const constantValue = (file: string, expression: string, parsed: PythonParsedFile) => {
+  const constantValue = (file: string, expression: string, parsed: PythonParsedFile, line: number) => {
     const key = expression.split(".").at(-1) ?? expression;
     if (!expression.includes(".")) return constants.get(`${file}:${key}`);
     const module = expression.split(".")[0];
-    const localImport = parsed.imports.find((item) => item.moduleScope && item.bindings[module] !== undefined);
-    const candidates = project.imports.filter((item) => item.path === file && item.source === localImport?.source && item.resolvedPath);
+    const localImport = importBindingAt(parsed, module, line);
+    const candidates = project.imports.filter((item) => item.path === file && item.line === localImport?.line && item.source === localImport?.source && item.resolvedPath);
     if (candidates.length !== 1) return undefined;
     return constants.get(`${candidates[0].resolvedPath}:${key}`);
   };
@@ -188,7 +198,7 @@ function buildRouterIndex(snapshot: SourceSnapshot, project: ProjectPreparation)
       if (call.name === "Blueprint") {
         const argument = call.arguments.find((item) => item.text.startsWith("url_prefix"));
         const prefixText = argument?.text.match(/url_prefix\s*=\s*(.+)/)?.[1];
-        ownPrefixes.set(`${file.path}:${call.receiver ?? "bp"}`, argument ? (stringValue({ text: prefixText ?? "", type: "string" }) ?? constantValue(file.path, prefixText ?? "", parsed) ?? `dynamic:${dynamicText(argument)}`) : "");
+        ownPrefixes.set(`${file.path}:${call.receiver ?? "bp"}`, argument ? (stringValue({ text: prefixText ?? "", type: "string" }) ?? constantValue(file.path, prefixText ?? "", parsed, call.line) ?? `dynamic:${dynamicText(argument)}`) : "");
       }
       if (call.name.endsWith("add_url_rule") && knownRouterReceivers.has(call.name.split(".")[0])) {
         // Endpoint indirection (add_url_rule maps a URL to an endpoint name
@@ -200,11 +210,11 @@ function buildRouterIndex(snapshot: SourceSnapshot, project: ProjectPreparation)
         const reference = call.arguments[0]?.text.trim() ?? "router";
         const prefixArgument = call.arguments.find((item) => item.text.startsWith("prefix")) ?? call.arguments.find((item) => item.text.startsWith("url_prefix"));
         const prefixText = prefixArgument?.text.match(/prefix\s*=\s*(.+)/)?.[1];
-        const prefix = prefixArgument ? (stringValue({ text: prefixText ?? "", type: "string" }) ?? constantValue(file.path, prefixText ?? "", parsed) ?? `dynamic:${dynamicText(prefixArgument)}`) : "";
+        const prefix = prefixArgument ? (stringValue({ text: prefixText ?? "", type: "string" }) ?? constantValue(file.path, prefixText ?? "", parsed, call.line) ?? `dynamic:${dynamicText(prefixArgument)}`) : "";
         let childFile = file.path;
         let childVariable = reference;
-        const localImport = parsed.imports.find((item) => item.moduleScope && item.bindings[reference] !== undefined);
-        const importCandidates = project.imports.filter((item) => item.path === file.path && item.source === localImport?.source && item.resolvedPath);
+        const localImport = importBindingAt(parsed, reference, call.line);
+        const importCandidates = project.imports.filter((item) => item.path === file.path && item.line === localImport?.line && item.source === localImport?.source && item.resolvedPath);
         const importedName = localImport?.bindings[reference];
         const exactImport = importCandidates.find((item) => item.resolvedPath?.endsWith(`/${importedName}.py`) || item.resolvedPath?.endsWith(`/${importedName}/__init__.py`));
         const unqualifiedImport = exactImport ?? (importCandidates.length === 1 ? importCandidates[0] : undefined);
@@ -217,14 +227,10 @@ function buildRouterIndex(snapshot: SourceSnapshot, project: ProjectPreparation)
         if (reference.includes(".")) {
           const [module, variable] = reference.split(".");
           childVariable = variable;
-          const localModuleImport = parsed.imports.find((item) => item.moduleScope && item.bindings[module] !== undefined);
+          const localModuleImport = importBindingAt(parsed, module, call.line);
           const candidates = project.imports.filter((item) => item.path === file.path && item.resolvedPath && (item.source === localModuleImport?.source || item.source === module || item.source.endsWith(`.${module}`)));
           const exact = candidates.find((item) => item.resolvedPath?.endsWith(`/${module}.py`) || item.resolvedPath?.endsWith(`/${module}/__init__.py`));
-          const fallback = snapshot.files.filter((entry) => entry.path.endsWith(`/${module}.py`));
-          // A unique submodule file beats a single relative-import candidate:
-          // `from . import views` resolves to the package __init__, which is
-          // never the child module that owns the blueprint variable.
-          const target = exact?.resolvedPath ?? (fallback.length === 1 ? fallback[0].path : undefined) ?? (candidates.length === 1 ? candidates[0].resolvedPath : undefined);
+          const target = exact?.resolvedPath ?? (candidates.length === 1 ? candidates[0].resolvedPath : undefined);
           if (target) childFile = target;
           else unresolved.push({ path: file.path, line: call.line, reference });
         }
