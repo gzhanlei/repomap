@@ -40,6 +40,8 @@ function lineText(source: ArchitectureSource | undefined, line: number) {
 }
 
 function executableSqlEvidence(evidence: ArchitectureEvidence, source: ArchitectureSource | undefined) {
+  // An AST extractor owns the operations of the calls it parsed.
+  if (evidence.detector.startsWith("ast:")) return false;
   if (!evidence.path.endsWith(".py")) return true;
   const text = lineText(source, evidence.line).replace(/^\s*\d+:\s?/, "").trim();
   if (!text || /^(?:from|import)\s+/.test(text) || /\bcreate_engine\s*\(/.test(text)) return false;

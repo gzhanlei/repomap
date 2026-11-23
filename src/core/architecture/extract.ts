@@ -11,7 +11,7 @@ import { linkStorageRelationships, storageArchitectureDetector } from "./detecto
 import { miniProgramApiRelationships, miniProgramArchitectureDetector } from "./detectors/mini-program.js";
 import { goInternalHttpRelationships } from "./detectors/go-http.js";
 import { packageDeployableFragment } from "./detectors/package.js";
-import { emptyArchitectureFragment, type ArchitectureContext, type ArchitectureFragment } from "./detectors/types.js";
+import { emptyArchitectureFragment, factEdge, type ArchitectureContext, type ArchitectureFragment } from "./detectors/types.js";
 import { detectGenericExternal, genericExternalCandidates } from "./detectors/generic-external.js";
 import type { ExternalCandidate } from "./candidates.js";
 import { assertSourceCensusReconciled, buildSourceCensus, linkCensusDeclarations, linkCensusEvidence, type RepositoryFileEntry } from "./census.js";
@@ -29,7 +29,7 @@ import { analyzeTypeScriptRoutes } from "./project/ts-routes.js";
 import { operationEvidenceReferences, operationOwner, sqlOperationFacts, sqlOperationOmissions } from "./sql-operations.js";
 import { analyzeGoAsync } from "./project/go-async.js";
 import { analyzePythonAsync } from "./project/python-async.js";
-import { analyzePythonDjangoOrm, type OrmExtraction } from "./project/python-orm.js";
+import { analyzePythonDjangoOrm, ormEvidence, type OrmExtraction } from "./project/python-orm.js";
 import { analyzeTypeScriptAsync } from "./project/ts-async.js";
 import { buildAsyncGraph, type AsyncGraph } from "./project/async-graph.js";
 import { buildRouteGraph, candidateOperationFacts, routeGraphEvidenceReferences, routeOperationFacts, type RouteGraph } from "./project/route-graph.js";
@@ -297,14 +297,33 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   const generic = genericExternalCandidates({ ...input, sources: runtimeSources, signals: inventory.signals });
   const signals = [...inventory.signals, ...generic.signals].sort((a, b) => a.id.localeCompare(b.id));
   const enrichedInventory = { ...inventory, signals };
-  const { facts, candidates } = extractWithInventory(input, runtimeSources, enrichedInventory);
+  const { facts: detectedFacts, candidates } = extractWithInventory(input, runtimeSources, enrichedInventory);
   // Django ORM operations belong to the runtime that owns their call site,
   // like every other SQL operation; the package is only the fallback.
   const ormOperations = djangoOrm.operations.map((operation) => {
     const [path, line] = (operation.callSite ?? "").split(/:(\d+)$/);
-    const owner = operationOwner(facts, { path }, { from: operation.owner });
+    const owner = operationOwner(detectedFacts, { path }, { from: operation.owner });
     return owner === operation.owner ? operation : ({ ...operation, owner } as typeof operation);
   });
+  // They are also the runtime's route to its database in the runtime graph:
+  // one sql edge per runtime and driver, on a store node that is created when
+  // no marker-detected store carries a configured engine identity.
+  const ormStores = new Map<string, NodeFact>();
+  const ormEdges = new Map<string, EdgeFact>();
+  for (const operation of ormOperations) {
+    if (operation.kind !== "sql" || !detectedFacts.nodes.some((node) => node.id === operation.owner)) continue;
+    const storeId = `store:${operation.driver}`;
+    const [path, line] = (operation.callSite ?? "").split(/:(\d+)$/);
+    const evidence = [ormEvidence(path, Number(line), operation.action)];
+    const edgeId = `sql:${operation.owner}->${storeId}`;
+    const edge = ormEdges.get(edgeId) ?? factEdge(edgeId, operation.owner, storeId, "sql", "SQL 读写", []);
+    edge.evidence.push(...evidence);
+    ormEdges.set(edgeId, edge);
+    const store = ormStores.get(storeId) ?? { id: storeId, kind: "database", label: operation.driver, signalIds: [], evidence: [] };
+    store.evidence.push(...evidence);
+    ormStores.set(storeId, store);
+  }
+  const facts = mergeArchitectureFragments(input.revision, [detectedFacts, { ...emptyArchitectureFragment(), nodes: [...ormStores.values()], edges: [...ormEdges.values()] }]);
   const coverage = evaluateArchitectureCoverage(enrichedInventory, facts);
   const declarationCoverage = evaluateDeclarationCoverage(rawDeclarations, facts);
   const mutation = mutationCheck(rawDeclarations, facts);

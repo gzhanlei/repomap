@@ -2,12 +2,18 @@ import { createHash } from "node:crypto";
 import type { ProjectPreparation } from "./adapter.js";
 import type { SourceSnapshot } from "./snapshot.js";
 import { importBindingAt, parsePythonSource, pythonParserStatus, type PythonParsedFile, type PythonParsedImport } from "./python-parser.js";
-import { parserEvidence } from "./route-graph.js";
 import type { AsyncExtraction } from "./async-graph.js";
 import { pythonCodeLines } from "./python-source.js";
+import { evidenceRecord } from "../evidence-index.js";
+import type { ArchitectureEvidence } from "../facts.js";
 import { irOmissionSchema, type IrOmission, type OperationFact } from "../ir.js";
 
 export type OrmExtraction = AsyncExtraction;
+
+/** The facts-level evidence of an ORM call; `evidenceRecord` derives its role (runtime-call, or migration in a migration module). */
+export function ormEvidence(path: string, line: number, action: string): ArchitectureEvidence {
+  return { path, line, detector: `ast:python-orm-call:${action}` };
+}
 
 // What a Django manager or queryset call has done by the time it returns. A
 // chain is classified by its terminal method. The lazy methods only build the
@@ -241,12 +247,13 @@ export function analyzePythonDjangoOrm(input: { snapshot: SourceSnapshot; projec
       : readWriteMethods.has(statement.method) ? "read-write"
         : readMethods.has(statement.method) || lazyMethods.has(statement.method) ? "read"
           : undefined;
+    const record = evidenceRecord(ormEvidence(statement.path, statement.line, action ?? "unknown"));
     const current = {
       id: `operation:orm:${shortHash(`${statement.path}|${statement.line}|${statement.model}|${statement.method}`)}`,
       kind: "sql",
       owner: statement.file.packageId,
       declarationIds,
-      evidenceIds: [parserEvidence(statement.path, statement.line, `ast:python-orm:${action ?? "unknown"}`, "runtime-call").id],
+      evidenceIds: [record.id],
       targetKind: "database",
       resolution: driver.resolution,
       action: action ?? "unknown",
@@ -254,6 +261,7 @@ export function analyzePythonDjangoOrm(input: { snapshot: SourceSnapshot; projec
       callSite: site,
     } as OperationFact;
     result.operations.push(current);
+    result.evidenceRecords.push(record);
     if (action === undefined) {
       result.omissions.push(ormOmission(`omission:python-orm-method:${site}:${statement.model}`, current.id, "uncertain-direction", `Django manager method ${statement.method} on ${statement.model}.objects is not a classified queryset method at ${site}`, current.declarationIds, current.evidenceIds));
     }
@@ -270,9 +278,6 @@ export function analyzePythonDjangoOrm(input: { snapshot: SourceSnapshot; projec
   }
   result.operations.sort((a, b) => a.id.localeCompare(b.id));
   result.omissions.sort((a, b) => a.id.localeCompare(b.id));
-  result.evidenceRecords = result.operations.map((operation) => {
-    const [path, line] = (operation.callSite ?? "unknown:1").split(/:(\d+)$/);
-    return parserEvidence(path, Number(line), `ast:python-orm:${operation.action}`, "runtime-call");
-  });
+  result.evidenceRecords = [...new Map(result.evidenceRecords.map((record) => [record.id, record])).values()].sort((a, b) => a.id.localeCompare(b.id));
   return result;
 }

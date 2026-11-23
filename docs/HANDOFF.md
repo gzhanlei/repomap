@@ -1,7 +1,7 @@
 # RepoMap 接手文档
 
 - 更新日期：2026-11-23
-- 代码基线：`25169ff` 加上其后的 Flask `register_blueprint` 前缀覆盖修复与 Django ORM 切片提交（本地与 origin/main 一致：已含 SQLAlchemy/Celery/RQ/Django 真实语料批次、脚本式入口检测、函数内导入的路由作用域修复 433a30e、flask 接入 gold:report 25169ff。账本最新发布停在 #256 @ `e0af3f9`，其后的 push 未触发分析，见 §9）
+- 代码基线：`25169ff` 加上其后的 Flask `register_blueprint` 前缀覆盖修复与 Django ORM 两个切片提交（本地与 origin/main 一致：已含 SQLAlchemy/Celery/RQ/Django 真实语料批次、脚本式入口检测、函数内导入的路由作用域修复 433a30e、flask 接入 gold:report 25169ff。账本最新发布停在 #256 @ `e0af3f9`，其后的 push 未触发分析，见 §9）
 - 远程仓库：`https://github.com/gzhanlei/repomap`
 - 当前分支：`main`
 
@@ -32,7 +32,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 - Flask 路由解析的作用域修复（2026-11-23）：router 组合解析此前只在模块级导入里找名字绑定，应用工厂里函数体内的 `from . import views` + `app.register_blueprint(views.bp)` 会退到"快照内唯一 `views.py` 文件名"兜底——flask 语料 `examples/**` 有三个 `views.py`，于是在 `examples/celery/src/task_app/__init__.py:25` 报出假的 `unresolved-import` 阻断 omission（路由本身由 Blueprint 声明产出、17/17 不丢，所以 gold 没暴露；现有单测只因夹具里只有一个 `views.py` 才通过）。修复：解析器为函数内导入记录所属函数的行范围（`PythonParsedImport.enclosingFunction`），`python-routes.ts` 新增 `importBindingAt` 按 Python 名字解析规则取绑定——函数内导入只在所属函数内且已执行到的行生效，否则取模块级导入；router 子引用、前缀常量和 `project.imports` 候选（按语句行号区分同名模块的重复导入）统一走它。同时去掉 `8b476f0` 为同一问题加的"唯一文件名"兜底（当时把函数内导入误判为"解析到包 `__init__`"）：名字没有导入绑定时按文件名猜与 §2"未知身份必须形成 omission"相悖，去掉后无绑定的引用失败关闭。flask 路由 omission 2→1（只剩设计内的 add_url_rule），其余八语料 236 个语义产物文件与修复前逐字节一致。
 - flask 语料接入 `gold:report`（2026-11-23）：`pallets/flask@49943b5a` examples/** 的 17 条路由 Gold（两个完整枚举 scope：flaskr 12/12、celery task app 5/5）此前只登记在 manifest、从未进报告脚本——`8b476f0` 晚于建脚本的 `680fe76`，是漏接而非卡住；作用域修复后接入，**九语料 1002/1002 critical facts、0 FP、0 invalid evidence**，flask 的 analyze 门禁通过（退出码 0，无需 expectedGateFailure），唯一路由 omission 是设计内的 add_url_rule。
 - Flask `register_blueprint` 前缀覆盖修复（2026-11-23）：`register_blueprint(bp, url_prefix=…)` 的注册前缀按 Flask 语义**替换**蓝图自身的 `url_prefix`，此前与 FastAPI 的 `include_router` 一样被拼接——自身前缀为 `/api` 的蓝图以 `url_prefix='/v2'` 注册会得到 `/v2/api/...`。依据是固定版本归档里的 Flask 源码（`src/flask/sansio/blueprints.py`：`url_prefix = options.get("url_prefix")`，仅为 None 时回退到蓝图自身；嵌套蓝图取父前缀 + 子蓝图的有效前缀）；显式 `url_prefix=''` 同样取消自身前缀。FastAPI `include_router` 逐层拼接的语义不变。flask 语料没有这种组合，九语料 260 个语义产物逐字节不变；行为由 4 个单测钉住（含 FastAPI 守卫），两个错误修法经变异验证都会被拦住。
-- Django ORM 切片（2026-11-23）：管理器根的 ORM 语句 `Model.objects.<…>` 进入 SQL 操作，新提取器 `project/python-orm.ts`。模型登记册按类基类建立——`django.db.models.Model`、仓库内的模型子类（含传递继承）、Django 自带的 `AbstractUser/AbstractBaseUser/PermissionsMixin`；同样来自 Django 的 `forms.Form`、`BaseCommand`、`ModelAdmin` 等不算模型。根经导入绑定解析（别名、模块限定名、函数内导入），从 `django.*` 导入的类视为外部模型。链式调用一条语句一个操作，按终端方法分类：`create/update/delete/bulk_*` = write，`get/count/first/exists/iterator…` = read，`get_or_create/update_or_create` = read-write，以惰性查询构建方法结尾的语句记为 read。数据迁移里 `X = apps.get_model(...)` 绑定的名字视为历史模型（仅限迁移模块）。独立分母是原始扫描的 `<Model>.objects.<方法>(` 行（字符串字面量不算，小写属主如 `self.objects.get` 不算），解析器不可用时声明保留并阻断；根不是模型 → unknown-identity 阻断；未分类的管理器方法 → 操作保留 + uncertain-direction 阻断；声明找不到对应调用 → 阻断。只在导入了 Django 的项目里生效。**driver** 取快照里 `ENGINE: "django.db.backends.*"` 字面量归一后的引擎族：唯一为 static；单别名多引擎（按配置切换，如 healthchecks 的 `DB` 环境变量）为 `resolution: configured`、driver 写候选集合 `mysql|postgres|sqlite`、不阻断——**这一条作者未作答，按推荐方案实施，可以改**；多别名多引擎为 dynamic + unknown-identity 阻断；没有引擎字面量为 unknown + 阻断。操作 owner 归调用点所在的 runtime。healthchecks 上 161 条操作（迁移文件外 120 + 数据迁移内 41）与一份独立的 Python AST 枚举脚本按方法逐类吻合，owner 全部 `python:hc`，全仓库 SQL 操作由 5 条增至 166 条，另有 13 条自定义管理器方法（`for_user` 10、`for_api_key` 3）方向不确定阻断；celery 的 Django 示例多出 2 条（`Widget.objects.count/get`）；其余七语料逐字节不变。**这些数字是机器对账，不是人工审计的 Gold。**
+- Django ORM 切片（2026-11-23）：管理器根的 ORM 语句 `Model.objects.<…>` 进入 SQL 操作，新提取器 `project/python-orm.ts`。模型登记册按类基类建立——`django.db.models.Model`、仓库内的模型子类（含传递继承）、Django 自带的 `AbstractUser/AbstractBaseUser/PermissionsMixin`；同样来自 Django 的 `forms.Form`、`BaseCommand`、`ModelAdmin` 等不算模型。根经导入绑定解析（别名、模块限定名、函数内导入），从 `django.*` 导入的类视为外部模型。链式调用一条语句一个操作，按终端方法分类：`create/update/delete/bulk_*` = write，`get/count/first/exists/iterator…` = read，`get_or_create/update_or_create` = read-write，以惰性查询构建方法结尾的语句记为 read。数据迁移里 `X = apps.get_model(...)` 绑定的名字视为历史模型（仅限迁移模块）。独立分母是原始扫描的 `<Model>.objects.<方法>(` 行（字符串字面量不算，小写属主如 `self.objects.get` 不算），解析器不可用时声明保留并阻断；根不是模型 → unknown-identity 阻断；未分类的管理器方法 → 操作保留 + uncertain-direction 阻断；声明找不到对应调用 → 阻断。只在导入了 Django 的项目里生效。**driver** 取快照里 `ENGINE: "django.db.backends.*"` 字面量归一后的引擎族：唯一为 static；单别名多引擎（按配置切换，如 healthchecks 的 `DB` 环境变量）为 `resolution: configured`、driver 写候选集合 `mysql|postgres|sqlite`、不阻断——**这一条作者未作答，按推荐方案实施，可以改**；多别名多引擎为 dynamic + unknown-identity 阻断；没有引擎字面量为 unknown + 阻断。操作 owner 归调用点所在的 runtime。healthchecks 上 161 条操作（迁移文件外 120 + 数据迁移内 41）与一份独立的 Python AST 枚举脚本按方法逐类吻合，owner 全部 `python:hc`，全仓库 SQL 操作由 5 条增至 166 条，另有 13 条自定义管理器方法（`for_user` 10、`for_api_key` 3）方向不确定阻断；celery 的 Django 示例多出 2 条（`Widget.objects.count/get`）；其余七语料逐字节不变。**这些数字是机器对账，不是人工审计的 Gold。** 第二步把 ORM 操作连入 facts（见 §4.3）：healthchecks 新增节点 `store:mysql|postgres|sqlite` 与边 `python:hc → store:mysql|postgres|sqlite`，celery 的 Django 示例新增边 `python:examples/django → store:sqlite`，SQL 操作数不变（无重复），其余七语料仍逐字节不变；一个纯 ORM 的最小 Django 夹具由此从"coverage 不可发布"变为 `fullArchitecture: true` 并交付流程页（修改前的同一份代码上该夹具交付失败）。ORM 证据的提取器名为 `ast:python-orm-call:<action>`，角色按路径推导——迁移模块里是 migration，其余是 runtime-call——与 facts 边共用同一条证据记录。
 
 尚未完成：
 
@@ -113,7 +113,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 - Django ORM 的管理器根语句 `Model.objects.<…>`：模型按类基类登记、根经导入绑定解析；一条语句一个操作，按终端方法分类，惰性查询构建记为 read；数据迁移里 `apps.get_model(...)` 绑定的名字视为历史模型。
 - ORM 调用的 driver 取自 Django `DATABASES` 的 ENGINE 字面量：引擎唯一为 static；单别名多引擎为 configured（driver 写候选集合，不阻断）；多别名多引擎或没有引擎字面量时阻断。
 - 只在导入了 Django 的项目中生效；`Model.objects` 之外的 ORM 形态不进入分母（见 §4.6）。
-- ORM 操作目前只进入 IR 和流程视图，不产生 runtime → store 的 facts 边。纯 ORM 的 Django 项目里，由引擎字面量检出的 store 节点在 runtime overview 中不可达，整体交付因 coverage 不可发布而失败——这是既有行为，在 ORM 切片之前的同一份代码上结果相同。
+- ORM 操作同时进入 facts：按 runtime 与 driver 汇成一条 `sql:<runtime>->store:<driver>` 边，证据就是各调用行；driver 是配置身份（如 `mysql|postgres|sqlite`）而没有对应的标记检出 store 时，新建一个数据库节点承载它。纯 ORM 的单引擎 Django 项目因此可以正常交付——此前由引擎字面量检出的 store 没有任何边，整体 coverage 不可发布。行级 SQL 检测器不处理 `ast:` 证据，同一条调用不会产出两个操作。注意多引擎配置的项目里，各引擎候选的标记 store 节点本身仍然只靠其他证据才可达。
 - import、schema 声明和 `create_engine` 只支撑 store/schema coverage，不生成伪造的 runtime operation。
 - Alembic `op.*` 调用归执行它的 runtime；纯 schema resource 可归 store。
 - 多数据库下，driver-neutral 或 driver 歧义调用不会扇出到多个 store，而是生成阻断 omission。
@@ -147,9 +147,9 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 ### 5.1 最新全量检查
 
-在代码基线 `25169ff` 加上 Flask 前缀覆盖修复与 Django ORM 切片上（2026-11-23，darwin arm64，node v25.5.0）：
+在代码基线 `25169ff` 加上 Flask 前缀覆盖修复与 Django ORM 两个切片上（2026-11-23，darwin arm64，node v25.5.0）：
 
-- `npm test`：**37 个测试文件、309 项测试通过**。
+- `npm test`：**37 个测试文件、310 项测试通过**。
 - `npm run typecheck`：通过。
 - `npm run build`：通过。
 - `npm run smoke:production`：通过；生产包中 Go/Python parser 可用，Python route 为 1 条、总 route 为 2 条、Python async operations 为 3 条。

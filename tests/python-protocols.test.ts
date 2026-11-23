@@ -1062,6 +1062,7 @@ describe("Django ORM operations", () => {
   function orm(analysis: ReturnType<typeof analyze>) {
     const operations = analysis.ir.operations.filter((operation) => operation.id.startsWith("operation:orm:")) as unknown as OrmOperation[];
     return {
+      analysis,
       operations,
       sites: operations.map((operation) => `${operation.action} ${operation.callSite.replace(/^[\w/]+\.py:/, "")}`).sort(),
       omissions: analysis.omissions.filter((omission) => omission.id.includes("python-orm")),
@@ -1284,10 +1285,44 @@ describe("Django ORM operations", () => {
     const inMigration = orm(analyze({ "app/settings.py": settings, "app/api/models.py": models, "app/api/migrations/0011_fill.py": dataMigration }));
     expect(inMigration.sites).toEqual(["read 5", "read 7", "write 6"]);
     expect(inMigration.omissions).toHaveLength(0);
+    // Evidence follows the file's role convention: ORM calls in a migration are migration evidence.
+    expect(inMigration.analysis.evidence.records.filter((record) => record.path === "app/api/migrations/0011_fill.py" && record.startLine >= 5).map((record) => `${record.startLine}:${record.role}`)).toEqual(["5:migration", "6:migration", "7:migration"]);
     // The same function outside a migration module has no app registry behind it.
     const elsewhere = orm(analyze({ "app/settings.py": settings, "app/api/models.py": models, "app/api/jobs.py": dataMigration }));
     expect(elsewhere.operations).toHaveLength(0);
     expect(elsewhere.omissions.map((omission) => omission.reason)).toEqual(["unknown-identity", "unknown-identity", "unknown-identity"]);
+  });
+
+  it("links ORM operations to their database from the runtime that owns them", () => {
+    const run = (settingsLines: string[]) => analyze({ "app/settings.py": settingsLines.join("\n"), "app/models.py": models, "app/wsgi.py": "from django.core.wsgi import get_wsgi_application\n", "app/views.py": [
+      "from .models import Check",
+      "def view(request):",
+      "    a = Check.objects.get(code='x')",
+      "    b = Check.objects.filter(user=request.user).count()",
+      "    c = Check.objects.filter(name=db.lookup('x'))",
+      "    return [a, b, c]",
+    ].join("\n") });
+    const sqlEdges = (analysis: ReturnType<typeof analyze>) => analysis.facts.edges.filter((edge) => edge.kind === "sql");
+    const sqlOperations = (analysis: ReturnType<typeof analyze>) => analysis.ir.operations.filter((operation) => operation.kind === "sql");
+    const single = run(["DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql'}}"]);
+    expect(sqlEdges(single).map((edge) => `${edge.from}->${edge.to}`)).toEqual(["python:app->store:postgres"]);
+    expect([...sqlEdges(single)[0].evidence].sort((left, right) => left.line - right.line).map((item) => `${item.line}:${item.detector}`)).toEqual(["3:ast:python-orm-call:read", "4:ast:python-orm-call:read", "5:ast:python-orm-call:read"]);
+    // The runtime reaches its database, so the store is no longer an unreachable unit.
+    expect(single.coverage.unreachableRuntimeUnits).toEqual([]);
+    // One sql operation per ORM statement: the facts edge carries the AST
+    // evidence but does not feed the line-based sql detector (line 5 also
+    // looks like a db.* call to it).
+    expect(sqlOperations(single).every((operation) => operation.id.startsWith("operation:orm:"))).toBe(true);
+    expect(sqlOperations(single)).toHaveLength(3);
+    // One evidence record per ORM call line, shared by the operation and the edge.
+    const records = single.evidence.records.filter((record) => record.path === "app/views.py" && record.startLine >= 3);
+    expect(records.map((record) => `${record.startLine}:${record.role}:${record.source}`)).toEqual(["3:runtime-call:parser", "4:runtime-call:parser", "5:runtime-call:parser"]);
+    expect(single.ir.edges.filter((edge) => edge.id === "sql:python:app->store:postgres").flatMap((edge) => edge.evidenceIds)).toEqual(records.map((record) => record.id).sort());
+    // A configured engine has no marker-detected store: the identity gets a node of its own.
+    const configured = run(["DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql'}}", "DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3'}}"]);
+    expect(sqlEdges(configured).map((edge) => `${edge.from}->${edge.to}`)).toEqual(["python:app->store:postgres|sqlite"]);
+    expect(configured.facts.nodes.filter((node) => node.kind === "database").map((node) => node.id).sort()).toEqual(["store:postgres", "store:postgres|sqlite", "store:sqlite"]);
+    expect(configured.facts.nodes.find((node) => node.id === "store:postgres|sqlite")?.label).toBe("postgres|sqlite");
   });
 
   it("keeps independent ORM declarations when the parser is disabled", () => {
