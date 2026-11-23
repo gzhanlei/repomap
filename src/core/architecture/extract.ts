@@ -29,7 +29,7 @@ import { analyzeTypeScriptRoutes } from "./project/ts-routes.js";
 import { operationEvidenceReferences, operationOwner, sqlOperationFacts, sqlOperationOmissions } from "./sql-operations.js";
 import { analyzeGoAsync } from "./project/go-async.js";
 import { analyzePythonAsync } from "./project/python-async.js";
-import { analyzePythonDjangoOrm, ormEvidence, type OrmExtraction } from "./project/python-orm.js";
+import { analyzePythonDjangoOrm, type OrmExtraction } from "./project/python-orm.js";
 import { analyzeTypeScriptAsync } from "./project/ts-async.js";
 import { buildAsyncGraph, type AsyncGraph } from "./project/async-graph.js";
 import { buildRouteGraph, candidateOperationFacts, routeGraphEvidenceReferences, routeOperationFacts, type RouteGraph } from "./project/route-graph.js";
@@ -208,17 +208,21 @@ function appendDeclarations<B extends { declarations: DeclarationRecord[] }>(bas
 }
 
 function withOrmDeclarations(base: ReturnType<typeof withAsyncDeclarations>, orm: OrmExtraction, snapshot: ReturnType<typeof createSourceSnapshot>) {
-  return appendDeclarations(base, orm.declarations.map((declaration) => ({
+  const records = (declarations: OrmExtraction["declarations"], detail: string, capability: string): DeclarationRecord[] => declarations.map((declaration) => ({
     declarationId: declaration.id,
     kind: "operation" as const,
     owner: snapshot.files.find((file) => file.path === declaration.path)?.packageId ?? "package:root",
     required: true,
     critical: true,
     sourcePath: declaration.path,
-    detail: "django orm manager call",
-    capability: "independent-django-orm-structure",
+    detail,
+    capability,
     evidenceIds: [],
-  })));
+  }));
+  return appendDeclarations(
+    appendDeclarations(base, records(orm.declarations, "django orm manager call", "independent-django-orm-structure")),
+    records(orm.migrationDeclarations, "django migration operation", "independent-django-migration-structure"),
+  );
 }
 
 export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory, "revision" | "scope">, sources: ArchitectureSource[], options: ArchitectureAnalysisOptions = {}) {
@@ -298,8 +302,8 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   const signals = [...inventory.signals, ...generic.signals].sort((a, b) => a.id.localeCompare(b.id));
   const enrichedInventory = { ...inventory, signals };
   const { facts: detectedFacts, candidates } = extractWithInventory(input, runtimeSources, enrichedInventory);
-  // Django ORM operations belong to the runtime that owns their call site,
-  // like every other SQL operation; the package is only the fallback.
+  // Django ORM and migration operations belong to the runtime that owns their
+  // call site, like every other SQL operation; the package is only the fallback.
   const ormOperations = djangoOrm.operations.map((operation) => {
     const [path, line] = (operation.callSite ?? "").split(/:(\d+)$/);
     const owner = operationOwner(detectedFacts, { path }, { from: operation.owner });
@@ -307,14 +311,18 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   });
   // They are also the runtime's route to its database in the runtime graph:
   // one sql edge per runtime and driver, on a store node that is created when
-  // no marker-detected store carries a configured engine identity.
+  // no marker-detected store carries a configured engine identity. The edge
+  // reuses each operation's own evidence record, so a call line is one record.
+  const ormRecordById = new Map(djangoOrm.evidenceRecords.map((record) => [record.id, record]));
   const ormStores = new Map<string, NodeFact>();
   const ormEdges = new Map<string, EdgeFact>();
   for (const operation of ormOperations) {
     if (operation.kind !== "sql" || !detectedFacts.nodes.some((node) => node.id === operation.owner)) continue;
     const storeId = `store:${operation.driver}`;
-    const [path, line] = (operation.callSite ?? "").split(/:(\d+)$/);
-    const evidence = [ormEvidence(path, Number(line), operation.action)];
+    const evidence = operation.evidenceIds.flatMap((id) => {
+      const record = ormRecordById.get(id);
+      return record ? [{ path: record.path, line: record.startLine, detector: record.extractor }] : [];
+    });
     const edgeId = `sql:${operation.owner}->${storeId}`;
     const edge = ormEdges.get(edgeId) ?? factEdge(edgeId, operation.owner, storeId, "sql", "SQL 读写", []);
     edge.evidence.push(...evidence);
@@ -323,7 +331,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     store.evidence.push(...evidence);
     ormStores.set(storeId, store);
   }
-  const facts = mergeArchitectureFragments(input.revision, [detectedFacts, { ...emptyArchitectureFragment(), nodes: [...ormStores.values()], edges: [...ormEdges.values()] }]);
+  const facts = ormStores.size === 0 ? detectedFacts : mergeArchitectureFragments(input.revision, [detectedFacts, { ...emptyArchitectureFragment(), nodes: [...ormStores.values()], edges: [...ormEdges.values()] }]);
   const coverage = evaluateArchitectureCoverage(enrichedInventory, facts);
   const declarationCoverage = evaluateDeclarationCoverage(rawDeclarations, facts);
   const mutation = mutationCheck(rawDeclarations, facts);
@@ -332,7 +340,12 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     const match = omission.owner.match(/^python-sql:(.*):(\d+)$/);
     return match ? [evidenceRecord({ path: match[1], line: Number(match[2]), detector: "python-sql-operation" })] : [];
   });
-  const operationFacts = [...routeOperationFacts(routeGraph), ...candidateOperationFacts(candidates), ...sqlOperationFacts(facts, runtimeSources), ...asyncGraph.operations, ...ormOperations];
+  // A call line the Django extractors own is theirs alone: a
+  // `migrations.RunSQL("UPDATE ...")` line also looks like raw SQL to the
+  // line-based detector, which must not claim it a second time.
+  const djangoCallSites = new Set(ormOperations.map((operation) => operation.callSite));
+  const lineSqlOperations = sqlOperationFacts(facts, runtimeSources).filter((operation) => !djangoCallSites.has(operation.callSite));
+  const operationFacts = [...routeOperationFacts(routeGraph), ...candidateOperationFacts(candidates), ...lineSqlOperations, ...asyncGraph.operations, ...ormOperations];
   const candidateEvidenceRecords = candidates.flatMap((candidate) => [
     evidenceRecord(candidate.evidence),
     ...(candidate.configEvidence ? [evidenceRecord(candidate.configEvidence)] : []),

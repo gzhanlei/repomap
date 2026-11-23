@@ -1286,7 +1286,7 @@ describe("Django ORM operations", () => {
     expect(inMigration.sites).toEqual(["read 5", "read 7", "write 6"]);
     expect(inMigration.omissions).toHaveLength(0);
     // Evidence follows the file's role convention: ORM calls in a migration are migration evidence.
-    expect(inMigration.analysis.evidence.records.filter((record) => record.path === "app/api/migrations/0011_fill.py" && record.startLine >= 5).map((record) => `${record.startLine}:${record.role}`)).toEqual(["5:migration", "6:migration", "7:migration"]);
+    expect(inMigration.analysis.evidence.records.filter((record) => record.path === "app/api/migrations/0011_fill.py" && record.startLine >= 5 && record.startLine <= 7).map((record) => `${record.startLine}:${record.role}`)).toEqual(["5:migration", "6:migration", "7:migration"]);
     // The same function outside a migration module has no app registry behind it.
     const elsewhere = orm(analyze({ "app/settings.py": settings, "app/api/models.py": models, "app/api/jobs.py": dataMigration }));
     expect(elsewhere.operations).toHaveLength(0);
@@ -1337,8 +1337,162 @@ describe("Django ORM operations", () => {
     const extraction = analyzePythonDjangoOrm({ snapshot, project, enabled: false });
     expect(extraction.declarations).toHaveLength(2);
     expect(extraction.operations).toHaveLength(0);
-    expect(extraction.omissions).toHaveLength(1);
-    expect(extraction.omissions[0].reason).toBe("parser-unavailable");
-    expect(extraction.omissions[0].declarationIds).toHaveLength(2);
+    // Migration declarations have their own parser-unavailable omission; this one is about ORM declarations.
+    const unavailable = extraction.omissions.filter((omission) => omission.id.includes("python-orm:parser-unavailable"));
+    expect(unavailable).toHaveLength(1);
+    expect(unavailable[0].reason).toBe("parser-unavailable");
+    expect(unavailable[0].declarationIds).toHaveLength(2);
+  });
+});
+
+describe("Django schema migrations", () => {
+  const settings = ["DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql'}}"].join("\n");
+  const models = ["from django.db import models", "", "class Check(models.Model):", "    slug = models.CharField(max_length=16)"].join("\n");
+  type MigrationOperation = { id: string; action: string; driver: string; resolution: string; callSite: string; owner: string; declarationIds: string[] };
+  function migrations(analysis: ReturnType<typeof analyze>) {
+    const operations = analysis.ir.operations.filter((operation) => operation.id.startsWith("operation:django-migration:")) as unknown as MigrationOperation[];
+    return {
+      analysis,
+      operations,
+      sites: operations.map((operation) => `${operation.action} ${operation.callSite.replace(/^[\w/]+\.py:/, "")}`).sort((left, right) => Number(left.split(" ")[1]) - Number(right.split(" ")[1])),
+      omissions: analysis.omissions.filter((omission) => omission.id.includes("python-django-migration")),
+      declarations: analysis.declarations.declarations.filter((declaration) => declaration.capability === "independent-django-migration-structure"),
+    };
+  }
+  const schemaMigration = [
+    "from django.db import migrations, models",
+    "",
+    "class Migration(migrations.Migration):",
+    '    dependencies = [("hc.api", "0006_auto"), migrations.swappable_dependency("auth")]',
+    "    operations = [",
+    "        migrations.CreateModel(",
+    '            name="TokenBucket",',
+    '            fields=[("id", models.AutoField(primary_key=True))],',
+    "        ),",
+    '        migrations.AddField(model_name="check", name="slug", field=models.CharField(max_length=16, blank=True)),',
+    '        migrations.AlterField(model_name="check", name="slug", field=models.CharField(max_length=16, unique=True)),',
+    '        migrations.RemoveField(model_name="check", name="slug"),',
+    '        migrations.AddIndex(model_name="check", index=models.Index(fields=["slug"], name="api_check_slug")),',
+    "    ]",
+  ].join("\n");
+  const djangoProject = (migrationFiles: Record<string, string>, settingsText = settings) => analyze({ "app/settings.py": settingsText, "app/models.py": models, "app/wsgi.py": "from django.core.wsgi import get_wsgi_application\n", ...migrationFiles });
+
+  it("extracts Django migration operations as migration sql operations owned by the runtime", () => {
+    const result = migrations(djangoProject({ "app/api/migrations/0007_slug.py": schemaMigration }));
+    // migrations.Migration (a base class), the models.* field constructors and
+    // lowercase helpers such as migrations.swappable_dependency are not operations.
+    expect(result.sites).toEqual(["migration 6", "migration 10", "migration 11", "migration 12", "migration 13"]);
+    expect(result.operations.every((operation) => operation.action === "migration" && operation.driver === "postgres" && operation.resolution === "static")).toBe(true);
+    // Same invariant as Alembic op.* calls: a migration operation belongs to a python: runtime, not the store.
+    expect(result.operations.every((operation) => operation.owner === "python:app")).toBe(true);
+    expect(result.declarations).toHaveLength(5);
+    expect(result.declarations.every((declaration) => declaration.kind === "operation" && declaration.critical)).toBe(true);
+    expect(result.operations.every((operation) => operation.declarationIds.length === 1)).toBe(true);
+    expect(result.omissions).toHaveLength(0);
+    // Migration evidence by path; the module graph's import record for the same file is a declaration.
+    expect(result.analysis.evidence.records.filter((record) => record.extractor.startsWith("ast:python-django-migration:")).map((record) => `${record.startLine}:${record.role}`)).toEqual(["10:migration", "11:migration", "12:migration", "13:migration", "6:migration"]);
+    const edge = result.analysis.facts.edges.find((item) => item.id === "sql:python:app->store:postgres");
+    expect([...(edge?.evidence ?? [])].map((item) => item.line).sort((left, right) => left - right)).toEqual([6, 10, 11, 12, 13]);
+  });
+
+  it("resolves the migrations module through aliases, full paths and function-local imports", () => {
+    const result = migrations(djangoProject({ "app/api/migrations/0003_forms.py": [
+      "from django.db import migrations as m",
+      "import django.db.migrations",
+      "def upgrade():",
+      "    from django.db import migrations",
+      "    return [",
+      '        m.CreateModel(name="A", fields=[]),',
+      '        django.db.migrations.AddField(model_name="a", name="x"),',
+      '        migrations.RemoveField(model_name="a", name="x"),',
+      "        m.CustomOperation(x=1),",
+      "    ]",
+    ].join("\n") }));
+    expect(result.sites).toEqual(["migration 6", "migration 7", "migration 8", "migration 9"]);
+    expect(result.omissions).toHaveLength(0);
+    // Only the textual `migrations.<Op>(` forms are in the raw denominator; an aliased receiver is resolved by the parser alone.
+    expect(result.declarations).toHaveLength(2);
+  });
+
+  it("records data migrations once and keeps ownership away from the line-based detector", () => {
+    const result = migrations(djangoProject({ "app/api/migrations/0012_data.py": [
+      "from django.db import migrations",
+      "",
+      "def forwards(apps, schema_editor):",
+      "    pass",
+      "",
+      "class Migration(migrations.Migration):",
+      "    dependencies = []",
+      "    operations = [",
+      "        migrations.RunPython(forwards, migrations.RunPython.noop),",
+      '        migrations.RunSQL("UPDATE api_check SET slug = code"),',
+      '        migrations.SeparateDatabaseAndState(migrations.RenameModel("Old", "New"), migrations.AlterModelTable("check", "api_check")),',
+      "    ]",
+    ].join("\n") }));
+    // Every `migrations.<Operation>(` occurrence is one operation, including the
+    // SeparateDatabaseAndState wrapper and the two operations nested in it.
+    expect(result.sites).toEqual(["migration 9", "migration 10", "migration 11", "migration 11", "migration 11"]);
+    expect(new Set(result.operations.map((operation) => operation.id)).size).toBe(5);
+    // The RunSQL line also looks like raw SQL to the line-based detector; one call site is one operation.
+    const atRunSql = result.analysis.ir.operations.filter((operation) => operation.kind === "sql" && operation.callSite === "app/api/migrations/0012_data.py:10");
+    expect(atRunSql.map((operation) => operation.id)).toEqual(result.operations.filter((operation) => operation.callSite === "app/api/migrations/0012_data.py:10").map((operation) => operation.id));
+    expect(atRunSql).toHaveLength(1);
+  });
+
+  it("takes the driver from the same engine rules as ORM calls", () => {
+    const configured = migrations(djangoProject({ "app/api/migrations/0001_initial.py": 'from django.db import migrations\n\n\nclass Migration(migrations.Migration):\n    operations = [migrations.CreateModel(name="Check", fields=[])]\n' }, [
+      "import os",
+      "DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3'}}",
+      "if os.getenv('DB') == 'postgres':",
+      "    DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql'}}",
+    ].join("\n")));
+    expect(configured.operations.map((operation) => `${operation.driver} ${operation.resolution}`)).toEqual(["postgres|sqlite configured"]);
+    expect(configured.omissions).toHaveLength(0);
+  });
+
+  it("fails closed when a migration call is not bound to django.db.migrations", () => {
+    const result = migrations(djangoProject({ "app/api/migrations/0002_other.py": [
+      "import migrations",
+      "class Migration:",
+      "    operations = [",
+      '        migrations.AddField(model_name="check", name="slug"),',
+      "    ]",
+    ].join("\n") }));
+    expect(result.operations).toHaveLength(0);
+    expect(result.declarations).toHaveLength(1);
+    expect(result.omissions.map((omission) => `${omission.reason} ${omission.detail}`)).toEqual([
+      "unknown-identity Django migration operation is not bound to django.db.migrations at app/api/migrations/0002_other.py:4",
+    ]);
+    expect(result.omissions[0].blocking).toBe(true);
+    expect(result.omissions[0].declarationIds).toHaveLength(1);
+  });
+
+  it("ignores migration calls outside Django projects and quoted in string literals", () => {
+    const outside = migrations(analyze({ "app/api/migrations/0001_initial.py": 'import migrations\n\n\nclass Migration:\n    operations = [migrations.CreateModel(name="Check", fields=[])]\n' }));
+    expect(outside.declarations).toHaveLength(0);
+    expect(outside.omissions).toHaveLength(0);
+    const quoted = migrations(djangoProject({ "app/docs.py": [
+      "EXAMPLES = [",
+      '    "migrations.AddField(model_name=\\"check\\", name=\\"slug\\")",',
+      "]",
+    ].join("\n") }));
+    expect(quoted.declarations).toHaveLength(0);
+    expect(quoted.omissions).toHaveLength(0);
+  });
+
+  it("keeps independent migration declarations when the parser is disabled", () => {
+    const sources = [
+      source("app/settings.py", settings),
+      source("app/models.py", models),
+      source("app/api/migrations/0007_slug.py", schemaMigration),
+    ];
+    const census = buildSourceCensus({ revision, inventory: sources.map((item) => ({ path: item.path, size: 0, entryKind: "file" as const, selected: true })) });
+    const snapshot = createSourceSnapshot({ revision, sources, census });
+    const project = prepareProjects({ revision, snapshot, census, adapters: [createUnavailableAdapter("ast-python", ["python"], "disabled")] });
+    const extraction = analyzePythonDjangoOrm({ snapshot, project, enabled: false });
+    expect(extraction.migrationDeclarations).toHaveLength(5);
+    const unavailable = extraction.omissions.filter((omission) => omission.id.includes("python-django-migration") && omission.reason === "parser-unavailable");
+    expect(unavailable).toHaveLength(1);
+    expect(unavailable[0].declarationIds).toHaveLength(5);
   });
 });

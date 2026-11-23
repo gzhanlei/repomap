@@ -2,16 +2,16 @@ import { createHash } from "node:crypto";
 import type { ProjectPreparation } from "./adapter.js";
 import type { SourceSnapshot } from "./snapshot.js";
 import { importBindingAt, parsePythonSource, pythonParserStatus, type PythonParsedFile, type PythonParsedImport } from "./python-parser.js";
-import type { AsyncExtraction } from "./async-graph.js";
+import { type AsyncDeclaration, type AsyncExtraction } from "./async-graph.js";
 import { pythonCodeLines } from "./python-source.js";
 import { evidenceRecord } from "../evidence-index.js";
 import type { ArchitectureEvidence } from "../facts.js";
 import { irOmissionSchema, type IrOmission, type OperationFact } from "../ir.js";
 
-export type OrmExtraction = AsyncExtraction;
+export type OrmExtraction = AsyncExtraction & { migrationDeclarations: AsyncDeclaration[] };
 
 /** The facts-level evidence of an ORM call; `evidenceRecord` derives its role (runtime-call, or migration in a migration module). */
-export function ormEvidence(path: string, line: number, action: string): ArchitectureEvidence {
+function ormEvidence(path: string, line: number, action: string): ArchitectureEvidence {
   return { path, line, detector: `ast:python-orm-call:${action}` };
 }
 
@@ -31,6 +31,9 @@ const djangoImport = /(?:^|\n)\s*(?:from\s+django(?:\.[\w.]+)?\s+import\b|import
 // owner must be a capitalized identifier, so a dict attribute such as
 // self.objects.get(...) is not a declaration.
 const managerCall = /\b([A-Z][A-Za-z0-9_]*)\.objects\.([A-Za-z_]\w*)\s*\(/g;
+// `migrations.<Operation>(`: a Django migration operation in its canonical textual form.
+const migrationCall = /\bmigrations\.([A-Z][A-Za-z0-9_]*)\s*\(/g;
+const djangoMigrations = "django.db.migrations";
 const engineLiteral = /["']ENGINE["']\s*:\s*["']django\.db\.backends\.([a-z0-9_]+)["']/g;
 const engineAlias = /["']([A-Za-z_]\w*)["']\s*:\s*\{[^{}]*?["']ENGINE["']\s*:\s*["']django\.db\.backends\.([a-z0-9_]+)["']/gs;
 const identifier = /^[A-Za-z_]\w*$/;
@@ -200,8 +203,48 @@ function independentDeclarations(files: OrmFile[]) {
   return declarations;
 }
 
+/** Independent denominator for migrations: every canonical `migrations.<Operation>(` line, found without the parser. */
+function independentMigrationDeclarations(files: OrmFile[]) {
+  const declarations: ManagerDeclaration[] = [];
+  const seen = new Set<string>();
+  for (const file of files) {
+    file.code.forEach((line, index) => {
+      for (const match of line.replace(stringLiteral, "''").matchAll(migrationCall)) {
+        const id = `django-migration:${shortHash(`${file.path}|${index + 1}|${match[1]}`)}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        declarations.push({ id, path: file.path, line: index + 1, model: match[1] });
+      }
+    });
+  }
+  return declarations;
+}
+
+/** The migration operations called in `files`, each bound to django.db.migrations through the file's imports. */
+function migrationOperations(files: OrmFile[]) {
+  const bound: Array<{ file: OrmFile; path: string; line: number; operation: string }> = [];
+  const unbound: Array<{ path: string; line: number; operation: string }> = [];
+  const order = (left: { path: string; line: number }, right: { path: string; line: number }) => left.path.localeCompare(right.path) || left.line - right.line;
+  const calls = files.flatMap((file) => (file.parsed?.calls ?? []).flatMap((call) => {
+    const segments = call.name.split(".");
+    const operation = segments.at(-1) ?? "";
+    const receiver = segments.slice(0, -1).join(".");
+    if (segments.length < 2 || !/^[A-Z]/.test(operation)) return [];
+    return [{ file, path: file.path, line: call.line, operation, receiver }];
+  })).sort(order);
+  for (const call of calls) {
+    const binding = importBindingAt(call.file.parsed!, call.receiver.split(".")[0], call.line);
+    if (qualifiedName(call.receiver, binding) === djangoMigrations) bound.push(call);
+    // The textual `migrations.<Operation>(` form is a declaration even when the
+    // receiver is some other module: it fails closed. Any other alias that does
+    // not resolve to Django's module is just some other call.
+    else if (call.receiver === "migrations" || call.receiver.endsWith(".migrations")) unbound.push(call);
+  }
+  return { bound, unbound };
+}
+
 export function analyzePythonDjangoOrm(input: { snapshot: SourceSnapshot; project: ProjectPreparation; enabled?: boolean }): OrmExtraction {
-  const result: OrmExtraction = { operations: [], declarations: [], omissions: [], evidenceRecords: [] };
+  const result: OrmExtraction = { operations: [], declarations: [], omissions: [], evidenceRecords: [], migrationDeclarations: [] };
   const files: OrmFile[] = input.snapshot.files
     .filter((file) => file.language === "python" && file.role === "source" && file.path.endsWith(".py"))
     .map((file) => {
@@ -212,8 +255,11 @@ export function analyzePythonDjangoOrm(input: { snapshot: SourceSnapshot; projec
   if (!files.some((file) => djangoImport.test(file.code.join("\n")))) return result;
   const declared = independentDeclarations(files);
   result.declarations = declared.map(({ id, path, line }) => ({ id, path, line }));
+  const declaredMigrations = independentMigrationDeclarations(files);
+  result.migrationDeclarations = declaredMigrations.map(({ id, path, line }) => ({ id, path, line }));
   if (input.enabled === false || pythonParserStatus().status === "unavailable") {
     result.omissions.push(ormOmission("omission:python-orm:parser-unavailable", "python-orm-extractor", "parser-unavailable", "Django ORM operation extraction was not run because the parser is unavailable", declared.map((declaration) => declaration.id), []));
+    result.omissions.push(ormOmission("omission:python-django-migration:parser-unavailable", "python-django-migration-extractor", "parser-unavailable", "Django migration operation extraction was not run because the parser is unavailable", declaredMigrations.map((declaration) => declaration.id), []));
     return result;
   }
   for (const file of files) file.parsed = parsePythonSource(file.raw) ?? undefined;
@@ -275,6 +321,57 @@ export function analyzePythonDjangoOrm(input: { snapshot: SourceSnapshot; projec
     const site = `${declaration.path}:${declaration.line}`;
     const parsedFile = files.find((file) => file.path === declaration.path);
     result.omissions.push(ormOmission(`omission:python-orm-unparsed:${site}:${declaration.model}`, `python-orm:${site}:${declaration.model}`, parsedFile?.parsed ? "unsupported-syntax" : "parse-error", `Django ORM declaration has no parsed call at ${site}`, [declaration.id], []));
+  }
+  // Migration operations: every call on django.db.migrations is one operation,
+  // whether it changes schema, data or both.
+  const { bound, unbound } = migrationOperations(files);
+  const migrationDeclaredByKey = new Map(declaredMigrations.map((declaration) => [`${declaration.path}:${declaration.line}:${declaration.model}`, declaration]));
+  const migrationParsed = new Set<string>();
+  const occurrence = new Map<string, number>();
+  const nextIndex = (key: string) => {
+    const index = occurrence.get(key) ?? 0;
+    occurrence.set(key, index + 1);
+    return index;
+  };
+  for (const call of bound) {
+    const site = `${call.path}:${call.line}`;
+    const key = `${site}:${call.operation}`;
+    const index = nextIndex(key);
+    const declaration = migrationDeclaredByKey.get(key);
+    if (declaration) migrationParsed.add(declaration.id);
+    const record = evidenceRecord({ path: call.path, line: call.line, detector: `ast:python-django-migration:${call.operation}` });
+    const current = {
+      id: `operation:django-migration:${shortHash(`${key}|${index}`)}`,
+      kind: "sql",
+      owner: call.file.packageId,
+      declarationIds: declaration ? [declaration.id] : [],
+      evidenceIds: [record.id],
+      targetKind: "database",
+      resolution: driver.resolution,
+      action: "migration",
+      driver: driver.value,
+      callSite: site,
+    } as OperationFact;
+    result.operations.push(current);
+    result.evidenceRecords.push(record);
+    if (driver.omission) {
+      result.omissions.push(ormOmission(`omission:python-django-migration-driver:${key}:${index}`, current.id, "unknown-identity", `${driver.omission}: ${site}`, current.declarationIds, current.evidenceIds));
+    }
+  }
+  for (const call of unbound) {
+    const site = `${call.path}:${call.line}`;
+    const key = `${site}:${call.operation}`;
+    const index = nextIndex(key);
+    const declaration = migrationDeclaredByKey.get(key);
+    if (declaration) migrationParsed.add(declaration.id);
+    result.omissions.push(ormOmission(`omission:python-django-migration-binding:${key}:${index}`, `python-django-migration:${key}`, "unknown-identity", `Django migration operation is not bound to ${djangoMigrations} at ${site}`, declaration ? [declaration.id] : [], []));
+  }
+  // A migration declaration the parser produced no call for is neither counted nor dropped.
+  for (const declaration of declaredMigrations) {
+    if (migrationParsed.has(declaration.id)) continue;
+    const site = `${declaration.path}:${declaration.line}`;
+    const parsedFile = files.find((file) => file.path === declaration.path);
+    result.omissions.push(ormOmission(`omission:python-django-migration-unparsed:${site}:${declaration.model}`, `python-django-migration:${site}:${declaration.model}`, parsedFile?.parsed ? "unsupported-syntax" : "parse-error", `Django migration declaration has no parsed call at ${site}`, [declaration.id], []));
   }
   result.operations.sort((a, b) => a.id.localeCompare(b.id));
   result.omissions.sort((a, b) => a.id.localeCompare(b.id));
