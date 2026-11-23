@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-17",
+  "generatedAt": "2026-11-23",
   "generator": "scripts/gold-report.ts (npm run gold:report); regenerate, never hand-edit",
   "allPassed": true,
   "totals": {
-    "corpora": 8,
-    "criticalFacts": 985,
-    "covered": 985,
+    "corpora": 9,
+    "criticalFacts": 1002,
+    "covered": 1002,
     "suspectedFalsePositives": 0,
     "evidenceInvalid": 0
   },
@@ -550,6 +550,70 @@
           "routeGraph": 0,
           "asyncGraph": 118,
           "ir": 152
+        }
+      }
+    },
+    {
+      "corpusId": "flask",
+      "repository": "pallets/flask@49943b5a94413a530761350f04e896f76e8d620e",
+      "revision": "49943b5a94413a530761350f04e896f76e8d620e",
+      "analyzeExitCode": 0,
+      "evaluation": {
+        "corpusId": "flask",
+        "revision": "49943b5a94413a530761350f04e896f76e8d620e",
+        "passed": true,
+        "recall": {
+          "total": 17,
+          "covered": 17,
+          "missing": [],
+          "byKind": {
+            "route": {
+              "total": 17,
+              "covered": 17,
+              "missing": 0
+            }
+          },
+          "dimensions": {
+            "node": {
+              "total": 17,
+              "covered": 17,
+              "missing": 0
+            },
+            "edge": {
+              "total": 0,
+              "covered": 0,
+              "missing": 0
+            },
+            "direction": {
+              "total": 0,
+              "covered": 0,
+              "missing": 0
+            }
+          }
+        },
+        "precision": {
+          "scopes": [
+            {
+              "id": "scope-routes-flaskr",
+              "outputRecords": 12,
+              "matched": 12
+            },
+            {
+              "id": "scope-routes-taskapp",
+              "outputRecords": 5,
+              "matched": 5
+            }
+          ],
+          "suspectedFalsePositives": []
+        },
+        "evidence": {
+          "checked": 17,
+          "invalid": []
+        },
+        "omissions": {
+          "routeGraph": 1,
+          "asyncGraph": 0,
+          "ir": 19
         }
       }
     }

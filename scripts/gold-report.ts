@@ -34,6 +34,7 @@ const corpora: CorpusDefinition[] = [
   { corpusId: "celery", repository: "celery/celery", revision: "9c2f238334331db43f15956f131235fd3bb70fd1", goldPath: "docs/gold/celery.v1.json", expectedGateFailure: "library/test-heavy repo: blocking omissions (unresolved relative imports, unknown-identity external calls, and canvas-expression celery enqueues failing closed as dynamic identities) are by design; the async operations artifact is complete for gold evaluation" },
   { corpusId: "django-healthchecks", repository: "healthchecks/healthchecks", revision: "6c05a7adf266efb70f9517727bef9ea8b2bbf52f", goldPath: "docs/gold/django-healthchecks.v1.json", expectedGateFailure: "SITE_ROOT subpath deployment makes every route prefix dynamic (blocking unsupported-syntax omissions) and admin.site.urls fails closed; the route artifact is complete for gold evaluation" },
   { corpusId: "rq", repository: "nvie/rq", revision: "535172412469b78d4ac690a446284d8ec1e9f541", goldPath: "docs/gold/rq.v1.json", expectedGateFailure: "library/test-heavy repo: 113 dynamic enqueues (parameter or expression job arguments) fail closed as blocking unknown-identity omissions; the queue operations artifact is complete for gold evaluation" },
+  { corpusId: "flask", repository: "pallets/flask", revision: "49943b5a94413a530761350f04e896f76e8d620e", include: "examples/**", goldPath: "docs/gold/flask.v1.json" },
 ];
 
 if (!existsSync(cliPath)) {
