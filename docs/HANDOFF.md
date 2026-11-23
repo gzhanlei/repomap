@@ -1,7 +1,7 @@
 # RepoMap 接手文档
 
-- 更新日期：2026-11-16
-- 代码基线：`d05d0a5`（origin/main 已含 codelphi 实战修复批次 0daeede/5aeb90f/ab0ec48；在其之上新增三个未 push 提交：SQLAlchemy 2.0 action 分类 98664f2、flow 视图 Python 目标解析回归修复 d05d0a5、本 handoff 提交；push 后需按账本对账）
+- 更新日期：2026-11-23
+- 代码基线：`25169ff`（本地与 origin/main 一致：已含 SQLAlchemy/Celery/RQ/Django 真实语料批次、脚本式入口检测、函数内导入的路由作用域修复 433a30e、flask 接入 gold:report 25169ff；本文档提交位于该基线之后。账本最新发布停在 #256 @ `e0af3f9`，其后的 push 未触发分析，见 §9）
 - 远程仓库：`https://github.com/gzhanlei/repomap`
 - 当前分支：`main`
 
@@ -20,6 +20,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 - codelphi 实战批次（1bc4068…ab0ec48，2026-11-13/16，已在 origin/main）：修复 TS handler 局部变量误判、flow 视图 TS 模块目标按路径解析、类型位置 `import()` 与 fetcher 注入封装的 blocking 误报、存储检测的标记表/引号内字面量误匹配，并新增游离操作流程投影（`detached:<路径>` owner），无运行时归属的操作也有流程页；codelphi@`d4a32ab` 五视图全过、交付 85 页。
 - SQLAlchemy 2.0 切片（识别半在 0daeede，分类半 98664f2）：`session.scalars/stream/add_all` 进入 pythonSqlLineFilter，action 分类 scalars/stream=read、add_all=write（账本 Python SQL 操作 HP-6）。
 - flow 视图 Python 目标解析回归修复（d05d0a5）：handler 调用目标 TS 记原始路径、Python 记 `module:<packageId>:<path>` 完整 ID，查找需双形式兜底；该回归由 `npm run gold:report` 的 fastapi analyzeExitCode 0→1 暴露——gold:report 必须每个切片都跑。
+- Flask Blueprint 切片（8b476f0，2026-11-12）：python-routes.ts 新增 Blueprint `url_prefix` 组合与 `register_blueprint`，`add_url_rule` 端点间接引用失败关闭；审计修掉幻影声明（参数窗口按括号配平截断）与单一相对导入子模块的解析。flask 语料 `pallets/flask@49943b5a` 17/17 路由、两个完整枚举 scope 全中（接入 gold:report 见下）。
 - SQLAlchemy 真实语料批次（2026-11-16/17）：新增 `sqlalchemy/sqlalchemy@fe8e67751891de18ba27171bbc8aa23b28bb8348` examples/** 人工审计 Gold（`docs/gold/sqlalchemy.v1.json`，66 条 facts：全部 session.scalars/stream/add_all 调用点逐行核验，含 sess 别名与 Session 接收器；targeted subset，暂无 precision scopes）。审计驱动了三个修复：caller marker 列表补齐三个会话方法（多行调用的被调行此前无 marker 命中）、sess 别名进入行过滤与 action 分类、驱动判定剥离非 URL 字符串字面量（"MySQL Crowbar" 曾抑制 examples/association 全部 caller 边）。已登记 gold-manifest。
 - SQLAlchemy 语料第二轮（2026-11-17）：Python 入口检测新增脚本式入口信号（缩进 0 的 SQL 调用语句或 `asyncio.run(`，detector `python-script-entry`，无 main guard 也可成立），使 examples/asyncio、inheritance、generic_associations、graphs、nested_sets、dynamic_dict 等模块级脚本目录获得 runtime unit；alembic versions 目录因此成为独立 runtime unit，迁移操作 owner 从 python:app 变为 python:app/alembic/versions（符合"真实 op.* 调用保留 runtime owner"不变式，测试断言已按不变式更新）。召回 24/66 → 50/66、0 FP；四既有语料 gold:report 回归全绿。
 - SQLAlchemy 语料第三轮（2026-11-17，收敛）：包级驱动归属——文件自身无驱动提及且单元驱动集合唯一时回退到 runtime unit 驱动集合（pythonDriverMatches 新增 unitDrivers 回退，storageCalls 一次计算单元文本）；`executableSqlEvidence` 接收者正则加 /i（dogpile_caching 的 `Session.` 大写接收器此前全部被过滤）。审计修正一处 gold 事实：performance/__init__.py:155 位于模块 docstring（1-210 行），是文档不是运行时调用，语料从 66 条修正为 65 条。**sqlalchemy 语料 65/65 通过、0 FP，已接入 `npm run gold:report`（sqlalchemy 的 analyze 门禁失败按 expectedGateFailure 登记：847 条阻断省略——117 条 lib 桶文件相对导入未解析、729 条库/测试代码外部调用 unknown-identity——库仓库的诚实 fail-closed）**。
@@ -33,8 +34,8 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 尚未完成：
 
-- M7 收尾已完成（680fe76）：四个 corpus 的 targeted Gold 共 237 critical facts（fastapi 117、black 59、click 34、authelia 27），`npm run gold:report` 生成可复现汇总报告 `docs/gold-evaluation-report.v1.json`（237/237、0 FP、0 evidence invalid）；release 资格证据已整合进 `docs/release-qualification.v1.json`（status: evidence-complete-pending-author-approval，批准块留给作者；FastAPI 视觉独立确认仍未声明完成，receipt `visualReview` 仍为 `pending`）。
-- Django、RQ、完整动态依赖注入/ORM/SSA，以及更多语言和真实仓库审查。
+- M7 发布资格（未完成）：`npm run gold:report` 已覆盖九语料 1002/1002（见上），但 `docs/release-qualification.v1.json` 仍停在 `680fe76` 的四语料 237 条，需要在单一 HEAD 上重跑 `gold:report`、`perf:gate`、`smoke:production` 并全部退出 0 后重新汇总——本地 perf:gate 目前在本机不稳定（§9），2026-11-23 未重新汇总。批准块（decision/decidedBy/decidedAt）与 FastAPI 视觉独立确认留给作者，receipt `visualReview` 仍为 `pending`。writefreely 与 commerce 两个语料仍是 pinned-not-audited。
+- Django ORM（`Model.objects.*`、`.save()` 等目前不产生 SQL 操作）、Flask `register_blueprint` 同时带注册前缀与蓝图自身前缀时的组合语义（§4.2）、完整动态依赖注入/ORM/SSA，以及更多语言和真实仓库审查。
 - 可选 Harness/LLM enrichment 尚未实现；默认分析保持 `aiRequests: 0`。
 
 **`fullArchitecture: true` 只表示某个固定输入在声明范围内通过语义门禁，不表示所有 Python 项目均受支持，也不等于 M7 或发布资格完成。**
@@ -67,14 +68,16 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 | `src/core/architecture/view-delivery.ts` | 每页 JSON/HTML、Archify delivery 和 visual-check |
 | `src/core/architecture/project/python-parser.ts` | Python Tree-sitter syntax facts |
 | `src/core/architecture/project/python.ts` | Python import/module 解析 |
-| `src/core/architecture/project/python-routes.ts` | FastAPI/Flask routes、APIRouter composition、独立 route declarations |
-| `src/core/architecture/project/python-async.ts` | asyncio/Celery/broker operations 和独立 async declarations |
+| `src/core/architecture/project/python-routes.ts` | FastAPI/Flask routes、APIRouter/Blueprint composition（`importBindingAt` 按作用域取导入绑定）、Django urls.py routes、独立 route declarations |
+| `src/core/architecture/project/python-async.ts` | asyncio/Celery/rq/broker operations（含 test 角色的 python 文件）和独立 async declarations |
 | `src/core/architecture/detectors/python.ts` | Python runtime entrypoints 和最近入口 ownership |
 | `src/core/architecture/detectors/storage.ts` | store 信号、driver-aware SQL evidence 和 runtime/store 关系 |
 | `src/core/architecture/sql-operations.ts` | 可执行 SQL operation 分类、ownership 和 driver 歧义 omissions |
 | `src/core/architecture/detectors/generic-external.ts` | 通用外部协议候选及 Python HTTP call-site identity |
 | `tests/python-protocols.test.ts` | Python 第二切片正负例、失败关闭和 independence fixtures |
 | `scripts/production-smoke.mjs` | 打包后生产安装与 TypeScript/Go/Python smoke |
+| `scripts/gold-report.ts` | 九语料 gold 汇总报告（`npm run gold:report`，重新生成 `docs/gold-evaluation-report.v1.json`） |
+| `scripts/performance-gate.ts` | 固定 Authelia 语料的耗时/峰值 RSS 门禁（`npm run perf:gate`） |
 
 ## 4. 当前 Python 能力边界
 
@@ -85,19 +88,25 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 - 支持 src layout、package、`__init__.py`、`__main__.py`、main guard、绝对/相对 import、嵌套/future import。
 - 支持字面量 `importlib.import_module`、`__import__`、aliases、re-export、wildcard export 和静态 `__all__`。
 - 动态 import、workspace 歧义、relative escape、unsupported `__all__` 和 parser-unavailable 均失败关闭。
+- 无 main guard 的脚本式入口也算 runtime 入口：缩进 0 的 SQL 调用语句或 `asyncio.run(`（detector `python-script-entry`）。
 
-### 4.2 FastAPI/Flask routes
+### 4.2 FastAPI/Flask/Django routes
 
 - decorator route、多个 HTTP methods、本地 handler 和 direct calls。
-- 跨文件 `APIRouter` composition，包括静态 prefix 和 `settings.API_V1_STR` 这类模块常量。
+- 跨文件 `APIRouter` 组合，包括静态 prefix 和 `settings.API_V1_STR` 这类模块常量。
 - route declarations 按 receiver 独立识别 FastAPI/Flask；普通 `@registry.get` 不进入 route 分母。
 - 动态 path/method、循环或歧义 prefix、unresolved include/factory 会产生 omission。
 - 普通对象的 `include_router` 不会被误判为 FastAPI，也不会无故阻断全图。
+- Flask Blueprint：`Blueprint(url_prefix=…)` 自身前缀与 `register_blueprint` 组合；蓝图模块名按作用域绑定导入（`importBindingAt`：函数内导入只在所属函数内且已执行的行生效，否则取模块级导入），没有导入绑定的引用失败关闭、不按文件名猜；`add_url_rule` 端点间接引用失败关闭。
+- Django `urls.py`：`path()`/`re_path()` 路由（framework `django`、method `PAGE`）、`include()` 组合（字符串模块、模块对象变量、别名导入；同一模块被多个前缀 include 时每实例一套路由）、跨模块与类视图 handler；`admin.site.urls` 这类视图间接引用和动态前缀（如 SITE_ROOT 子路径部署）失败关闭。
+- 已知缺陷：Flask `register_blueprint(bp, url_prefix='/v2')` 与蓝图自身 `url_prefix='/api'` 同时存在时，当前实现拼成 `/v2/api/...`，而 Flask 的语义是替换（应为 `/v2/...`）；FastAPI `include_router(router, prefix=…)` 本身就是拼接，不涉及。flask 语料没有这种组合，gold 未覆盖。
 
 ### 4.3 SQL / Alembic
 
 - 常见 DB-API、SQLAlchemy/SQLModel read/write/transaction/migration operations。
 - 支持 `session.get/exec/query` 和多行 SQL 上下文分类。
+- SQLAlchemy 2.0 会话方法：`session.scalars/stream` 归 read、`add_all` 归 write；独立调用行、`sess` 别名和大写 `Session` 接收器都能识别。
+- 文件自身没有驱动提及、而所属 runtime unit 的驱动集合唯一时，SQL 证据回退到单元驱动集合（包级 `create_engine`）。
 - import、schema 声明和 `create_engine` 只支撑 store/schema coverage，不生成伪造的 runtime operation。
 - Alembic `op.*` 调用归执行它的 runtime；纯 schema resource 可归 store。
 - 多数据库下，driver-neutral 或 driver 歧义调用不会扇出到多个 store，而是生成阻断 omission。
@@ -107,6 +116,9 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 - `asyncio.Queue`、put/get、`create_task/gather/sleep`、`threading.Timer`、`schedule.every`。
 - Celery task 和有 broker 证据的 publish/subscribe。
+- Celery `.delay()`/`.apply_async()` enqueue：仓库级装饰任务登记册让没有 celery import 的 producer 文件也能归属，跨模块 `@app.task` 经仓库级 constructed-app 接收器绑定；canvas 表达式等非标识符接收者失败关闭。
+- rq：`@job` 装饰器 consume（topic = 被装饰函数名）；绑定了 rq 的文件里任何 `.enqueue` 调用都是 enqueue，topic 取第一参数——def/import 绑定的标识符或字符串字面量静态解析，形参与表达式失败关闭。
+- census 里 test 角色的 python 文件只供异步提取器消费（CRLF 规范化后传入）；它们仍不进 snapshot，其他语言的 test 路径和其余检测器不变。
 - receiver/import 必须匹配；route、ORM、dict、requests、其他库的 `.get/.put/.task/.publish` 不算 async protocol。
 - 动态 pub/sub topic 会保留 declaration 并阻断，不生成确定性的假 topic。
 
@@ -119,7 +131,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 ### 4.6 明确未支持
 
-- Django、RQ、任意动态 route registration 和完整 ASGI/WSGI dependency injection。
+- Django 在 `urls.py` 的 `path()/re_path()` 之外的能力：ORM（`Model.objects.*`、`.save()` 等不产生 SQL 操作——healthchecks 全仓库 IR 只有 5 条 SQL）和 `admin.site.urls` 这类视图间接引用；rq 的动态 job 参数；任意动态 route registration 和完整 ASGI/WSGI dependency injection。
 - 完整 ORM 类型系统、SSA、动态分派和运行时生成模型。
 - 所有自定义 HTTP session/wrapper、所有 broker 和所有 Python 框架。
 - 以上边界不能被“Python full 已通过”掩盖；相应输入必须失败关闭或保持明确 partial。
@@ -128,13 +140,16 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 ### 5.1 最新全量检查
 
-在代码基线 `cad62c2` 上：
+在代码基线 `25169ff` 上（2026-11-23，darwin arm64，node v25.5.0）：
 
-- `npm test`：**37 个测试文件、267 项测试通过**（在 680fe76 上）。
+- `npm test`：**37 个测试文件、293 项测试通过**。
 - `npm run typecheck`：通过。
 - `npm run build`：通过。
 - `npm run smoke:production`：通过；生产包中 Go/Python parser 可用，Python route 为 1 条、总 route 为 2 条、Python async operations 为 3 条。
 - `git diff --check`：通过。
+- `npm run gold:report`：九语料 1002/1002 critical facts、0 FP、0 invalid evidence，退出码 0。
+- CI（`25169ff`，ubuntu-latest / node 22，run 45170737995）：checks 与 performance-gate 均通过；performance-gate 三次峰值 RSS 为 791,732,224 / 880,791,552 / 880,959,488 字节，中位耗时 21,784ms。
+- 本地 `npm run perf:gate` 在同一基线上退出码 1（仅 peakRss 一项不过：1,076,822,016 / 1,110,867,968 / 950,288,384 字节，中位 21,185ms）——这是本机当日噪声，见 §9，阈值未改动。
 
 ### 5.2 FastAPI 固定模板
 
@@ -196,6 +211,20 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 三者均为 fixed-SHA、accepted、`fullArchitecture: true`、round-trip 零缺失/重复/dangling，自动 visual-check 通过并抽查截图。这些结果同样是 per-input 证据，不是 Gold/release qualification。
 
+### 5.6 Python 真实语料 Gold
+
+五个 Python 真实仓库语料均由 `npm run gold:report` 在固定 SHA 上重跑，逐语料明细见 `docs/gold-evaluation-report.v1.json`，审计过程见 §1：
+
+| 语料 | 范围 | 人工审计 Gold | analyze 门禁 |
+| --- | --- | --- | --- |
+| `pallets/flask@49943b5a94413a530761350f04e896f76e8d620e` | `examples/**` | 17 条路由；两个完整枚举 scope（flaskr 12/12、celery task app 5/5） | 通过（退出码 0）；唯一路由 omission 是设计内的 add_url_rule |
+| `sqlalchemy/sqlalchemy@fe8e67751891de18ba27171bbc8aa23b28bb8348` | `examples/**` | 65 条 SQL 操作（scalars/stream/add_all 逐行核验） | 预期失败：847 条库/测试代码的阻断省略 |
+| `celery/celery@9c2f238334331db43f15956f131235fd3bb70fd1` | `examples/**` | 47 条（36 个 task 装饰器 consume + 11 条 enqueue） | 预期失败：库/测试代码阻断省略 |
+| `healthchecks/healthchecks@6c05a7adf266efb70f9517727bef9ea8b2bbf52f` | 全仓库 | 148 条 Django 路由 | 预期失败：SITE_ROOT 动态前缀与 admin.site.urls |
+| `nvie/rq@535172412469b78d4ac690a446284d8ec1e9f541` | `rq/`、`examples/`、`tests/**` | 488 条（20 个 `@job` consume + 468 条静态 enqueue） | 预期失败：113 条动态 enqueue |
+
+“预期失败”指语料的 analyze 退出码非 0，但失败的是按设计失败关闭的库/测试代码；gold 评估只看对应的语义产物，omission 不计入覆盖。另外四个语料见 §5.2（fastapi-template）、§5.3（click）、§5.4（black）、§5.5（authelia）。
+
 ## 6. 接手后先做什么
 
 1. 阅读：
@@ -218,6 +247,8 @@ npm run typecheck
 npm test
 npm run build
 npm run smoke:production
+npm run gold:report
+npm run perf:gate
 ```
 
 准备固定 Archify runtime（只生成忽略文件）：
@@ -263,6 +294,8 @@ node dist/cli.js analyze \
 
 ### P0：M7 评估与发布资格
 
+现状（2026-11-23）：九语料 1002/1002 已进 `gold:report`，CI 性能门槛（阻塞）与生产安装验证都在 CI 内。剩余是 release qualification 的作者收尾：`docs/release-qualification.v1.json` 仍停在 `680fe76` 的四语料 237 条，重新汇总要求 `gold:report`、`perf:gate`、`smoke:production` 在单一 HEAD 上全部退出 0——本地 perf:gate 目前在本机不稳定（§9），能否以 CI 的 performance-gate 运行作为性能证据由作者决定。另有待定：CI 是否跑完整 `gold:report`（现在只守 fastapi-template 一个语料，其余八个靠本地自觉）。
+
 - 为关键 facts 做 targeted human-reviewed Gold，不要求先维护整仓库人工 Gold。
 - 分开报告 node/edge/direction/evidence 的 precision 和 recall。
 - 固定 corpus、SHA/archive hash、false-positive/false-negative 清单和 failure matrix。
@@ -271,8 +304,9 @@ node dist/cli.js analyze \
 
 ### P1：Python 真实仓库与协议扩展
 
-- 增加固定 SHA 的 Flask、SQLAlchemy/asyncio/Celery 真实仓库验证。
-- 根据需求增加 Django/RQ；每个框架先写独立 declarations、负例和失败关闭测试。
+- 已有固定 SHA 真实语料：Flask、SQLAlchemy、Celery、Django（urls.py 路由）、RQ（§5.6）；asyncio 还没有人工审计语料。
+- 下一个候选切片：Django ORM → SQL 操作（healthchecks 的路由有 148 条，但全仓库 IR 只有 5 条 SQL；归档里粗数约 765 行 `.objects.<方法>(`、935 行 `.save(`，含测试代码）；Flask `register_blueprint` 前缀覆盖语义（§4.2 已知缺陷）。
+- 每个新框架或协议先写独立 declarations、负例和失败关闭测试。
 - 扩展动态 ORM/SSA、HTTP wrapper 和 broker 时，不能复用“同名方法即协议”的捷径。
 
 ### P2：更多语言与可选 enrichment
@@ -289,4 +323,7 @@ node dist/cli.js analyze \
 - M7 未完成是后续资格评估工作，不影响已提交切片作为 per-input 能力使用。
 - Click 和不受支持的动态 Python 输入失败关闭是预期行为，不要为了“全绿”删除 omission。
 - GitHub anonymous API 可能限流；优先使用固定 SHA 和已有 archive cache，不在命令或日志中暴露 token。
-- `docs/gold-manifest.v1.json` 仍是 pinned-not-audited skeleton，不是人工批准的 ground truth。
+- `docs/gold-manifest.v1.json` 现含九个 human-audited-targeted 语料，全部接入 `gold:report`；writefreely 与 commerce 仍是 pinned-not-audited。sqlalchemy、celery、django-healthchecks、rq 四个条目尚未登记 archiveSha256（其余七个都有）。
+- **本地 perf gate 噪声（2026-11-23）**：同一份代码在本机的 6 次峰值 RSS——`680fe76` 为 751,550,464–1,132,445,696 字节（3/6 超阈值）、`401b50b` 为 958,038,016–1,102,495,744（5/6 超阈值）、`f949b59` 3 次为 939,638,784–1,069,236,224、`25169ff` 3 次为 950,288,384–1,110,867,968（退出码 1）；文档记录的本地基线是 916,619,264；同期 CI 三次运行的最大值分别为 945,750,016（`f949b59`）、891,551,744（`433a30e`）、880,959,488 字节（`25169ff`）。当日本机 swap 已用 14.1/15.4GB、负载约 5，原因未验证（推测是内存压力改变了 GC 时序）。阈值未改动。本地 perf:gate 失败时不要归因于切片：先对基线提交做临时 worktree 的 A/B（各 ≥6 次、比较范围），以 CI 的 performance-gate（ubuntu/node 22）为准。
+- **账本对账积压（2026-11-23）**：codelphi 账本的最新分析与发布停在 run 371 / #256 @ `e0af3f9`；其后的 push（`401b50b`、`f949b59`、`433a30e`、`25169ff`）都没有触发分析（`wait_for_release` 返回 `analysisRunId: null`），需要在 codelphi 侧检查 webhook/摄取；恢复后对这段区间的发布做意图对账。
+- **已知缺陷：Flask `register_blueprint` 前缀覆盖**（§4.2）：注册前缀与蓝图自身前缀同时存在时被拼接，Flask 的语义是替换；现有 gold 与单测都没有覆盖这种组合。
