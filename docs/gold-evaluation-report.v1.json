@@ -450,7 +450,7 @@
       "repository": "healthchecks/healthchecks@6c05a7adf266efb70f9517727bef9ea8b2bbf52f",
       "revision": "6c05a7adf266efb70f9517727bef9ea8b2bbf52f",
       "analyzeExitCode": 1,
-      "gateFailure": "SITE_ROOT subpath deployment makes every route prefix dynamic (blocking unsupported-syntax omissions) and admin.site.urls fails closed; the route artifact is complete for gold evaluation",
+      "gateFailure": "SITE_ROOT subpath deployment makes every route prefix dynamic (blocking unsupported-syntax omissions), admin.site.urls fails closed, and 13 Django manager calls on custom queryset methods (for_user, for_api_key) fail closed as uncertain-direction omissions; the route artifact is complete for gold evaluation",
       "evaluation": {
         "corpusId": "django-healthchecks",
         "revision": "6c05a7adf266efb70f9517727bef9ea8b2bbf52f",
@@ -495,7 +495,7 @@
         "omissions": {
           "routeGraph": 157,
           "asyncGraph": 0,
-          "ir": 671
+          "ir": 684
         }
       }
     },

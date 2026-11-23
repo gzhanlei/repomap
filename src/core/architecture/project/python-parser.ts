@@ -48,6 +48,7 @@ export interface PythonParsedSymbol {
   exported: boolean;
   line: number;
   endLine?: number;
+  bases?: string[];
 }
 
 export interface PythonParsedCall {
@@ -55,6 +56,8 @@ export interface PythonParsedCall {
   arguments: { text: string; type: string }[];
   receiver?: string;
   line: number;
+  /** The call is called on through a further attribute (`qs.filter().count()`): a link of a chain, not a statement. */
+  chained?: true;
 }
 
 export interface PythonParsedDecorator {
@@ -81,8 +84,22 @@ export interface PythonParsedFile {
   diagnostics: PythonParseDiagnostic[];
 }
 
+// The import statement binding `name` where `line` is used, as Python resolves
+// it: a function-local import only inside its own function and only once that
+// line is reached, otherwise a module-level import from anywhere in the file.
+export function importBindingAt(file: PythonParsedFile, name: string, line: number) {
+  const binds = (item: PythonParsedImport) => item.bindings[name] !== undefined;
+  const local = file.imports.filter((item) => !item.moduleScope && binds(item) && item.enclosingFunction !== undefined && item.enclosingFunction.line <= line && line <= item.enclosingFunction.endLine);
+  if (local.length > 0) return local.filter((item) => item.line <= line).at(-1);
+  return file.imports.filter((item) => item.moduleScope && binds(item)).at(-1);
+}
+
 function firstNamed(node: SyntaxNode, ...types: string[]) {
   return node.namedChildren.find((child) => types.includes(child.type));
+}
+
+function sameSpan(left: SyntaxNode | null | undefined, right: SyntaxNode | null | undefined) {
+  return Boolean(left && right && left.startPosition.row === right.startPosition.row && left.startPosition.column === right.startPosition.column && left.endPosition.row === right.endPosition.row && left.endPosition.column === right.endPosition.column);
 }
 
 function diagnostics(root: SyntaxNode): PythonParseDiagnostic[] {
@@ -194,13 +211,20 @@ export function parsePythonSource(raw: string): PythonParsedFile | undefined {
     }
     if (node.type === "call") {
       const fn = node.childForFieldName("function")?.text;
-      if (fn) calls.push({ name: fn, arguments: (node.childForFieldName("arguments")?.namedChildren ?? []).map((argument) => ({ text: argument.text, type: argument.type })), ...(node.parent?.type === "assignment" ? { receiver: node.parent.childForFieldName("left")?.text } : {}), line: node.startPosition.row + 1 });
+      // SyntaxNode wrappers are not stable objects, so nodes are compared by span.
+      const attribute = node.parent;
+      const outer = attribute?.parent;
+      const calledOn = attribute?.type === "attribute" && outer?.type === "call" && sameSpan(outer.childForFieldName("function"), attribute);
+      if (fn) calls.push({ name: fn, arguments: (node.childForFieldName("arguments")?.namedChildren ?? []).map((argument) => ({ text: argument.text, type: argument.type })), ...(node.parent?.type === "assignment" ? { receiver: node.parent.childForFieldName("left")?.text } : {}), ...(calledOn ? { chained: true } : {}), line: node.startPosition.row + 1 });
     }
     const dynamic = dynamicImport(node, moduleScope);
     if (dynamic) imports.push(dynamic);
     if ((node.type === "function_definition" || node.type === "class_definition") && moduleScope) {
       const name = node.childForFieldName("name")?.text;
-      if (name) symbols.push({ name, kind: node.type === "function_definition" ? "function" : "class", exported: !name.startsWith("_"), line: node.startPosition.row + 1, endLine: node.endPosition.row + 1 });
+      if (name) {
+        const bases = node.type === "class_definition" ? (node.childForFieldName("superclasses")?.namedChildren ?? []).filter((child) => child.type !== "keyword_argument").map((child) => child.text) : [];
+        symbols.push({ name, kind: node.type === "function_definition" ? "function" : "class", exported: !name.startsWith("_"), line: node.startPosition.row + 1, endLine: node.endPosition.row + 1, ...(bases.length > 0 ? { bases } : {}) });
+      }
     } else if (node.type === "assignment" && moduleScope) {
       const left = node.childForFieldName("left");
       if (left?.type === "identifier" && left.text === "__all__") {

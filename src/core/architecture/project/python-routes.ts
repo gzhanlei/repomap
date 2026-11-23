@@ -1,7 +1,7 @@
 import { posix } from "node:path";
 import type { ProjectPreparation } from "./adapter.js";
 import type { SourceSnapshot } from "./snapshot.js";
-import { parsePythonSource, type PythonParsedCall, type PythonParsedDecorator, type PythonParsedFile, type PythonParsedImport } from "./python-parser.js";
+import { importBindingAt, parsePythonSource, type PythonParsedCall, type PythonParsedDecorator, type PythonParsedFile } from "./python-parser.js";
 import { pythonParserStatus } from "./python-parser.js";
 import {
   emptyRouteExtraction, handlerCallId, handlerId, parserEvidence, routeEdgeId, routeId,
@@ -78,16 +78,6 @@ function localHandler(file: PythonParsedFile, decorator: PythonParsedDecorator, 
     resolution: "local", targetId: `python-module:${path}`,
     evidenceIds: [parserEvidence(path, line, "ast:python-handler:local").id],
   };
-}
-
-// The import statement binding `name` where `line` is used, as Python resolves
-// it: a function-local import only inside its own function and only once that
-// line is reached, otherwise a module-level import from anywhere in the file.
-function importBindingAt(file: PythonParsedFile, name: string, line: number) {
-  const binds = (item: PythonParsedImport) => item.bindings[name] !== undefined;
-  const local = file.imports.filter((item) => !item.moduleScope && binds(item) && item.enclosingFunction !== undefined && item.enclosingFunction.line <= line && line <= item.enclosingFunction.endLine);
-  if (local.length > 0) return local.filter((item) => item.line <= line).at(-1);
-  return file.imports.filter((item) => item.moduleScope && binds(item)).at(-1);
 }
 
 function importedCallTarget(file: PythonParsedFile, project: ProjectPreparation, call: PythonParsedCall, path: string, handler: RouteHandler, endLine: number) {

@@ -7,6 +7,7 @@ import { analyzeArchitectureFacts } from "../src/core/architecture/extract.js";
 import { analyzePythonAsync } from "../src/core/architecture/project/python-async.js";
 import { loadLocalRepositorySources } from "../src/core/source/local.js";
 import { analyzePythonRoutes } from "../src/core/architecture/project/python-routes.js";
+import { analyzePythonDjangoOrm } from "../src/core/architecture/project/python-orm.js";
 import { createUnavailableAdapter } from "../src/core/architecture/project/adapter.js";
 import { buildSourceCensus } from "../src/core/architecture/census.js";
 import { prepareProjects } from "../src/core/architecture/project/prepare.js";
@@ -1036,5 +1037,273 @@ describe("M8 Python protocols", () => {
     });
     expect(analysis.routeGraph.routes.map((route) => `${route.method} ${route.path}`)).toEqual(["GET /v2/api/status"]);
     expect(analysis.routeGraph.coverage.missing).toHaveLength(0);
+  });
+});
+
+describe("Django ORM operations", () => {
+  const settings = [
+    "DATABASES = {",
+    '    "default": {"ENGINE": "django.db.backends.postgresql", "NAME": "hc"},',
+    "}",
+  ].join("\n");
+  const models = [
+    "from django.db import models",
+    "",
+    "class Check(models.Model):",
+    "    code = models.CharField(max_length=10)",
+    "",
+    "class Ping(models.Model):",
+    "    code = models.CharField(max_length=10)",
+    "",
+    "class Profile(models.Model):",
+    "    user = models.CharField(max_length=10)",
+  ].join("\n");
+  type OrmOperation = { id: string; action: string; driver: string; resolution: string; callSite: string; owner: string; declarationIds: string[] };
+  function orm(analysis: ReturnType<typeof analyze>) {
+    const operations = analysis.ir.operations.filter((operation) => operation.id.startsWith("operation:orm:")) as unknown as OrmOperation[];
+    return {
+      operations,
+      sites: operations.map((operation) => `${operation.action} ${operation.callSite.replace(/^[\w/]+\.py:/, "")}`).sort(),
+      omissions: analysis.omissions.filter((omission) => omission.id.includes("python-orm")),
+      declarations: analysis.declarations.declarations.filter((declaration) => declaration.capability === "independent-django-orm-structure"),
+    };
+  }
+
+  it("extracts manager-rooted Django ORM calls as sql operations with their actions", () => {
+    const result = orm(analyze({ "app/settings.py": settings, "app/models.py": models, "app/wsgi.py": "from django.core.wsgi import get_wsgi_application\n", "app/views.py": [
+      "from .models import Check, Ping",
+      "def view(request):",
+      "    a = Check.objects.get(code='x')",
+      "    b = Check.objects.filter(user=request.user)",
+      "    c = Check.objects.filter(user=request.user).count()",
+      "    d = Ping.objects.create(code='y')",
+      "    e = Check.objects.filter(code='y').update(status='down')",
+      "    f = Check.objects.filter(code='y').delete()",
+      "    g = Check.objects.get_or_create(code='z')",
+      "    h = Check.objects.filter(code='y').iterator()",
+    ].join("\n") }));
+    expect(result.sites).toEqual(["read 10", "read 3", "read 4", "read 5", "read-write 9", "write 6", "write 7", "write 8"]);
+    expect(result.operations.every((operation) => operation.driver === "postgres" && operation.resolution === "static" && operation.declarationIds.length === 1)).toBe(true);
+    // Owned by the runtime that owns the call site, like every other SQL operation.
+    expect(result.operations.every((operation) => operation.owner === "python:app")).toBe(true);
+    expect(result.declarations).toHaveLength(8);
+    expect(result.declarations.every((declaration) => declaration.kind === "operation" && declaration.critical)).toBe(true);
+    expect(result.omissions).toHaveLength(0);
+  });
+
+  it("ignores .objects access outside Django projects and ORM-named calls on other receivers", () => {
+    const result = orm(analyze({
+      "app/models.py": ["class Registry:", "    objects = []"].join("\n"),
+      "app/views.py": [
+        "def view(request, form, check, data):",
+        "    a = Registry.objects.filter(x=1)",
+        "    b = request.GET.get('a')",
+        "    c = form.save()",
+        "    d = check.delete()",
+        "    e = data.update(x=1)",
+        "    return [a, b, c, d, e]",
+      ].join("\n"),
+    }));
+    expect(result.operations).toHaveLength(0);
+    expect(result.declarations).toHaveLength(0);
+    expect(result.omissions).toHaveLength(0);
+  });
+
+  it("keeps ORM-named calls on non-manager receivers out of the denominator inside Django projects", () => {
+    const result = orm(analyze({ "app/settings.py": settings, "app/models.py": models, "app/views.py": [
+      "from .models import Check",
+      "def view(request, form, check, data, checks, project):",
+      "    a = form.save()",
+      "    b = check.delete()",
+      "    c = data.update(x=1)",
+      "    d = checks.count()",
+      "    e = project.check_set.all()",
+      "    f = Check.objects.filter(owner=request.user).first()",
+      "    return [a, b, c, d, e, f]",
+    ].join("\n") }));
+    // Instance methods, queryset variables and related managers need binding
+    // analysis; they are outside this denominator, not silently counted.
+    expect(result.sites).toEqual(["read 8"]);
+    expect(result.declarations).toHaveLength(1);
+    expect(result.omissions).toHaveLength(0);
+  });
+
+  it("does not count manager calls quoted in string literals", () => {
+    const result = orm(analyze({ "app/settings.py": settings, "app/models.py": models, "app/docs.py": [
+      "EXAMPLES = [",
+      "    \"Check.objects.get(code='x')\",",
+      "    'Ping.objects.all()',",
+      "    \"\"\"Profile.objects.filter(user=u)\"\"\",",
+      "]",
+    ].join("\n") }));
+    expect(result.operations).toHaveLength(0);
+    expect(result.declarations).toHaveLength(0);
+    expect(result.omissions).toHaveLength(0);
+  });
+
+  it("fails closed when a manager access is rooted on a class that is not a Django model", () => {
+    const result = orm(analyze({ "app/settings.py": settings, "app/models.py": [
+      "from django import forms",
+      "from django.db import models",
+      "",
+      "class CheckForm(forms.Form):",
+      "    code = forms.CharField()",
+      "",
+      "class Check(models.Model):",
+      "    code = models.CharField(max_length=10)",
+    ].join("\n"), "app/views.py": [
+      "from .models import Check, CheckForm",
+      "def view(request):",
+      "    a = Check.objects.all()",
+      "    b = CheckForm.objects.all()",
+      "    c = Registry.objects.all()",
+      "    return [a, b, c]",
+    ].join("\n") }));
+    expect(result.sites).toEqual(["read 3"]);
+    expect(result.declarations).toHaveLength(3);
+    expect(result.omissions.map((omission) => `${omission.reason} ${omission.detail}`)).toEqual([
+      "unknown-identity Django manager access is rooted on a class that is not a Django model at app/views.py:4",
+      "unknown-identity Django manager access is rooted on a class that is not a Django model at app/views.py:5",
+    ]);
+    expect(result.omissions.every((omission) => omission.blocking && omission.affectedViews.includes("protocol-flows") && omission.affectedViews.includes("full-declared-scope"))).toBe(true);
+    expect(result.omissions.every((omission) => omission.declarationIds.length === 1)).toBe(true);
+  });
+
+  it("classifies a manager chain by its terminal method and emits one operation per statement", () => {
+    const result = orm(analyze({ "app/settings.py": settings, "app/models.py": models, "app/views.py": [
+      "from .models import Check, Ping",
+      "def view(request, owner):",
+      "    a = Check.objects.filter(owner=owner).exclude(code='x').order_by('code').count()",
+      "    b = Check.objects.filter(project__in=Ping.objects.filter(owner=owner).values_list('id', flat=True))",
+      "    c = Check.objects.filter(owner=owner).first()",
+      "    return [a, b, c]",
+    ].join("\n") }));
+    expect(result.sites).toEqual(["read 3", "read 4", "read 4", "read 5"]);
+    expect(result.declarations).toHaveLength(4);
+    expect(new Set(result.operations.map((operation) => operation.id)).size).toBe(4);
+    expect(result.omissions).toHaveLength(0);
+  });
+
+  it("binds model roots through aliased imports, module-qualified names and function-local imports", () => {
+    const result = orm(analyze({ "app/settings.py": settings, "app/api/__init__.py": "", "app/api/models.py": models, "app/views.py": [
+      "from app.api.models import Check as Ck",
+      "from app.api import models as api_models",
+      "import app.api.models",
+      "def view():",
+      "    a = Ck.objects.all()",
+      "    b = api_models.Ping.objects.all()",
+      "    c = app.api.models.Check.objects.all()",
+      "    from app.api.models import Ping",
+      "    d = Ping.objects.all()",
+      "    return [a, b, c, d]",
+    ].join("\n") }));
+    expect(result.sites).toEqual(["read 5", "read 6", "read 7", "read 9"]);
+    expect(result.omissions).toHaveLength(0);
+  });
+
+  it("accepts Django's own model classes as roots and as model bases", () => {
+    const result = orm(analyze({ "app/settings.py": settings, "app/models.py": [
+      "from django.contrib.auth.models import AbstractUser",
+      "class Member(AbstractUser):",
+      "    pass",
+    ].join("\n"), "app/views.py": [
+      "from django.contrib.auth.models import User",
+      "from .models import Member",
+      "def view():",
+      "    a = User.objects.filter(is_active=True)",
+      "    b = Member.objects.all()",
+      "    return [a, b]",
+    ].join("\n") }));
+    expect(result.sites).toEqual(["read 4", "read 5"]);
+    expect(result.omissions).toHaveLength(0);
+  });
+
+  it("takes the driver from the declared Django database engines", () => {
+    const run = (settingsLines: string[]) => orm(analyze({ "app/settings.py": settingsLines.join("\n"), "app/models.py": models, "app/views.py": [
+      "from .models import Check",
+      "def view():",
+      "    return Check.objects.all()",
+    ].join("\n") }));
+    const single = run(["DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3'}}"]);
+    expect(single.operations.map((operation) => `${operation.driver} ${operation.resolution}`)).toEqual(["sqlite static"]);
+    expect(single.omissions).toHaveLength(0);
+    // One database alias whose engine is selected by configuration: the
+    // operation names the candidate engines instead of guessing one.
+    const configured = run([
+      "import os",
+      "DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3'}}",
+      "if os.getenv('DB') == 'postgres':",
+      "    DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql', 'OPTIONS': {'sslmode': 'require'}}}",
+    ]);
+    expect(configured.operations.map((operation) => `${operation.driver} ${operation.resolution}`)).toEqual(["postgres|sqlite configured"]);
+    expect(configured.omissions).toHaveLength(0);
+    // Several aliases with different engines: the call does not say which
+    // database it targets, so it is kept but blocks.
+    const several = run([
+      "DATABASES = {",
+      "    'default': {'ENGINE': 'django.db.backends.postgresql'},",
+      "    'stats': {'ENGINE': 'django.db.backends.sqlite3'},",
+      "}",
+    ]);
+    expect(several.operations.map((operation) => `${operation.driver} ${operation.resolution}`)).toEqual(["postgres|sqlite dynamic"]);
+    expect(several.omissions.map((omission) => omission.reason)).toEqual(["unknown-identity"]);
+    // No engine literal in the snapshot at all.
+    const unknown = run(["import os", "DATABASES = {'default': {'ENGINE': os.getenv('DB_ENGINE')}}"]);
+    expect(unknown.operations.map((operation) => `${operation.driver} ${operation.resolution}`)).toEqual(["unknown unknown"]);
+    expect(unknown.omissions.map((omission) => omission.reason)).toEqual(["unknown-identity"]);
+  });
+
+  it("keeps an unclassified manager method as an operation with a blocking omission", () => {
+    const result = orm(analyze({ "app/settings.py": settings, "app/models.py": models, "app/views.py": [
+      "from .models import Profile",
+      "def view(user):",
+      "    return Profile.objects.for_user(user)",
+    ].join("\n") }));
+    expect(result.sites).toEqual(["unknown 3"]);
+    expect(result.omissions.map((omission) => `${omission.reason} ${omission.detail}`)).toEqual([
+      "uncertain-direction Django manager method for_user on Profile.objects is not a classified queryset method at app/views.py:3",
+    ]);
+    expect(result.omissions[0].blocking).toBe(true);
+    expect(result.omissions[0].declarationIds).toHaveLength(1);
+  });
+
+  it("binds the historical models a data migration obtains from apps.get_model, and only there", () => {
+    const dataMigration = [
+      "from django.db import migrations",
+      "",
+      "def forwards(apps, schema_editor):",
+      '    Check = apps.get_model("api", "Check")',
+      "    for check in Check.objects.all():",
+      "        Check.objects.filter(id=check.id).update(code='x')",
+      "    return Check.objects.count()",
+      "",
+      "class Migration(migrations.Migration):",
+      "    dependencies = []",
+      "    operations = [migrations.RunPython(forwards)]",
+    ].join("\n");
+    const inMigration = orm(analyze({ "app/settings.py": settings, "app/api/models.py": models, "app/api/migrations/0011_fill.py": dataMigration }));
+    expect(inMigration.sites).toEqual(["read 5", "read 7", "write 6"]);
+    expect(inMigration.omissions).toHaveLength(0);
+    // The same function outside a migration module has no app registry behind it.
+    const elsewhere = orm(analyze({ "app/settings.py": settings, "app/api/models.py": models, "app/api/jobs.py": dataMigration }));
+    expect(elsewhere.operations).toHaveLength(0);
+    expect(elsewhere.omissions.map((omission) => omission.reason)).toEqual(["unknown-identity", "unknown-identity", "unknown-identity"]);
+  });
+
+  it("keeps independent ORM declarations when the parser is disabled", () => {
+    const sources = [
+      source("app/settings.py", settings),
+      source("app/models.py", models),
+      source("app/views.py", "from .models import Check\nCheck.objects.all()\nCheck.objects.filter(code='x').count()\n"),
+    ];
+    const census = buildSourceCensus({ revision, inventory: sources.map((item) => ({ path: item.path, size: 0, entryKind: "file" as const, selected: true })) });
+    const snapshot = createSourceSnapshot({ revision, sources, census });
+    const project = prepareProjects({ revision, snapshot, census, adapters: [createUnavailableAdapter("ast-python", ["python"], "disabled")] });
+    const extraction = analyzePythonDjangoOrm({ snapshot, project, enabled: false });
+    expect(extraction.declarations).toHaveLength(2);
+    expect(extraction.operations).toHaveLength(0);
+    expect(extraction.omissions).toHaveLength(1);
+    expect(extraction.omissions[0].reason).toBe("parser-unavailable");
+    expect(extraction.omissions[0].declarationIds).toHaveLength(2);
   });
 });

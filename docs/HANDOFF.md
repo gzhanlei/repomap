@@ -1,7 +1,7 @@
 # RepoMap 接手文档
 
 - 更新日期：2026-11-23
-- 代码基线：`25169ff` 加上其后的 Flask `register_blueprint` 前缀覆盖修复提交（本地与 origin/main 一致：已含 SQLAlchemy/Celery/RQ/Django 真实语料批次、脚本式入口检测、函数内导入的路由作用域修复 433a30e、flask 接入 gold:report 25169ff。账本最新发布停在 #256 @ `e0af3f9`，其后的 push 未触发分析，见 §9）
+- 代码基线：`25169ff` 加上其后的 Flask `register_blueprint` 前缀覆盖修复与 Django ORM 切片提交（本地与 origin/main 一致：已含 SQLAlchemy/Celery/RQ/Django 真实语料批次、脚本式入口检测、函数内导入的路由作用域修复 433a30e、flask 接入 gold:report 25169ff。账本最新发布停在 #256 @ `e0af3f9`，其后的 push 未触发分析，见 §9）
 - 远程仓库：`https://github.com/gzhanlei/repomap`
 - 当前分支：`main`
 
@@ -32,11 +32,12 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 - Flask 路由解析的作用域修复（2026-11-23）：router 组合解析此前只在模块级导入里找名字绑定，应用工厂里函数体内的 `from . import views` + `app.register_blueprint(views.bp)` 会退到"快照内唯一 `views.py` 文件名"兜底——flask 语料 `examples/**` 有三个 `views.py`，于是在 `examples/celery/src/task_app/__init__.py:25` 报出假的 `unresolved-import` 阻断 omission（路由本身由 Blueprint 声明产出、17/17 不丢，所以 gold 没暴露；现有单测只因夹具里只有一个 `views.py` 才通过）。修复：解析器为函数内导入记录所属函数的行范围（`PythonParsedImport.enclosingFunction`），`python-routes.ts` 新增 `importBindingAt` 按 Python 名字解析规则取绑定——函数内导入只在所属函数内且已执行到的行生效，否则取模块级导入；router 子引用、前缀常量和 `project.imports` 候选（按语句行号区分同名模块的重复导入）统一走它。同时去掉 `8b476f0` 为同一问题加的"唯一文件名"兜底（当时把函数内导入误判为"解析到包 `__init__`"）：名字没有导入绑定时按文件名猜与 §2"未知身份必须形成 omission"相悖，去掉后无绑定的引用失败关闭。flask 路由 omission 2→1（只剩设计内的 add_url_rule），其余八语料 236 个语义产物文件与修复前逐字节一致。
 - flask 语料接入 `gold:report`（2026-11-23）：`pallets/flask@49943b5a` examples/** 的 17 条路由 Gold（两个完整枚举 scope：flaskr 12/12、celery task app 5/5）此前只登记在 manifest、从未进报告脚本——`8b476f0` 晚于建脚本的 `680fe76`，是漏接而非卡住；作用域修复后接入，**九语料 1002/1002 critical facts、0 FP、0 invalid evidence**，flask 的 analyze 门禁通过（退出码 0，无需 expectedGateFailure），唯一路由 omission 是设计内的 add_url_rule。
 - Flask `register_blueprint` 前缀覆盖修复（2026-11-23）：`register_blueprint(bp, url_prefix=…)` 的注册前缀按 Flask 语义**替换**蓝图自身的 `url_prefix`，此前与 FastAPI 的 `include_router` 一样被拼接——自身前缀为 `/api` 的蓝图以 `url_prefix='/v2'` 注册会得到 `/v2/api/...`。依据是固定版本归档里的 Flask 源码（`src/flask/sansio/blueprints.py`：`url_prefix = options.get("url_prefix")`，仅为 None 时回退到蓝图自身；嵌套蓝图取父前缀 + 子蓝图的有效前缀）；显式 `url_prefix=''` 同样取消自身前缀。FastAPI `include_router` 逐层拼接的语义不变。flask 语料没有这种组合，九语料 260 个语义产物逐字节不变；行为由 4 个单测钉住（含 FastAPI 守卫），两个错误修法经变异验证都会被拦住。
+- Django ORM 切片（2026-11-23）：管理器根的 ORM 语句 `Model.objects.<…>` 进入 SQL 操作，新提取器 `project/python-orm.ts`。模型登记册按类基类建立——`django.db.models.Model`、仓库内的模型子类（含传递继承）、Django 自带的 `AbstractUser/AbstractBaseUser/PermissionsMixin`；同样来自 Django 的 `forms.Form`、`BaseCommand`、`ModelAdmin` 等不算模型。根经导入绑定解析（别名、模块限定名、函数内导入），从 `django.*` 导入的类视为外部模型。链式调用一条语句一个操作，按终端方法分类：`create/update/delete/bulk_*` = write，`get/count/first/exists/iterator…` = read，`get_or_create/update_or_create` = read-write，以惰性查询构建方法结尾的语句记为 read。数据迁移里 `X = apps.get_model(...)` 绑定的名字视为历史模型（仅限迁移模块）。独立分母是原始扫描的 `<Model>.objects.<方法>(` 行（字符串字面量不算，小写属主如 `self.objects.get` 不算），解析器不可用时声明保留并阻断；根不是模型 → unknown-identity 阻断；未分类的管理器方法 → 操作保留 + uncertain-direction 阻断；声明找不到对应调用 → 阻断。只在导入了 Django 的项目里生效。**driver** 取快照里 `ENGINE: "django.db.backends.*"` 字面量归一后的引擎族：唯一为 static；单别名多引擎（按配置切换，如 healthchecks 的 `DB` 环境变量）为 `resolution: configured`、driver 写候选集合 `mysql|postgres|sqlite`、不阻断——**这一条作者未作答，按推荐方案实施，可以改**；多别名多引擎为 dynamic + unknown-identity 阻断；没有引擎字面量为 unknown + 阻断。操作 owner 归调用点所在的 runtime。healthchecks 上 161 条操作（迁移文件外 120 + 数据迁移内 41）与一份独立的 Python AST 枚举脚本按方法逐类吻合，owner 全部 `python:hc`，全仓库 SQL 操作由 5 条增至 166 条，另有 13 条自定义管理器方法（`for_user` 10、`for_api_key` 3）方向不确定阻断；celery 的 Django 示例多出 2 条（`Widget.objects.count/get`）；其余七语料逐字节不变。**这些数字是机器对账，不是人工审计的 Gold。**
 
 尚未完成：
 
 - M7 发布资格（未完成）：`npm run gold:report` 已覆盖九语料 1002/1002（见上），但 `docs/release-qualification.v1.json` 仍停在 `680fe76` 的四语料 237 条，需要在单一 HEAD 上重跑 `gold:report`、`perf:gate`、`smoke:production` 并全部退出 0 后重新汇总——本地 perf:gate 目前在本机不稳定（§9），2026-11-23 未重新汇总。批准块（decision/decidedBy/decidedAt）与 FastAPI 视觉独立确认留给作者，receipt `visualReview` 仍为 `pending`。writefreely 与 commerce 两个语料仍是 pinned-not-audited。
-- Django ORM（`Model.objects.*`、`.save()` 等目前不产生 SQL 操作）、完整动态依赖注入/ORM/SSA，以及更多语言和真实仓库审查。
+- Django ORM 的其余形态：实例方法（`obj.save()`/`delete()`）、查询集与关联管理器变量上的调用（`qs.count()`、`project.check_set.all()`）需要作用域内的绑定分析，不在当前分母里；自定义管理器方法的方向（目前保留操作并阻断）；非 Django 的第三方模型基类（阻断）；Django 模式迁移（`migrations.CreateModel/AddField/AlterField…`，healthchecks 约 250 处，尚不产生 migration 操作）。此外还有完整动态依赖注入/ORM/SSA，以及更多语言和真实仓库审查。
 - 可选 Harness/LLM enrichment 尚未实现；默认分析保持 `aiRequests: 0`。
 
 **`fullArchitecture: true` 只表示某个固定输入在声明范围内通过语义门禁，不表示所有 Python 项目均受支持，也不等于 M7 或发布资格完成。**
@@ -71,6 +72,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 | `src/core/architecture/project/python.ts` | Python import/module 解析 |
 | `src/core/architecture/project/python-routes.ts` | FastAPI/Flask routes、APIRouter/Blueprint composition（`importBindingAt` 按作用域取导入绑定）、Django urls.py routes、独立 route declarations |
 | `src/core/architecture/project/python-async.ts` | asyncio/Celery/rq/broker operations（含 test 角色的 python 文件）和独立 async declarations |
+| `src/core/architecture/project/python-orm.ts` | Django ORM 管理器调用 → SQL operations（模型登记册、根解析、终端方法分类、ENGINE 驱动）和独立 orm declarations |
 | `src/core/architecture/detectors/python.ts` | Python runtime entrypoints 和最近入口 ownership |
 | `src/core/architecture/detectors/storage.ts` | store 信号、driver-aware SQL evidence 和 runtime/store 关系 |
 | `src/core/architecture/sql-operations.ts` | 可执行 SQL operation 分类、ownership 和 driver 歧义 omissions |
@@ -108,6 +110,10 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 - 支持 `session.get/exec/query` 和多行 SQL 上下文分类。
 - SQLAlchemy 2.0 会话方法：`session.scalars/stream` 归 read、`add_all` 归 write；独立调用行、`sess` 别名和大写 `Session` 接收器都能识别。
 - 文件自身没有驱动提及、而所属 runtime unit 的驱动集合唯一时，SQL 证据回退到单元驱动集合（包级 `create_engine`）。
+- Django ORM 的管理器根语句 `Model.objects.<…>`：模型按类基类登记、根经导入绑定解析；一条语句一个操作，按终端方法分类，惰性查询构建记为 read；数据迁移里 `apps.get_model(...)` 绑定的名字视为历史模型。
+- ORM 调用的 driver 取自 Django `DATABASES` 的 ENGINE 字面量：引擎唯一为 static；单别名多引擎为 configured（driver 写候选集合，不阻断）；多别名多引擎或没有引擎字面量时阻断。
+- 只在导入了 Django 的项目中生效；`Model.objects` 之外的 ORM 形态不进入分母（见 §4.6）。
+- ORM 操作目前只进入 IR 和流程视图，不产生 runtime → store 的 facts 边。纯 ORM 的 Django 项目里，由引擎字面量检出的 store 节点在 runtime overview 中不可达，整体交付因 coverage 不可发布而失败——这是既有行为，在 ORM 切片之前的同一份代码上结果相同。
 - import、schema 声明和 `create_engine` 只支撑 store/schema coverage，不生成伪造的 runtime operation。
 - Alembic `op.*` 调用归执行它的 runtime；纯 schema resource 可归 store。
 - 多数据库下，driver-neutral 或 driver 歧义调用不会扇出到多个 store，而是生成阻断 omission。
@@ -132,7 +138,7 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 ### 4.6 明确未支持
 
-- Django 在 `urls.py` 的 `path()/re_path()` 之外的能力：ORM（`Model.objects.*`、`.save()` 等不产生 SQL 操作——healthchecks 全仓库 IR 只有 5 条 SQL）和 `admin.site.urls` 这类视图间接引用；rq 的动态 job 参数；任意动态 route registration 和完整 ASGI/WSGI dependency injection。
+- Django 在 `urls.py` 路由和管理器根 ORM 语句之外的能力：实例方法（`obj.save()`/`delete()`/`refresh_from_db()`）、查询集与关联管理器变量上的调用（`qs.count()`、`project.check_set.all()`）、自定义管理器/QuerySet 方法的方向（保留操作并阻断）、非 Django 的第三方模型基类（阻断）、Django 模式迁移（`migrations.CreateModel/AddField/…` 尚不产生 migration 操作），以及 `admin.site.urls` 这类视图间接引用；rq 的动态 job 参数；任意动态 route registration 和完整 ASGI/WSGI dependency injection。
 - 完整 ORM 类型系统、SSA、动态分派和运行时生成模型。
 - 所有自定义 HTTP session/wrapper、所有 broker 和所有 Python 框架。
 - 以上边界不能被“Python full 已通过”掩盖；相应输入必须失败关闭或保持明确 partial。
@@ -141,9 +147,9 @@ RepoMap 是一个本地、确定性的架构分析 CLI。它从固定源码快�
 
 ### 5.1 最新全量检查
 
-在代码基线 `25169ff` 加上 Flask 前缀覆盖修复上（2026-11-23，darwin arm64，node v25.5.0）：
+在代码基线 `25169ff` 加上 Flask 前缀覆盖修复与 Django ORM 切片上（2026-11-23，darwin arm64，node v25.5.0）：
 
-- `npm test`：**37 个测试文件、297 项测试通过**。
+- `npm test`：**37 个测试文件、309 项测试通过**。
 - `npm run typecheck`：通过。
 - `npm run build`：通过。
 - `npm run smoke:production`：通过；生产包中 Go/Python parser 可用，Python route 为 1 条、总 route 为 2 条、Python async operations 为 3 条。
@@ -306,7 +312,7 @@ node dist/cli.js analyze \
 ### P1：Python 真实仓库与协议扩展
 
 - 已有固定 SHA 真实语料：Flask、SQLAlchemy、Celery、Django（urls.py 路由）、RQ（§5.6）；asyncio 还没有人工审计语料。
-- 下一个候选切片：Django ORM → SQL 操作（healthchecks 的路由有 148 条，但全仓库 IR 只有 5 条 SQL；归档里粗数约 765 行 `.objects.<方法>(`、935 行 `.save(`，含测试代码）。
+- 下一个候选切片（Django）：模式迁移 → migration 操作（`migrations.CreateModel/AddField/AlterField…`，healthchecks 约 250 处，标记明确、可原始扫描）；ORM 的实例方法与查询集变量调用（需要作用域内的绑定分析）；自定义管理器方法的方向。Django ORM 的人工审计 Gold 还没有做——现有 161 条只是与独立脚本的机器对账。
 - 每个新框架或协议先写独立 declarations、负例和失败关闭测试。
 - 扩展动态 ORM/SSA、HTTP wrapper 和 broker 时，不能复用“同名方法即协议”的捷径。
 
@@ -326,4 +332,5 @@ node dist/cli.js analyze \
 - GitHub anonymous API 可能限流；优先使用固定 SHA 和已有 archive cache，不在命令或日志中暴露 token。
 - `docs/gold-manifest.v1.json` 现含九个 human-audited-targeted 语料，全部接入 `gold:report`；writefreely 与 commerce 仍是 pinned-not-audited。sqlalchemy、celery、django-healthchecks、rq 四个条目尚未登记 archiveSha256（其余七个都有）。
 - **本地 perf gate 噪声（2026-11-23）**：同一份代码在本机的 6 次峰值 RSS——`680fe76` 为 751,550,464–1,132,445,696 字节（3/6 超阈值）、`401b50b` 为 958,038,016–1,102,495,744（5/6 超阈值）、`f949b59` 3 次为 939,638,784–1,069,236,224、`25169ff` 3 次为 950,288,384–1,110,867,968（退出码 1）；文档记录的本地基线是 916,619,264；同期 CI 三次运行的最大值分别为 945,750,016（`f949b59`）、891,551,744（`433a30e`）、880,959,488 字节（`25169ff`）。当日本机 swap 已用 14.1/15.4GB、负载约 5，原因未验证（推测是内存压力改变了 GC 时序）。阈值未改动。本地 perf:gate 失败时不要归因于切片：先对基线提交做临时 worktree 的 A/B（各 ≥6 次、比较范围），以 CI 的 performance-gate（ubuntu/node 22）为准。
+- **Django ORM 的数字是机器对账**（2026-11-23）：healthchecks 的 161 条 ORM 操作与一份独立的 Python AST 枚举脚本按方法逐类吻合，但没有经过人工审计，不是 Gold；gold-manifest 里没有对应的 sql-operation facts。单别名多引擎按 `configured` 身份处理、不阻断，是在作者未作答时按推荐方案实施的，可改。
 - **账本对账积压（2026-11-23）**：codelphi 账本的最新分析与发布停在 run 371 / #256 @ `e0af3f9`；其后的 push（`401b50b`、`f949b59`、`433a30e`、`25169ff`）都没有触发分析（`wait_for_release` 返回 `analysisRunId: null`），需要在 codelphi 侧检查 webhook/摄取；恢复后对这段区间的发布做意图对账。

@@ -26,9 +26,10 @@ import { buildGoModuleGraph, goModuleGraphEvidenceReferences } from "./project/g
 import { analyzeGoRoutes } from "./project/go-routes.js";
 import { analyzePythonRoutes } from "./project/python-routes.js";
 import { analyzeTypeScriptRoutes } from "./project/ts-routes.js";
-import { operationEvidenceReferences, sqlOperationFacts, sqlOperationOmissions } from "./sql-operations.js";
+import { operationEvidenceReferences, operationOwner, sqlOperationFacts, sqlOperationOmissions } from "./sql-operations.js";
 import { analyzeGoAsync } from "./project/go-async.js";
 import { analyzePythonAsync } from "./project/python-async.js";
+import { analyzePythonDjangoOrm, type OrmExtraction } from "./project/python-orm.js";
 import { analyzeTypeScriptAsync } from "./project/ts-async.js";
 import { buildAsyncGraph, type AsyncGraph } from "./project/async-graph.js";
 import { buildRouteGraph, candidateOperationFacts, routeGraphEvidenceReferences, routeOperationFacts, type RouteGraph } from "./project/route-graph.js";
@@ -193,6 +194,33 @@ function withAsyncDeclarations(base: ReturnType<typeof withRouteDeclarations>, g
   };
 }
 
+function appendDeclarations<B extends { declarations: DeclarationRecord[] }>(base: B, added: DeclarationRecord[]) {
+  const all = [...base.declarations, ...added].sort((a, b) => a.declarationId.localeCompare(b.declarationId));
+  return {
+    ...base,
+    declarations: all,
+    statistics: {
+      total: all.length,
+      critical: all.filter((declaration) => declaration.critical).length,
+      byKind: Object.fromEntries([...new Set(all.map((declaration) => declaration.kind))].sort().map((kind) => [kind, all.filter((declaration) => declaration.kind === kind).length])),
+    },
+  };
+}
+
+function withOrmDeclarations(base: ReturnType<typeof withAsyncDeclarations>, orm: OrmExtraction, snapshot: ReturnType<typeof createSourceSnapshot>) {
+  return appendDeclarations(base, orm.declarations.map((declaration) => ({
+    declarationId: declaration.id,
+    kind: "operation" as const,
+    owner: snapshot.files.find((file) => file.path === declaration.path)?.packageId ?? "package:root",
+    required: true,
+    critical: true,
+    sourcePath: declaration.path,
+    detail: "django orm manager call",
+    capability: "independent-django-orm-structure",
+    evidenceIds: [],
+  })));
+}
+
 export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory, "revision" | "scope">, sources: ArchitectureSource[], options: ArchitectureAnalysisOptions = {}) {
   // Lockfiles remain in the raw census but never enter evidence or signal scans.
   const candidateSources = sources.filter((source) => isArchitectureSourcePath(source.path) && !isLockfilePath(source.path));
@@ -255,9 +283,14 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     ],
   });
 
+  // Django ORM calls are manager-rooted expressions (`Model.objects...`). Like
+  // the async extractor this reads the same immutable snapshot and never
+  // touches facts v1.
+  const djangoOrm = analyzePythonDjangoOrm({ snapshot, project, enabled: project.parsers.find((parser) => parser.id === "ast-python")?.status !== "unavailable" });
+
   // Independent declaration discovery runs before any semantic detector.
   const structuralDeclarations = buildDeclarationInventory({ revision: input.revision, census: baseCensus, sources: runtimeSources });
-  const rawDeclarations = withAsyncDeclarations(withRouteDeclarations(structuralDeclarations, routeGraph, snapshot), asyncGraph, snapshot);
+  const rawDeclarations = withOrmDeclarations(withAsyncDeclarations(withRouteDeclarations(structuralDeclarations, routeGraph, snapshot), asyncGraph, snapshot), djangoOrm, snapshot);
   const censusWithDeclarations = linkCensusDeclarations(baseCensus, rawDeclarations);
 
   const inventory = collectArchitectureSignals(input, runtimeSources);
@@ -265,6 +298,13 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   const signals = [...inventory.signals, ...generic.signals].sort((a, b) => a.id.localeCompare(b.id));
   const enrichedInventory = { ...inventory, signals };
   const { facts, candidates } = extractWithInventory(input, runtimeSources, enrichedInventory);
+  // Django ORM operations belong to the runtime that owns their call site,
+  // like every other SQL operation; the package is only the fallback.
+  const ormOperations = djangoOrm.operations.map((operation) => {
+    const [path, line] = (operation.callSite ?? "").split(/:(\d+)$/);
+    const owner = operationOwner(facts, { path }, { from: operation.owner });
+    return owner === operation.owner ? operation : ({ ...operation, owner } as typeof operation);
+  });
   const coverage = evaluateArchitectureCoverage(enrichedInventory, facts);
   const declarationCoverage = evaluateDeclarationCoverage(rawDeclarations, facts);
   const mutation = mutationCheck(rawDeclarations, facts);
@@ -273,7 +313,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     const match = omission.owner.match(/^python-sql:(.*):(\d+)$/);
     return match ? [evidenceRecord({ path: match[1], line: Number(match[2]), detector: "python-sql-operation" })] : [];
   });
-  const operationFacts = [...routeOperationFacts(routeGraph), ...candidateOperationFacts(candidates), ...sqlOperationFacts(facts, runtimeSources), ...asyncGraph.operations];
+  const operationFacts = [...routeOperationFacts(routeGraph), ...candidateOperationFacts(candidates), ...sqlOperationFacts(facts, runtimeSources), ...asyncGraph.operations, ...ormOperations];
   const candidateEvidenceRecords = candidates.flatMap((candidate) => [
     evidenceRecord(candidate.evidence),
     ...(candidate.configEvidence ? [evidenceRecord(candidate.configEvidence)] : []),
@@ -295,7 +335,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   // One lossless index: regex runtime evidence, AST imports, routes and direct calls.
   const evidence = mergeEvidenceIndex(
     buildEvidenceIndex(input.revision, facts),
-    [...moduleGraph.evidenceRecords, ...goModuleGraph.evidenceRecords, ...routeGraph.evidenceRecords, ...candidateEvidenceRecords, ...asyncGraph.evidenceRecords, ...sqlOmissionEvidenceRecords],
+    [...moduleGraph.evidenceRecords, ...goModuleGraph.evidenceRecords, ...routeGraph.evidenceRecords, ...candidateEvidenceRecords, ...asyncGraph.evidenceRecords, ...djangoOrm.evidenceRecords, ...sqlOmissionEvidenceRecords],
     [...moduleGraphEvidenceReferences(moduleGraph), ...goModuleGraphEvidenceReferences(goModuleGraph), ...routeGraphEvidenceReferences(routeGraph), ...candidateEvidenceReferences, ...operationEvidenceReferences(operationFacts.filter((operation) => operation.kind === "sql" || operation.kind === "queue" || operation.kind === "schedule"))],
   );
   const declarations = {
@@ -318,7 +358,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
     buildContext: options.buildContext,
     parsers: project.parsers,
   });
-  const omissions = [...omissionsFrom(baseCensus, rawDeclarations, facts), ...project.omissions, ...moduleGraph.omissions, ...goModuleGraph.omissions, ...routeGraph.omissions, ...asyncGraph.omissions, ...sqlOmissions];
+  const omissions = [...omissionsFrom(baseCensus, rawDeclarations, facts), ...project.omissions, ...moduleGraph.omissions, ...goModuleGraph.omissions, ...routeGraph.omissions, ...asyncGraph.omissions, ...djangoOrm.omissions, ...sqlOmissions];
   const ir = buildArchitectureIr({
     revision: input.revision,
     view: defaultArchitectureView,
@@ -336,7 +376,7 @@ export function analyzeArchitectureFacts(input: Pick<ArchitectureSignalInventory
   return {
     inventory: enrichedInventory, facts, coverage, candidates,
     census, evidence, declarations, declarationCoverage, mutation,
-    scope, ir, projection, omissions, project, moduleGraph, goModuleGraph, routeGraph, asyncGraph, snapshotId: snapshot.snapshotId,
+    scope, ir, projection, omissions, project, moduleGraph, goModuleGraph, routeGraph, asyncGraph, djangoOrm, snapshotId: snapshot.snapshotId,
     view: defaultArchitectureView,
   };
 }

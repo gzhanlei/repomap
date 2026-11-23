@@ -73,7 +73,8 @@ function actionFor(evidence: ArchitectureEvidence, source: ArchitectureSource | 
   return "read-write";
 }
 
-function operationOwner(facts: ArchitectureFactSet, evidence: ArchitectureEvidence, edge: ArchitectureFactSet["edges"][number]) {
+/** The runtime that owns an operation called at `evidence.path`: the deepest runtime unit listing that path. */
+export function operationOwner(facts: ArchitectureFactSet, evidence: Pick<ArchitectureEvidence, "path">, edge: Pick<ArchitectureFactSet["edges"][number], "from">) {
   const candidates = facts.nodes.filter((node) => ["frontend", "api", "worker", "agent", "cli"].includes(node.kind) && (node.sourcePaths ?? []).includes(evidence.path));
   if (candidates.length === 0) return edge.from;
   return candidates.sort((a, b) => (b.runtimeUnit?.length ?? 0) - (a.runtimeUnit?.length ?? 0) || a.id.localeCompare(b.id))[0].id;
